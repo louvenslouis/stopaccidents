@@ -653,8 +653,8 @@ export function ReportSheet({
                       <AppIcon icon={Send} size={19} color="#A66913" />
                       <Text style={styles.noticeText}>
                         En appuyant sur « Suivant », le signalement et ce lieu
-                        sont enregistrés. Vous pourrez ensuite ajouter des
-                        précisions.
+                        sont enregistrés et visibles par tous sur l’Accueil.
+                        Vous pourrez ensuite ajouter des précisions.
                       </Text>
                     </View>
                   </>
@@ -922,9 +922,9 @@ export function ReportSheet({
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color="#6C7789" />
                       <Text style={[styles.small, styles.flex]}>
-                        Vos photos et informations personnelles sont conservées
-                        dans un espace privé. Elles ne sont pas affichées
-                        publiquement.
+                        Les précisions et les photos sont visibles par tous dans
+                        la fiche de l’accident. Les numéros d’identité et les
+                        immatriculations restent visibles uniquement par vous.
                       </Text>
                     </View>
                   </>

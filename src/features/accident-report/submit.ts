@@ -1,5 +1,6 @@
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '@/lib/supabase';
+import { ensureReportSession } from './session';
 import {
   MAX_PHOTO_BYTES,
   splitIdentifiers,
@@ -19,24 +20,7 @@ export async function saveAccidentReportStep(
   if (validation) throw new Error(validation);
   if (step < 0 || step > 3) throw new Error('Étape inconnue.');
   onProgress('Connexion sécurisée…');
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.getSession();
-  if (sessionError)
-    throw new Error('La connexion a expiré. Réessayez dans un instant.');
-  let userId = sessionData.session?.user.id;
-  if (!userId) {
-    const { data, error } = await supabase.auth.signInAnonymously();
-    if (error?.code === 'anonymous_provider_disabled') {
-      throw new Error(
-        'Le signalement sans compte n’est pas encore activé. Réessayez après son activation.',
-      );
-    }
-    if (error || !data.user)
-      throw new Error(
-        'Connexion impossible. Vérifiez votre connexion Internet et réessayez.',
-      );
-    userId = data.user.id;
-  }
+  const userId = await ensureReportSession();
 
   // Sparse parameters ensure an adjustment never erases fields from other steps.
   const payload: Record<string, unknown> = { p_id: draft.id, p_step: step + 1 };

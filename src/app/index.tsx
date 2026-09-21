@@ -1,4 +1,8 @@
 import { AppScreen } from '@/components/app-screen';
+import { AccidentDetailSheet } from '@/components/accident-detail-sheet';
+import { LatestAccidentCard } from '@/components/latest-accident-card';
+import { readLatestAccident } from '@/features/accident-report/read';
+import { useAccident } from '@/features/accident-report/use-accident';
 import { ReportSheet } from '@/components/report-sheet';
 import type { ReportType } from '@/components/report-type-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -30,6 +34,8 @@ export default function HomeScreen() {
   const [webWidth, setWebWidth] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportType, setReportType] = useState<ReportType | null>(null);
+  const [selectedAccident, setSelectedAccident] = useState<string | null>(null);
+  const latestAccident = useAccident(readLatestAccident, !reportOpen && !selectedAccident, 30000);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
   const scrollY = useSharedValue(0);
@@ -98,7 +104,15 @@ export default function HomeScreen() {
             <AppIcon icon={Bell} size={23} color="#9F9F9F" />
           </AnimatedPressable>
         }
-      />
+      >
+        <LatestAccidentCard
+          report={latestAccident.data}
+          loading={latestAccident.loading}
+          error={latestAccident.error}
+          onRefresh={latestAccident.refresh}
+          onOpen={setSelectedAccident}
+        />
+      </AppScreen>
 
       <Animated.View
         entering={FadeInUp.delay(180).duration(360).reduceMotion(ReduceMotion.System)}
@@ -155,6 +169,9 @@ export default function HomeScreen() {
         onBackToTypes={() => setReportType(null)}
         onClose={() => setReportOpen(false)}
       />
+      {selectedAccident && (
+        <AccidentDetailSheet key={selectedAccident} id={selectedAccident} onClose={() => setSelectedAccident(null)} />
+      )}
     </>
   );
 }

@@ -42,7 +42,7 @@ do $$ begin
   assert (select count(*) from public.accident_reports where id in ('33333333-3333-4333-8333-333333333333','55555555-5555-4555-8555-555555555555')) = 0, 'Cross-user report exposure';
   assert (select count(*) from public.accident_report_identifiers where report_id='33333333-3333-4333-8333-333333333333') = 0, 'Cross-user identity exposure';
   assert (select count(*) from public.accident_report_photos where report_id='55555555-5555-4555-8555-555555555555') = 0, 'Cross-user photo exposure';
-  assert (select count(*) from storage.objects where name like '11111111-1111-4111-8111-111111111111/%') = 0, 'Cross-user storage exposure';
+  assert (select count(*) from storage.objects where name like '11111111-1111-4111-8111-111111111111/%') = 1, 'Attached photo unavailable in the shared feed';
   begin
     insert into public.accident_report_identifiers(report_id,kind,value) values('33333333-3333-4333-8333-333333333333','registration','FORGED');
     raise exception 'Cross-user insert accepted';

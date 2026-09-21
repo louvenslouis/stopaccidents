@@ -117,6 +117,32 @@ nécessiter une purge d’exploitation via l’API Storage. Les étapes non vali
 constituent pas une file hors ligne persistante et le brouillon n’est pas restauré
 automatiquement au redémarrage. L’enregistrement ne déclenche pas les secours.
 
+### Dernier accident sur l’Accueil
+
+L’Accueil affiche le dernier signalement de tous les utilisateurs, ordonné par
+date de création (puis par référence en cas d’égalité). Les signalements partiels
+apparaissent immédiatement avec « À préciser » pour les étapes non renseignées.
+La carte contient le type, le lieu, la gravité et la date du signalement. Elle ouvre
+une fiche avec le lieu complet, les coordonnées et leur précision, le statut,
+les dates, les précisions et les photos. Les numéros d’identité et les
+immatriculations sont affichés seulement à leur auteur.
+
+La migration `20260921035356_shared_accident_feed.sql` ajoute la lecture partagée
+`read_accident` : sans référence, elle renvoie uniquement le résumé du dernier
+accident ; avec une référence, elle renvoie les détails autorisés. L’implémentation
+privilégiée est isolée dans le schéma `private`, vérifie l’identité de session et
+renvoie une liste explicite de champs. Les tables conservent leurs règles RLS
+réservées à l’auteur. Seules les photos attachées sont consultables par les autres
+utilisateurs, via des URL signées de 15 minutes ; les téléversements non attachés
+restent privés. Le formulaire indique cette visibilité avant l’envoi des compléments.
+
+La session anonyme est partagée entre lecture et enregistrement. L’Accueil se
+rafraîchit au retour sur l’onglet, au retour au premier plan, à la fermeture d’une
+fiche ou du formulaire et toutes les 30 secondes pendant sa consultation.
+Un bouton permet aussi l’actualisation manuelle. La fiche recharge ses informations
+à chaque ouverture et propose une actualisation. Une erreur de photo ne masque
+pas les autres détails. Aucun faux accident n’est affiché lorsque la base est vide.
+
 ### Vérification
 
 - `npm test` : validation du formulaire et tests PostgreSQL embarqués (PGlite),

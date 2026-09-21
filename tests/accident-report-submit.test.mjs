@@ -84,6 +84,7 @@ function fixture({
   const { saveAccidentReportStep } = compile(submitSource, {
     '@/lib/supabase': { supabase: client },
     './model': model,
+    './session': { ensureReportSession: async () => 'user-id' },
     'base64-arraybuffer': { decode },
   });
   return {
