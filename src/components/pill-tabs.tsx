@@ -6,10 +6,22 @@ import {
   type TabListProps,
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import type { Ref } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import House from 'lucide-react-native/icons/house';
+import Map from 'lucide-react-native/icons/map';
+import User from 'lucide-react-native/icons/user';
+import { useEffect, type Ref } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  interpolateColor,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
+import { AnimatedPressable } from '@/components/ui/animated-pressable';
 
 const colors = {
   background: '#F7F7F7',
@@ -21,25 +33,50 @@ const colors = {
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
-  icon: SymbolViewProps['name'];
+  icon: AppIconComponent;
   ref?: Ref<View>;
 };
 
 function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
   const color = isFocused ? colors.active : colors.inactive;
+  const focusProgress = useSharedValue(isFocused ? 1 : 0);
+
+  useEffect(() => {
+    focusProgress.value = withSpring(isFocused ? 1 : 0, {
+      damping: 18,
+      mass: 0.7,
+      reduceMotion: ReduceMotion.System,
+      stiffness: 260,
+    });
+  }, [focusProgress, isFocused]);
+
+  const activeStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      focusProgress.value,
+      [0, 1],
+      ['rgba(255, 240, 236, 0)', colors.activeBackground],
+    ),
+  }));
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: -focusProgress.value },
+      { scale: 1 + focusProgress.value * 0.08 },
+    ],
+  }));
 
   return (
-    <Pressable
+    <AnimatedPressable
       {...props}
       accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.tabButton,
-        isFocused && styles.tabButtonActive,
-        pressed && styles.tabButtonPressed,
-      ]}>
-      <SymbolView name={icon} size={23} tintColor={color} weight="semibold" />
+      haptic="selection"
+      pressedScale={0.93}
+      style={[styles.tabButton, activeStyle]}>
+      <Animated.View style={iconStyle}>
+        <AppIcon icon={icon} size={23} color={color} strokeWidth={isFocused ? 2.5 : 2} />
+      </Animated.View>
       <Text style={[styles.tabLabel, { color }]}>{label}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -64,21 +101,15 @@ export default function PillTabs() {
       <TabList asChild>
         <FloatingTabList>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton
-              label="Accueil"
-              icon={{ ios: 'house.fill', android: 'home', web: 'home' }}
-            />
+            <TabButton label="Accueil" icon={House} />
           </TabTrigger>
 
           <TabTrigger name="map" href="/carte" asChild>
-            <TabButton label="Carte" icon={{ ios: 'map.fill', android: 'map', web: 'map' }} />
+            <TabButton label="Carte" icon={Map} />
           </TabTrigger>
 
           <TabTrigger name="profile" href="/profil" asChild>
-            <TabButton
-              label="Profil"
-              icon={{ ios: 'person.fill', android: 'person', web: 'person' }}
-            />
+            <TabButton label="Profil" icon={User} />
           </TabTrigger>
         </FloatingTabList>
       </TabList>
@@ -123,12 +154,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-  },
-  tabButtonActive: {
-    backgroundColor: colors.activeBackground,
-  },
-  tabButtonPressed: {
-    opacity: 0.68,
   },
   tabLabel: {
     fontSize: 11,

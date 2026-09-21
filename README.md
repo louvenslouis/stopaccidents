@@ -65,3 +65,52 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Signalement d’accident
+
+Le bouton de l’accueil ouvre un bottom sheet en trois étapes : accident, gravité,
+puis précisions et photos. La caméra intégrée ne propose aucun accès à la galerie.
+Les coordonnées GPS ne sont demandées qu’au toucher du bouton correspondant.
+Les champs facultatifs sont les plaques, les pièces d’identité, les remarques et
+jusqu’à quatre photos JPEG de 6 Mo maximum chacune.
+
+### Configuration Supabase
+
+Sur le projet `vqzmzblwmbhmfoikpbhy`, activer **Authentication → Sign In / Providers
+→ Allow anonymous sign-ins**. Chaque visiteur obtient ainsi une identité Supabase
+sans formulaire d’inscription. Les sessions natives utilisent le stockage sécurisé
+existant ; la session web reste en mémoire.
+
+La migration `supabase/migrations/20260921030629_accident_reports.sql` crée :
+
+- `accident_reports` : lieu, GPS et précision, type, gravité, notes, statut et auteur ;
+- `accident_report_identifiers` : immatriculations et numéros d’identité facultatifs ;
+- `accident_report_photos` : liens privés et date de capture ;
+- le bucket privé `accident-photos` et la fonction `submit_accident_report`.
+
+Les trois tables utilisent RLS, avec lecture limitée à l’auteur. Le statut de
+traitement est réservé au serveur. Le bucket est privé ; les photos attachées à
+un signalement ne peuvent pas être remplacées ou supprimées par le client.
+L’enregistrement des trois tables est transactionnel et une référence UUID stable
+évite les doublons lors d’une reprise. Les photos sont téléversées avant cette
+transaction ; en cas d’échec, l’application tente de supprimer les fichiers non
+attachés. Une interruption complète ou une absence prolongée de réseau peut laisser
+des téléversements privés non attachés : leur purge périodique doit être assurée
+par l’exploitation, via l’API Storage (pas en supprimant directement ses lignes SQL).
+
+Le formulaire reste disponible pendant la session de l’application. Il ne constitue
+pas une file d’envoi hors ligne persistante. Un accusé de réception signifie que
+les données ont été enregistrées, sans déclenchement automatique des secours.
+
+### Vérification
+
+- `npm test` : validation du formulaire et tests PostgreSQL embarqués (PGlite),
+  avec schémas système Supabase minimaux et migration réelle non modifiée ;
+- `npx tsc --noEmit` et `npm run lint` ;
+- `npx expo export -p web`.
+
+`supabase/tests/accident_reports.sql` peut aussi être exécuté avec `psql` dans une
+base de développement Supabase ; toutes ses données synthétiques sont annulées.
+La caméra et le GPS doivent être vérifiés sur appareil physique. Une nouvelle
+compilation native est nécessaire pour prendre en compte les modules et permissions
+ajoutés ; les navigateurs nécessitent HTTPS ou localhost pour ces fonctions.

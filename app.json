@@ -38,6 +38,21 @@
         {
           "configureAndroidBackup": true
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autorisez Stop Accidents à prendre des photos pour votre signalement.",
+          "recordAudioAndroid": false,
+          "microphonePermission": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Autorisez Stop Accidents à préciser le lieu de l’accident lorsque vous le demandez."
+        }
       ]
     ],
     "experiments": {

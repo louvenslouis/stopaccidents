@@ -1,8 +1,15 @@
 import { AppScreen } from '@/components/app-screen';
-import { SymbolView } from 'expo-symbols';
-import { Alert, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { AccidentReportSheet } from '@/components/accident-report-sheet';
+import { AnimatedPressable } from '@/components/ui/animated-pressable';
+import { AppIcon } from '@/components/ui/app-icon';
+import Bell from 'lucide-react-native/icons/bell';
+import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
+import { useEffect, useState } from 'react';
+import { Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
+  FadeInUp,
+  ReduceMotion,
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -18,9 +25,25 @@ const WIDE_LAYOUT_GAP = 16;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width: initialWidth } = useWindowDimensions();
+  const [webWidth, setWebWidth] = useState(0);
+  const [reportOpen, setReportOpen] = useState(false);
+  const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
   const scrollY = useSharedValue(0);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
+    const updateWebWidth = () => setWebWidth(window.innerWidth);
+
+    updateWebWidth();
+    window.addEventListener('resize', updateWebWidth);
+
+    return () => window.removeEventListener('resize', updateWebWidth);
+  }, []);
 
   const handleScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -63,21 +86,20 @@ export default function HomeScreen() {
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerRight={
-          <Pressable
+          <AnimatedPressable
             accessibilityLabel="Notifications"
             accessibilityRole="button"
+            haptic="light"
             hitSlop={8}
-            style={({ pressed }) => [styles.notificationButton, pressed && styles.buttonPressed]}>
-            <SymbolView
-              name={{ ios: 'bell', android: 'notifications', web: 'notifications' }}
-              size={23}
-              tintColor="#9F9F9F"
-            />
-          </Pressable>
+            pressedScale={0.9}
+            style={styles.notificationButton}>
+            <AppIcon icon={Bell} size={23} color="#9F9F9F" />
+          </AnimatedPressable>
         }
       />
 
       <Animated.View
+        entering={FadeInUp.delay(180).duration(360).reduceMotion(ReduceMotion.System)}
         pointerEvents="box-none"
         style={[
           styles.reportButtonPosition,
@@ -97,32 +119,31 @@ export default function HomeScreen() {
           pointerEvents="box-none"
           style={[styles.reportButtonRail, isWideLayout && styles.reportButtonRailWide]}>
           <Animated.View style={[styles.reportButton, reportButtonStyle]}>
-            <Pressable
+            <AnimatedPressable
               accessibilityHint="Ouvre le signalement d'un accident"
               accessibilityLabel="Signaler un accident"
               accessibilityRole="button"
-              onPress={() =>
-                Alert.alert('Signaler un accident', 'Le formulaire sera bientôt disponible.')
-              }
-              style={({ pressed }) => [
-                styles.reportButtonPressable,
-                pressed && styles.buttonPressed,
-              ]}>
+              haptic="warning"
+              onPress={() => setReportOpen(true)}
+              pressedOpacity={0.9}
+              pressedScale={0.97}
+              style={styles.reportButtonPressable}>
               <Animated.View style={[styles.reportIcon, reportIconStyle]}>
-                <SymbolView
-                  name={{ ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' }}
+                <AppIcon
+                  icon={TriangleAlert}
                   size={24}
-                  tintColor="#FFFFFF"
-                  weight="semibold"
+                  color="#FFFFFF"
+                  strokeWidth={2.5}
                 />
               </Animated.View>
               <Animated.Text numberOfLines={1} style={[styles.reportLabel, reportLabelStyle]}>
                 Signaler un Accident
               </Animated.Text>
-            </Pressable>
+            </AnimatedPressable>
           </Animated.View>
         </Animated.View>
       </Animated.View>
+      <AccidentReportSheet visible={reportOpen} onClose={() => setReportOpen(false)} />
     </>
   );
 }
@@ -137,9 +158,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buttonPressed: {
-    opacity: 0.65,
   },
   homeContent: {
     minHeight: '115%',

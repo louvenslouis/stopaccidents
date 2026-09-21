@@ -1,36 +1,60 @@
-import { SymbolView } from 'expo-symbols';
-import { PropsWithChildren, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import { PropsWithChildren, useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  FadeInDown,
+  FadeOutUp,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { AnimatedPressable } from '@/components/ui/animated-pressable';
+import { AppIcon } from '@/components/ui/app-icon';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const theme = useTheme();
+  const openProgress = useSharedValue(0);
+
+  useEffect(() => {
+    openProgress.value = withSpring(isOpen ? 1 : 0, {
+      damping: 16,
+      reduceMotion: ReduceMotion.System,
+      stiffness: 260,
+    });
+  }, [isOpen, openProgress]);
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${90 - openProgress.value * 90}deg` }],
+  }));
 
   return (
     <ThemedView>
-      <Pressable
-        style={({ pressed }) => [styles.heading, pressed && styles.pressedHeading]}
+      <AnimatedPressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: isOpen }}
+        haptic="selection"
+        pressedScale={0.985}
+        style={styles.heading}
         onPress={() => setIsOpen((value) => !value)}>
         <ThemedView type="backgroundElement" style={styles.button}>
-          <SymbolView
-            name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
-            size={14}
-            weight="bold"
-            tintColor={theme.text}
-            style={{ transform: [{ rotate: isOpen ? '-90deg' : '90deg' }] }}
-          />
+          <Animated.View style={chevronStyle}>
+            <AppIcon icon={ChevronRight} size={14} strokeWidth={3} color={theme.text} />
+          </Animated.View>
         </ThemedView>
 
         <ThemedText type="small">{title}</ThemedText>
-      </Pressable>
+      </AnimatedPressable>
       {isOpen && (
-        <Animated.View entering={FadeIn.duration(200)}>
+        <Animated.View
+          entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)}
+          exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)}>
           <ThemedView type="backgroundElement" style={styles.content}>
             {children}
           </ThemedView>
@@ -45,9 +69,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  pressedHeading: {
-    opacity: 0.7,
   },
   button: {
     width: Spacing.four,

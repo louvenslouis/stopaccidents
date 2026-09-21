@@ -1,0 +1,1210 @@
+import { randomUUID } from 'expo-crypto';
+import * as Location from 'expo-location';
+import { Image } from 'expo-image';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
+import ArrowRight from 'lucide-react-native/icons/arrow-right';
+import Camera from 'lucide-react-native/icons/camera';
+import Car from 'lucide-react-native/icons/car';
+import CarFront from 'lucide-react-native/icons/car-front';
+import Check from 'lucide-react-native/icons/check';
+import CheckCheck from 'lucide-react-native/icons/check-check';
+import CircleHelp from 'lucide-react-native/icons/circle-question-mark';
+import HeartPulse from 'lucide-react-native/icons/heart-pulse';
+import LocateFixed from 'lucide-react-native/icons/locate-fixed';
+import MapPin from 'lucide-react-native/icons/map-pin';
+import Bike from 'lucide-react-native/icons/motorbike';
+import Plus from 'lucide-react-native/icons/plus';
+import Send from 'lucide-react-native/icons/send';
+import ShieldCheck from 'lucide-react-native/icons/shield-check';
+import Siren from 'lucide-react-native/icons/siren';
+import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
+import X from 'lucide-react-native/icons/x';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
+import { ReportCamera } from '@/components/report-camera';
+import {
+  MAX_PHOTOS,
+  validateStep,
+  type AccidentType,
+  type ReportDraft,
+  type Severity,
+} from '@/features/accident-report/model';
+import { submitAccidentReport } from '@/features/accident-report/submit';
+
+const types: {
+  value: AccidentType;
+  label: string;
+  description: string;
+  icon: AppIconComponent;
+}[] = [
+  {
+    value: 'two_cars',
+    label: 'Deux voitures',
+    description: 'Collision entre véhicules',
+    icon: CarFront,
+  },
+  {
+    value: 'single_car',
+    label: 'Une seule voiture',
+    description: 'Sortie de route, obstacle…',
+    icon: Car,
+  },
+  {
+    value: 'motorcycle',
+    label: 'Motocyclette',
+    description: 'Une moto est impliquée',
+    icon: Bike,
+  },
+  {
+    value: 'other',
+    label: 'Autre',
+    description: 'Piéton, camion, vélo…',
+    icon: Plus,
+  },
+];
+const severities: {
+  value: Severity;
+  label: string;
+  description: string;
+  icon: AppIconComponent;
+  color: string;
+  tint: string;
+}[] = [
+  {
+    value: 'material',
+    label: 'Dégâts matériels',
+    description: 'Aucun blessé apparent',
+    icon: Car,
+    color: '#23766A',
+    tint: '#EAF6F1',
+  },
+  {
+    value: 'injuries',
+    label: 'Des blessés',
+    description: 'Des personnes semblent blessées',
+    icon: HeartPulse,
+    color: '#A66913',
+    tint: '#FFF5E4',
+  },
+  {
+    value: 'serious',
+    label: 'Blessures graves',
+    description: 'Une personne semble en danger',
+    icon: Siren,
+    color: '#CD4A29',
+    tint: '#FFF0E9',
+  },
+  {
+    value: 'fatal',
+    label: 'Décès signalé',
+    description: 'Un décès est rapporté sur place',
+    icon: TriangleAlert,
+    color: '#BD2E40',
+    tint: '#FDECEF',
+  },
+  {
+    value: 'unknown',
+    label: 'Je ne sais pas',
+    description: 'La gravité reste à déterminer',
+    icon: CircleHelp,
+    color: '#657084',
+    tint: '#F0F2F6',
+  },
+];
+const steps = ['L’accident', 'La gravité', 'Les détails'];
+const makeDraft = (): ReportDraft => ({
+  id: randomUUID(),
+  location: '',
+  coordinates: null,
+  accidentType: null,
+  severity: null,
+  registrations: '',
+  identities: '',
+  notes: '',
+  photos: [],
+});
+
+function Action({
+  label,
+  onPress,
+  icon,
+  secondary = false,
+  disabled = false,
+  busy = false,
+}: {
+  label: string;
+  onPress: () => void;
+  icon?: AppIconComponent;
+  secondary?: boolean;
+  disabled?: boolean;
+  busy?: boolean;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled, busy }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.action,
+        secondary ? styles.secondaryAction : styles.primaryAction,
+        (disabled || pressed) && { opacity: 0.6 },
+      ]}
+    >
+      {busy ? (
+        <ActivityIndicator color={secondary ? '#243147' : '#fff'} />
+      ) : (
+        icon && (
+          <AppIcon
+            icon={icon}
+            size={19}
+            color={secondary ? '#243147' : '#fff'}
+          />
+        )
+      )}
+      <Text style={[styles.actionText, secondary && { color: '#243147' }]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function AccidentReportSheet({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
+  const [draft, setDraft] = useState<ReportDraft>(makeDraft);
+  const [step, setStep] = useState(0);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [receipt, setReceipt] = useState<string | null>(null);
+  const submitting = useRef(false);
+  const locationRequest = useRef(0);
+  const dragStartY = useRef(0);
+  const scroll = useRef<ScrollView>(null);
+  useEffect(() => {
+    const tracker = locationRequest;
+    return () => {
+      tracker.current++;
+    };
+  }, []);
+  function close() {
+    if (submitting.current) return;
+    if (cameraOpen) {
+      setCameraOpen(false);
+      return;
+    }
+    locationRequest.current++;
+    setLocating(false);
+    if (receipt) {
+      done();
+      return;
+    }
+    onClose();
+  }
+  function update<K extends keyof ReportDraft>(key: K, value: ReportDraft[K]) {
+    if (submitting.current) return;
+    setDraft((current) => ({ ...current, [key]: value }));
+    setError(null);
+  }
+  function changeStep(next: number) {
+    setStep(next);
+    setError(null);
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  }
+  async function locate() {
+    if (locating || !draft || submitting.current) return;
+    const request = ++locationRequest.current;
+    setLocating(true);
+    setLocationError(null);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted)
+        throw new Error(
+          'Localisation non autorisée. Saisissez le lieu manuellement ou autorisez la localisation dans les réglages.',
+        );
+      const position = await Promise.race([
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+        new Promise<never>((_, reject) => {
+          timeout = setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'La position tarde à arriver. Réessayez à l’extérieur ou indiquez le lieu manuellement.',
+                ),
+              ),
+            18000,
+          );
+        }),
+      ]);
+      if (locationRequest.current !== request) return;
+      update('coordinates', {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+      });
+    } catch (e) {
+      if (locationRequest.current === request)
+        setLocationError(
+          e instanceof Error
+            ? e.message
+            : 'GPS indisponible. Vous pouvez saisir le lieu manuellement.',
+        );
+    } finally {
+      clearTimeout(timeout);
+      if (locationRequest.current === request) setLocating(false);
+    }
+  }
+  async function next() {
+    if (!draft || submitting.current) return;
+    const validation = validateStep(draft, step);
+    if (validation) {
+      setError(validation);
+      return;
+    }
+    if (step < 2) {
+      changeStep(step + 1);
+      return;
+    }
+    submitting.current = true;
+    setSending(true);
+    setError(null);
+    try {
+      setReceipt(await submitAccidentReport(draft, setProgress));
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : 'Envoi impossible. Réessayez dans un instant.',
+      );
+    } finally {
+      submitting.current = false;
+      setSending(false);
+    }
+  }
+  function done() {
+    setDraft(makeDraft());
+    setReceipt(null);
+    setStep(0);
+    setError(null);
+    setLocationError(null);
+    onClose();
+  }
+  if (!draft) return null;
+  const selectedType = types.find((item) => item.value === draft.accidentType);
+  const selectedSeverity = severities.find(
+    (item) => item.value === draft.severity,
+  );
+  const narrow = width < 370;
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={close}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer le formulaire, les informations sont conservées"
+          disabled={sending}
+          onPress={close}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          accessibilityViewIsModal
+          style={[
+            styles.sheet,
+            {
+              height: Math.min(height - insets.top - 18, 850),
+              paddingBottom: Math.max(insets.bottom, 12),
+            },
+          ]}
+        >
+          {cameraOpen ? (
+            <ReportCamera
+              onClose={() => setCameraOpen(false)}
+              onCapture={(photo) => {
+                update('photos', [...draft.photos, photo].slice(0, MAX_PHOTOS));
+                setCameraOpen(false);
+              }}
+            />
+          ) : receipt ? (
+            <View style={styles.success}>
+              <View style={styles.successArt}>
+                <AppIcon icon={ShieldCheck} size={62} color="#20846A" />
+                <View style={styles.successBadge}>
+                  <AppIcon icon={Check} size={20} color="#fff" />
+                </View>
+              </View>
+              <Text style={styles.eyebrow}>MERCI POUR VOTRE VIGILANCE</Text>
+              <Text accessibilityRole="header" style={styles.successTitle}>
+                Signalement envoyé
+              </Text>
+              <Text style={styles.successBody}>
+                Vos informations{draft.photos.length ? ' et vos photos' : ''}{' '}
+                ont bien été enregistrées.
+              </Text>
+              <View style={styles.receipt}>
+                <Text style={styles.small}>RÉFÉRENCE DU SIGNALEMENT</Text>
+                <Text selectable style={styles.reference}>
+                  {receipt.toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.notice}>
+                <AppIcon icon={TriangleAlert} size={20} color="#A66913" />
+                <Text style={styles.noticeText}>
+                  Cet envoi ne déclenche pas automatiquement l’intervention des
+                  secours.
+                </Text>
+              </View>
+              <Action label="Terminer" icon={CheckCheck} onPress={done} />
+            </View>
+          ) : (
+            <>
+              <View
+                style={styles.handleArea}
+                onStartShouldSetResponder={() => true}
+                onResponderGrant={(event) => {
+                  dragStartY.current = event.nativeEvent.pageY;
+                }}
+                onResponderRelease={(event) => {
+                  if (event.nativeEvent.pageY - dragStartY.current > 60)
+                    close();
+                }}
+              >
+                <View style={styles.handle} />
+              </View>
+              <View style={styles.header}>
+                <View style={styles.headerIcon}>
+                  <AppIcon icon={TriangleAlert} size={23} color="#DA3D32" />
+                </View>
+                <View style={styles.flex}>
+                  <Text style={styles.eyebrow}>CHAQUE SIGNALEMENT COMPTE</Text>
+                  <Text accessibilityRole="header" style={styles.title}>
+                    Signaler un accident
+                  </Text>
+                </View>
+                <Pressable
+                  disabled={sending}
+                  accessibilityRole="button"
+                  accessibilityLabel="Fermer le formulaire"
+                  onPress={close}
+                  style={styles.iconButton}
+                >
+                  <AppIcon icon={X} size={21} color="#667185" />
+                </Pressable>
+              </View>
+              <View style={styles.steps}>
+                {steps.map((label, index) => (
+                  <Pressable
+                    key={label}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Étape ${index + 1} : ${label}`}
+                    accessibilityState={{
+                      selected: step === index,
+                      disabled: index > step || sending,
+                    }}
+                    disabled={index > step || sending}
+                    onPress={() => changeStep(index)}
+                    style={styles.stepItem}
+                  >
+                    <View
+                      style={[
+                        styles.stepBar,
+                        index <= step && styles.stepBarActive,
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.stepLabel,
+                        index === step && styles.stepLabelActive,
+                      ]}
+                    >
+                      {index + 1}. {label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+              <ScrollView
+                ref={scroll}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+              >
+                {step === 0 && (
+                  <>
+                    <View style={styles.notice}>
+                      <AppIcon icon={ShieldCheck} size={20} color="#A66913" />
+                      <Text style={styles.noticeText}>
+                        Mettez-vous d’abord en sécurité. En cas d’urgence,
+                        contactez les secours.
+                      </Text>
+                    </View>
+                    <View style={styles.sectionHeading}>
+                      <View style={styles.sectionIcon}>
+                        <AppIcon icon={MapPin} color="#D94235" size={21} />
+                      </View>
+                      <View style={styles.flex}>
+                        <Text style={styles.sectionTitle}>
+                          Où a eu lieu l’accident ?
+                        </Text>
+                        <Text style={styles.small}>
+                          Un lieu ou une position GPS est nécessaire.
+                        </Text>
+                      </View>
+                    </View>
+                    <TextInput
+                      accessibilityLabel="Lieu de l’accident"
+                      placeholder="Rue, quartier, commune ou point de repère"
+                      placeholderTextColor="#89919E"
+                      value={draft.location}
+                      onChangeText={(value) => update('location', value)}
+                      maxLength={500}
+                      multiline
+                      style={[styles.input, styles.locationInput]}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={locating}
+                      onPress={locate}
+                      style={styles.gpsButton}
+                    >
+                      {locating ? (
+                        <ActivityIndicator color="#267E70" />
+                      ) : (
+                        <AppIcon icon={LocateFixed} color="#267E70" size={19} />
+                      )}
+                      <Text style={styles.gpsText}>
+                        {locating
+                          ? 'Recherche de votre position…'
+                          : draft.coordinates
+                            ? 'Actualiser ma position GPS'
+                            : 'Utiliser ma position GPS'}
+                      </Text>
+                    </Pressable>
+                    {locationError && (
+                      <Text
+                        accessibilityRole="alert"
+                        style={styles.inlineError}
+                      >
+                        {locationError}
+                      </Text>
+                    )}
+                    {draft.coordinates && (
+                      <View style={styles.gpsResult}>
+                        <View style={styles.flex}>
+                          <Text style={styles.gpsText}>
+                            Position ajoutée
+                            {draft.coordinates.accuracy !== null
+                              ? ` · ± ${Math.round(draft.coordinates.accuracy)} m`
+                              : ''}
+                          </Text>
+                          <Text style={styles.small}>
+                            {draft.coordinates.latitude.toFixed(5)},{' '}
+                            {draft.coordinates.longitude.toFixed(5)}
+                          </Text>
+                          <Text style={styles.small}>
+                            Vérifiez que vous êtes bien sur le lieu de
+                            l’accident.
+                          </Text>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel="Retirer la position GPS"
+                          onPress={() => update('coordinates', null)}
+                          style={styles.iconButton}
+                        >
+                          <AppIcon icon={X} size={18} color="#267E70" />
+                        </Pressable>
+                      </View>
+                    )}
+                    <Text style={styles.sectionTitle}>
+                      Quel type d’accident ?
+                    </Text>
+                    <View style={styles.typeGrid}>
+                      {types.map((item) => {
+                        const selected = draft.accidentType === item.value;
+                        return (
+                          <Pressable
+                            key={item.value}
+                            accessibilityRole="radio"
+                            accessibilityLabel={item.label}
+                            accessibilityState={{ checked: selected }}
+                            onPress={() => update('accidentType', item.value)}
+                            style={[
+                              styles.typeCard,
+                              narrow && { width: '100%' },
+                              selected && styles.typeCardSelected,
+                            ]}
+                          >
+                            <View style={styles.cardTop}>
+                              <View
+                                style={[
+                                  styles.typeIcon,
+                                  selected && styles.typeIconSelected,
+                                ]}
+                              >
+                                <AppIcon
+                                  icon={item.icon}
+                                  color={selected ? '#D94235' : '#68758A'}
+                                  size={28}
+                                />
+                              </View>
+                              <View
+                                style={[
+                                  styles.radio,
+                                  selected && styles.radioSelected,
+                                ]}
+                              >
+                                {selected && (
+                                  <AppIcon
+                                    icon={Check}
+                                    size={12}
+                                    color="#fff"
+                                  />
+                                )}
+                              </View>
+                            </View>
+                            <Text style={styles.cardTitle}>{item.label}</Text>
+                            <Text style={styles.cardDescription}>
+                              {item.description}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+                {step === 1 && (
+                  <>
+                    <View style={styles.sectionHeading}>
+                      <View style={styles.sectionIcon}>
+                        <AppIcon icon={HeartPulse} color="#D94235" size={23} />
+                      </View>
+                      <View style={styles.flex}>
+                        <Text style={styles.sectionTitle}>
+                          Quelle est la gravité ?
+                        </Text>
+                        <Text style={styles.small}>
+                          Indiquez seulement ce que vous savez.
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.body}>
+                      Une estimation suffit. Vous n’avez pas besoin de vous
+                      approcher des victimes.
+                    </Text>
+                    {severities.map((item) => {
+                      const selected = item.value === draft.severity;
+                      return (
+                        <Pressable
+                          key={item.value}
+                          accessibilityRole="radio"
+                          accessibilityLabel={`${item.label}. ${item.description}`}
+                          accessibilityState={{ checked: selected }}
+                          onPress={() => update('severity', item.value)}
+                          style={[
+                            styles.severityCard,
+                            selected && {
+                              borderColor: item.color,
+                              backgroundColor: item.tint,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.severityIcon,
+                              { backgroundColor: item.tint },
+                            ]}
+                          >
+                            <AppIcon
+                              icon={item.icon}
+                              color={item.color}
+                              size={24}
+                            />
+                          </View>
+                          <View style={styles.flex}>
+                            <Text style={styles.cardTitle}>{item.label}</Text>
+                            <Text style={styles.cardDescription}>
+                              {item.description}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.radio,
+                              selected && {
+                                backgroundColor: item.color,
+                                borderColor: item.color,
+                              },
+                            ]}
+                          >
+                            {selected && (
+                              <AppIcon icon={Check} size={12} color="#fff" />
+                            )}
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                    {(draft.severity === 'serious' ||
+                      draft.severity === 'fatal') && (
+                      <View style={styles.notice}>
+                        <AppIcon icon={Siren} size={20} color="#B63838" />
+                        <Text style={styles.noticeText}>
+                          Contactez les secours en priorité. Ce formulaire ne
+                          remplace pas un appel d’urgence.
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
+                {step === 2 && (
+                  <>
+                    <View style={styles.summary}>
+                      <Text style={styles.summaryTitle}>Votre signalement</Text>
+                      <View style={styles.inline}>
+                        <AppIcon icon={MapPin} size={17} color="#64748B" />
+                        <Text style={[styles.small, styles.flex]}>
+                          {draft.location.trim() || 'Position GPS ajoutée'}
+                        </Text>
+                      </View>
+                      <Text style={styles.summaryDetails}>
+                        {selectedType?.label} · {selectedSeverity?.label}
+                      </Text>
+                    </View>
+                    <View style={styles.sectionHeading}>
+                      <Text style={styles.sectionTitle}>
+                        Quelques précisions
+                      </Text>
+                      <Text style={styles.optional}>FACULTATIF</Text>
+                    </View>
+                    <Text style={styles.label}>Numéros d’immatriculation</Text>
+                    <TextInput
+                      editable={!sending}
+                      accessibilityLabel="Numéros d’immatriculation"
+                      placeholder="Ex. : AA-12345, BB-67890"
+                      placeholderTextColor="#89919E"
+                      value={draft.registrations}
+                      onChangeText={(value) => update('registrations', value)}
+                      maxLength={810}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                      style={styles.input}
+                    />
+                    <Text style={styles.label}>
+                      Numéros de pièce d’identité
+                    </Text>
+                    <TextInput
+                      editable={!sending}
+                      accessibilityLabel="Numéros de pièce d’identité"
+                      placeholder="Uniquement s’ils sont disponibles"
+                      placeholderTextColor="#89919E"
+                      value={draft.identities}
+                      onChangeText={(value) => update('identities', value)}
+                      maxLength={810}
+                      autoCorrect={false}
+                      style={styles.input}
+                    />
+                    <Text style={styles.small}>
+                      Séparez les numéros par une virgule. Ne vous mettez pas en
+                      danger pour les obtenir.
+                    </Text>
+                    <View style={styles.sectionHeading}>
+                      <View style={styles.inline}>
+                        <AppIcon icon={Camera} size={20} color="#D94235" />
+                        <Text style={styles.sectionTitle}>
+                          Photos sur place
+                        </Text>
+                      </View>
+                      <Text style={styles.optional}>
+                        {draft.photos.length}/{MAX_PHOTOS}
+                      </Text>
+                    </View>
+                    <Text style={styles.small}>
+                      Caméra uniquement · 4 photos maximum
+                    </Text>
+                    <View style={styles.photoGrid}>
+                      {draft.photos.map((photo, index) => (
+                        <View style={styles.photoWrap} key={photo.id}>
+                          <Image
+                            source={{ uri: photo.uri }}
+                            style={styles.photo}
+                            contentFit="cover"
+                            accessibilityLabel={`Photo de l’accident ${index + 1}`}
+                          />
+                          <Pressable
+                            disabled={sending}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Retirer la photo ${index + 1}`}
+                            onPress={() =>
+                              update(
+                                'photos',
+                                draft.photos.filter(
+                                  (item) => item.id !== photo.id,
+                                ),
+                              )
+                            }
+                            style={styles.removePhoto}
+                          >
+                            <AppIcon icon={X} size={16} color="#fff" />
+                          </Pressable>
+                        </View>
+                      ))}
+                      {draft.photos.length < MAX_PHOTOS && (
+                        <Pressable
+                          disabled={sending}
+                          accessibilityRole="button"
+                          accessibilityLabel="Prendre une photo avec la caméra"
+                          onPress={() => setCameraOpen(true)}
+                          style={styles.addPhoto}
+                        >
+                          <AppIcon icon={Camera} size={25} color="#D94235" />
+                          <Text style={styles.addPhotoText}>
+                            Prendre{'\n'}une photo
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                    <Text style={styles.label}>Autres informations</Text>
+                    <TextInput
+                      editable={!sending}
+                      accessibilityLabel="Autres informations sur l’accident"
+                      placeholder="Un repère, les véhicules impliqués, ce que vous avez observé…"
+                      placeholderTextColor="#89919E"
+                      value={draft.notes}
+                      onChangeText={(value) => update('notes', value)}
+                      maxLength={2000}
+                      multiline
+                      style={[styles.input, styles.notes]}
+                    />
+                    <View style={styles.privacy}>
+                      <AppIcon icon={ShieldCheck} size={18} color="#6C7789" />
+                      <Text style={[styles.small, styles.flex]}>
+                        Vos photos et informations personnelles sont conservées
+                        dans un espace privé. Elles ne sont pas affichées
+                        publiquement.
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </ScrollView>
+              <View style={styles.footer}>
+                {error && (
+                  <Text accessibilityRole="alert" style={styles.inlineError}>
+                    {error}
+                  </Text>
+                )}
+                {sending && (
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    style={styles.progress}
+                  >
+                    {progress}
+                  </Text>
+                )}
+                <View style={styles.footerActions}>
+                  {step > 0 && (
+                    <Action
+                      label="Retour"
+                      secondary
+                      icon={ArrowLeft}
+                      onPress={() => changeStep(step - 1)}
+                      disabled={sending}
+                    />
+                  )}
+                  <View style={styles.flex}>
+                    <Action
+                      label={
+                        sending
+                          ? 'Envoi en cours…'
+                          : step === 2
+                            ? 'Envoyer le signalement'
+                            : 'Continuer'
+                      }
+                      icon={step === 2 ? Send : ArrowRight}
+                      onPress={next}
+                      disabled={sending || locating}
+                      busy={sending}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.footerHint}>
+                  {step === 2
+                    ? 'Vérifiez les informations avant l’envoi.'
+                    : 'Vous pouvez fermer et reprendre ce formulaire dans cette session.'}
+                </Text>
+              </View>
+            </>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: '#11182780',
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 620,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    overflow: 'hidden',
+    boxShadow: '0 -8px 50px rgba(17, 24, 39, 0.16)',
+  },
+  handleArea: { height: 22, alignItems: 'center', justifyContent: 'center' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D8DDE5' },
+  header: {
+    paddingHorizontal: 22,
+    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: '#FFF0EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flex: { flex: 1 },
+  eyebrow: {
+    color: '#AD5044',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    marginBottom: 6,
+  },
+  title: {
+    color: '#1C2637',
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: '#F5F6F8',
+  },
+  steps: {
+    flexDirection: 'row',
+    gap: 9,
+    paddingHorizontal: 24,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF0F3',
+  },
+  stepItem: { flex: 1, minHeight: 40 },
+  stepBar: {
+    height: 3,
+    borderRadius: 3,
+    backgroundColor: '#EAEDF1',
+    marginBottom: 9,
+  },
+  stepBarActive: { backgroundColor: '#E14D3E' },
+  stepLabel: { color: '#9299A4', fontSize: 12, fontWeight: '600' },
+  stepLabelActive: { color: '#B93F35' },
+  content: { padding: 24, gap: 14, paddingBottom: 30 },
+  notice: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#FFF6E8',
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'flex-start',
+  },
+  noticeText: { flex: 1, fontSize: 12, lineHeight: 18, color: '#86602B' },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 7,
+  },
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: '#FFF0EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    color: '#243147',
+    fontSize: 17,
+    fontWeight: '700',
+    letterSpacing: -0.35,
+  },
+  small: { color: '#768091', fontSize: 12, lineHeight: 18 },
+  body: { color: '#768091', fontSize: 14, lineHeight: 21 },
+  input: {
+    borderColor: '#DFE3EA',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#243147',
+    backgroundColor: '#FAFBFC',
+    minHeight: 50,
+  },
+  locationInput: { minHeight: 74, textAlignVertical: 'top' },
+  gpsButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    gap: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF8F5',
+    borderRadius: 13,
+  },
+  gpsText: {
+    color: '#267E70',
+    fontWeight: '600',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  gpsResult: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 12,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: '#DCEEE7',
+  },
+  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  typeCard: {
+    width: '48%',
+    flexGrow: 1,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: '#E6E9EE',
+    padding: 15,
+    gap: 5,
+  },
+  typeCardSelected: { borderColor: '#E36555', backgroundColor: '#FFFAF7' },
+  cardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 7,
+  },
+  typeIcon: {
+    width: 47,
+    height: 44,
+    backgroundColor: '#F1F4F7',
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeIconSelected: { backgroundColor: '#FCE7DE' },
+  radio: {
+    width: 19,
+    height: 19,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#D6DCE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: { backgroundColor: '#DD5847', borderColor: '#DD5847' },
+  cardTitle: { color: '#273347', fontSize: 14, fontWeight: '700' },
+  cardDescription: {
+    color: '#86909E',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 3,
+  },
+  severityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    padding: 14,
+    minHeight: 78,
+    borderWidth: 1.5,
+    borderColor: '#E6E9EE',
+    borderRadius: 17,
+  },
+  severityIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summary: {
+    backgroundColor: '#F5F7FA',
+    borderRadius: 17,
+    padding: 16,
+    gap: 9,
+  },
+  summaryTitle: { color: '#29364C', fontSize: 13, fontWeight: '700' },
+  summaryDetails: { color: '#637087', fontSize: 12, fontWeight: '600' },
+  inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  optional: {
+    color: '#9099A7',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  label: {
+    color: '#485469',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: -6,
+  },
+  notes: { minHeight: 92, textAlignVertical: 'top' },
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  photoWrap: { width: 100, height: 105 },
+  photo: { width: '100%', height: '100%', borderRadius: 15 },
+  removePhoto: {
+    position: 'absolute',
+    right: 3,
+    top: 3,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#172033CC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addPhoto: {
+    width: 100,
+    height: 105,
+    borderWidth: 1.5,
+    borderColor: '#E9BCB3',
+    borderStyle: 'dashed',
+    borderRadius: 15,
+    backgroundColor: '#FFFAF7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+  },
+  addPhotoText: {
+    fontSize: 11,
+    textAlign: 'center',
+    lineHeight: 15,
+    fontWeight: '600',
+    color: '#C85443',
+  },
+  privacy: {
+    flexDirection: 'row',
+    gap: 9,
+    alignItems: 'flex-start',
+    marginTop: 4,
+  },
+  footer: {
+    paddingHorizontal: 22,
+    paddingTop: 16,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#EEF0F3',
+    backgroundColor: '#fff',
+  },
+  footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  action: {
+    borderRadius: 15,
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    gap: 8,
+  },
+  primaryAction: { backgroundColor: '#DF493B' },
+  secondaryAction: { backgroundColor: '#F1F3F6' },
+  actionText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 13,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  footerHint: {
+    color: '#929BA8',
+    fontSize: 10,
+    lineHeight: 15,
+    textAlign: 'center',
+  },
+  inlineError: { color: '#BA3540', fontSize: 12, lineHeight: 18 },
+  progress: { color: '#637087', fontSize: 12, textAlign: 'center' },
+  success: { flex: 1, justifyContent: 'center', padding: 30, gap: 22 },
+  successArt: {
+    width: 122,
+    height: 122,
+    alignSelf: 'center',
+    borderRadius: 42,
+    backgroundColor: '#E9F6EF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  successBadge: {
+    position: 'absolute',
+    bottom: 3,
+    right: -5,
+    backgroundColor: '#20846A',
+    borderRadius: 20,
+    width: 35,
+    height: 35,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: '#fff',
+  },
+  successTitle: {
+    color: '#243147',
+    fontSize: 29,
+    fontWeight: '700',
+    letterSpacing: -0.7,
+  },
+  successBody: { color: '#768091', fontSize: 16, lineHeight: 25 },
+  receipt: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: '#F5F7FA',
+    gap: 8,
+  },
+  reference: { color: '#36465D', fontSize: 12, fontWeight: '700' },
+});

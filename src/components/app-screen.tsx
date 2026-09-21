@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AppScreenProps = {
@@ -37,15 +37,24 @@ export function AppScreen({
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+        <Animated.View
+          entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
+          style={styles.header}>
           <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
             <Text style={styles.title}>{title}</Text>
           </View>
           {headerRight}
-        </View>
-        <Text style={styles.description}>{description}</Text>
-        {children}
+        </Animated.View>
+        <Animated.Text
+          entering={FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System)}
+          style={styles.description}>
+          {description}
+        </Animated.Text>
+        <Animated.View
+          entering={FadeInDown.delay(120).duration(340).reduceMotion(ReduceMotion.System)}>
+          {children}
+        </Animated.View>
       </Animated.ScrollView>
     </SafeAreaView>
   );
