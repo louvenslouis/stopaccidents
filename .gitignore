@@ -30,8 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# Environment files are local-only. Expo inlines EXPO_PUBLIC_* values in the
+# client bundle, so only publishable values belong there.
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo

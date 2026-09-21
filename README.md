@@ -16,6 +16,17 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+### Supabase
+
+The app uses the Supabase project configured in `.env.local`. For a new checkout,
+copy `.env.example` to `.env.local` and replace the placeholder publishable key.
+
+Only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are
+allowed in the mobile app. Never add a Supabase secret key to an Expo environment
+variable, source file, build profile, or client bundle. Privileged operations must
+run in a server or Supabase Edge Function and every exposed table must use Row Level
+Security (RLS) with least-privilege policies.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

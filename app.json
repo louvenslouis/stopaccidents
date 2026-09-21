@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "stopaccidents",
+    "name": "Stop Accidents",
     "slug": "stopaccidents",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,6 +31,12 @@
           "backgroundColor": "#208AEF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true
         }
       ]
     ],
