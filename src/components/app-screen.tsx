@@ -1,7 +1,9 @@
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
+import type { NativeScrollEvent, NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AppScreenProps = {
@@ -9,9 +11,20 @@ type AppScreenProps = {
   title: string;
   description: string;
   headerRight?: ReactNode;
+  children?: ReactNode;
+  contentContainerStyle?: StyleProp<ViewStyle>;
+  onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
 };
 
-export function AppScreen({ eyebrow, title, description, headerRight }: AppScreenProps) {
+export function AppScreen({
+  eyebrow,
+  title,
+  description,
+  headerRight,
+  children,
+  contentContainerStyle,
+  onScroll,
+}: AppScreenProps) {
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <Head>
@@ -19,7 +32,11 @@ export function AppScreen({ eyebrow, title, description, headerRight }: AppScree
       </Head>
       <StatusBar style="dark" />
 
-      <View style={styles.content}>
+      <Animated.ScrollView
+        contentContainerStyle={[styles.content, contentContainerStyle]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
@@ -28,7 +45,8 @@ export function AppScreen({ eyebrow, title, description, headerRight }: AppScree
           {headerRight}
         </View>
         <Text style={styles.description}>{description}</Text>
-      </View>
+        {children}
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -39,7 +57,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F7F7',
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 36,
     paddingBottom: 116,
