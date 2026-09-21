@@ -41,6 +41,7 @@
       ]
     ],
     "experiments": {
+      "baseUrl": "/stopaccidents",
       "typedRoutes": true,
       "reactCompiler": true
     }
