@@ -6,6 +6,7 @@ import {
   type TabListProps,
   type TabTriggerSlotProps,
 } from 'expo-router/ui';
+import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import House from 'lucide-react-native/icons/house';
 import Map from 'lucide-react-native/icons/map';
 import User from 'lucide-react-native/icons/user';
@@ -106,6 +107,10 @@ export default function PillTabs() {
 
           <TabTrigger name="map" href="/carte" asChild>
             <TabButton label="Carte" icon={Map} />
+          </TabTrigger>
+
+          <TabTrigger name="reports" href="/rapports" asChild>
+            <TabButton label="Rapports" icon={ClipboardList} />
           </TabTrigger>
 
           <TabTrigger name="profile" href="/profil" asChild>

@@ -19,7 +19,10 @@ const reportTypes = [
 ] as const;
 export type ReportType = (typeof reportTypes)[number]['id'];
 
-export function ReportTypePicker({ onSelect, onClose }: {
+export function ReportTypePicker({
+  onSelect,
+  onClose,
+}: {
   onSelect: (type: ReportType) => void;
   onClose: () => void;
 }) {
@@ -29,28 +32,54 @@ export function ReportTypePicker({ onSelect, onClose }: {
       <View
         style={styles.handleArea}
         onStartShouldSetResponder={() => true}
-        onResponderGrant={(event) => { dragStartY.current = event.nativeEvent.pageY; }}
-        onResponderRelease={(event) => { if (event.nativeEvent.pageY - dragStartY.current > 60) onClose(); }}>
+        onResponderGrant={(event) => {
+          dragStartY.current = event.nativeEvent.pageY;
+        }}
+        onResponderRelease={(event) => {
+          if (event.nativeEvent.pageY - dragStartY.current > 60) onClose();
+        }}
+      >
         <View style={styles.handle} />
       </View>
       <View style={styles.header}>
         <View style={styles.heading}>
           <Text style={styles.eyebrow}>NOUVEAU SIGNALEMENT</Text>
-          <Text accessibilityRole="header" style={styles.title}>Que souhaitez-vous signaler ?</Text>
+          <Text accessibilityRole="header" style={styles.title}>
+            Que souhaitez-vous signaler ?
+          </Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Fermer les types de signalement" onPress={onClose} style={styles.close}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer les types de signalement"
+          onPress={onClose}
+          style={styles.close}
+        >
           <AppIcon icon={X} size={21} color="#667185" />
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.description}>Choisissez le type de situation pour commencer.</Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.description}>
+          Choisissez le type de situation pour commencer.
+        </Text>
         {reportTypes.map((type) => (
-          <AnimatedPressable key={type.id} accessibilityRole="button" accessibilityLabel={type.title}
-            accessibilityHint="Ouvre le formulaire de signalement d’un accident"
-            haptic="light" pressedScale={0.98} onPress={() => onSelect(type.id)} style={styles.card}>
+          <AnimatedPressable
+            key={type.id}
+            accessibilityRole="button"
+            accessibilityLabel={type.title}
+            accessibilityHint="Localise automatiquement et enregistre le signalement avant les compléments"
+            haptic="light"
+            pressedScale={0.98}
+            onPress={() => onSelect(type.id)}
+            style={styles.card}
+          >
             <View style={styles.illustration}>
               <AppIcon icon={type.icon} size={34} color="#D94235" />
-              <View style={styles.badge}><AppIcon icon={TriangleAlert} size={15} color="#D94235" /></View>
+              <View style={styles.badge}>
+                <AppIcon icon={TriangleAlert} size={15} color="#D94235" />
+              </View>
             </View>
             <View style={styles.heading}>
               <Text style={styles.cardTitle}>{type.title}</Text>
@@ -61,7 +90,9 @@ export function ReportTypePicker({ onSelect, onClose }: {
         ))}
         <View style={styles.note}>
           <AppIcon icon={ShieldCheck} size={18} color="#7C8797" />
-          <Text style={styles.noteText}>Votre vigilance contribue à la sécurité de tous.</Text>
+          <Text style={styles.noteText}>
+            Accident lance la localisation précise et enregistre le signalement.
+          </Text>
         </View>
       </ScrollView>
     </>
@@ -71,17 +102,75 @@ export function ReportTypePicker({ onSelect, onClose }: {
 const styles = StyleSheet.create({
   handleArea: { height: 28, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D8DDE5' },
-  header: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingHorizontal: 24, paddingTop: 7, paddingBottom: 8 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingHorizontal: 24,
+    paddingTop: 7,
+    paddingBottom: 8,
+  },
   heading: { flex: 1 },
-  eyebrow: { color: '#AD5044', fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginBottom: 9 },
-  title: { color: '#1C2637', fontSize: 24, lineHeight: 30, fontWeight: '700', letterSpacing: -0.6 },
-  close: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F5F6F8', alignItems: 'center', justifyContent: 'center' },
+  eyebrow: {
+    color: '#AD5044',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.3,
+    marginBottom: 9,
+  },
+  title: {
+    color: '#1C2637',
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '700',
+    letterSpacing: -0.6,
+  },
+  close: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F6F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   content: { padding: 24, paddingTop: 8, gap: 20 },
   description: { color: '#768091', fontSize: 14, lineHeight: 21 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderWidth: 1.5, borderColor: '#F0D3CB', borderRadius: 20, backgroundColor: '#FFFAF7', minHeight: 112 },
-  illustration: { width: 58, height: 62, borderRadius: 18, backgroundColor: '#FCE9E2', alignItems: 'center', justifyContent: 'center' },
-  badge: { position: 'absolute', right: -4, bottom: -3, width: 26, height: 26, borderRadius: 10, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
-  cardTitle: { color: '#273347', fontSize: 18, fontWeight: '700', marginBottom: 6 },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: '#F0D3CB',
+    borderRadius: 20,
+    backgroundColor: '#FFFAF7',
+    minHeight: 112,
+  },
+  illustration: {
+    width: 58,
+    height: 62,
+    borderRadius: 18,
+    backgroundColor: '#FCE9E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    right: -4,
+    bottom: -3,
+    width: 26,
+    height: 26,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTitle: {
+    color: '#273347',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
   cardDescription: { color: '#7E8998', fontSize: 12, lineHeight: 18 },
   note: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   noteText: { flex: 1, color: '#8A94A3', fontSize: 12, lineHeight: 18 },

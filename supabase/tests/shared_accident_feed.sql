@@ -43,20 +43,17 @@ do $$ declare latest jsonb; detail jsonb; begin
   assert detail->>'is_owner' = 'true' and jsonb_array_length(detail->'identifiers') = 2, 'Owner details missing';
   assert public.read_accident('77777777-7777-4777-8777-777777777777') is null, 'Missing report must return null';
 end $$;
--- Missing session and the unauthenticated role cannot invoke the shared reader.
+-- Guests may consult shared information, never private identifiers or uploads.
 select set_config('request.jwt.claims','{}',true);
-do $$ begin
-  begin
-    perform public.read_accident();
-    raise exception 'Missing identity accepted';
-  exception when insufficient_privilege then null; end;
-  assert not private.is_shared_accident_photo('11111111-1111-4111-8111-111111111111/33333333-3333-4333-8333-333333333333/44444444-4444-4444-8444-444444444444.jpg'), 'Missing identity can read photo';
-end $$;
 set local role anon;
-do $$ begin
+do $$ declare detail jsonb; begin
+  assert public.read_accident()->>'id' = '66666666-6666-4666-8666-666666666666', 'Guest cannot read latest';
+  detail := public.read_accident('33333333-3333-4333-8333-333333333333');
+  assert detail->'identifiers' = '[]'::jsonb and detail->>'is_owner' = 'false', 'Guest identifiers exposed';
+  assert (select count(*) from storage.objects) = 1, 'Guest can see unattached uploads';
   begin
-    perform public.read_accident();
-    raise exception 'Unauthenticated RPC allowed';
+    perform 1 from public.accident_report_identifiers;
+    raise exception 'Guest can read private table';
   exception when insufficient_privilege then null; end;
 end $$;
 rollback;

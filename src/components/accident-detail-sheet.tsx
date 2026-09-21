@@ -1,10 +1,10 @@
-import { Image } from "expo-image";
-import ArrowUpRight from "lucide-react-native/icons/arrow-up-right";
-import CarFront from "lucide-react-native/icons/car-front";
-import ImageOff from "lucide-react-native/icons/image-off";
-import MapPin from "lucide-react-native/icons/map-pin";
-import X from "lucide-react-native/icons/x";
-import { useCallback, useState, type ReactNode } from "react";
+import { Image } from 'expo-image';
+import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
+import CarFront from 'lucide-react-native/icons/car-front';
+import ImageOff from 'lucide-react-native/icons/image-off';
+import MapPin from 'lucide-react-native/icons/map-pin';
+import X from 'lucide-react-native/icons/x';
+import { useCallback, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -15,25 +15,26 @@ import {
   Text,
   View,
   useWindowDimensions,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppIcon } from "@/components/ui/app-icon";
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppIcon } from '@/components/ui/app-icon';
+import { GeocodingCredit } from '@/components/geocoding-credit';
 import {
-  accidentLocation,
   accidentSeverity,
   accidentTypeLabel,
   formatAccidentDate,
-} from "@/features/accident-report/presentation";
+} from '@/features/accident-report/presentation';
 import {
   readAccident,
   type AccidentPhoto,
-} from "@/features/accident-report/read";
-import { useAccident } from "@/features/accident-report/use-accident";
+} from '@/features/accident-report/read';
+import { useAccident } from '@/features/accident-report/use-accident';
+import { useAccidentLocation } from '@/features/accident-report/use-accident-location';
 
 const statusLabels = {
-  received: "Signalement reçu",
-  reviewing: "En cours d’examen",
-  closed: "Dossier clôturé",
+  received: 'Signalement reçu',
+  reviewing: 'En cours d’examen',
+  closed: 'Dossier clôturé',
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -88,6 +89,7 @@ export function AccidentDetailSheet({
   const { data: report, loading, error, refresh } = useAccident(loader);
   const [mapError, setMapError] = useState<string | null>(null);
   const severity = report ? accidentSeverity(report) : null;
+  const location = useAccidentLocation(report);
 
   async function openMap() {
     if (!report) return;
@@ -101,7 +103,7 @@ export function AccidentDetailSheet({
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`,
       );
     } catch {
-      setMapError("Impossible d’ouvrir la carte. Réessayez.");
+      setMapError('Impossible d’ouvrir la carte. Réessayez.');
     }
   }
 
@@ -157,8 +159,8 @@ export function AccidentDetailSheet({
                 {loading && <ActivityIndicator color="#D94235" />}
                 <Text style={styles.body}>
                   {loading
-                    ? "Chargement de l’accident…"
-                    : (error ?? "Ce signalement n’est plus disponible.")}
+                    ? 'Chargement de l’accident…'
+                    : (error ?? 'Ce signalement n’est plus disponible.')}
                 </Text>
                 {!loading && (
                   <Pressable
@@ -212,16 +214,17 @@ export function AccidentDetailSheet({
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color="#737D8D" />
                     <Text selectable style={[styles.body, styles.heading]}>
-                      {accidentLocation(report)}
+                      {location.estimated ? `Zone estimée : ${location.label}` : location.label}
                     </Text>
                   </View>
+                  {location.estimated && <GeocodingCredit />}
                   {report.latitude !== null && report.longitude !== null && (
                     <Text selectable style={styles.muted}>
-                      GPS : {report.latitude.toFixed(5)},{" "}
+                      GPS : {report.latitude.toFixed(5)},{' '}
                       {report.longitude.toFixed(5)}
                       {report.location_accuracy_m !== null
                         ? ` · Précision ± ${Math.round(report.location_accuracy_m)} m`
-                        : ""}
+                        : ''}
                     </Text>
                   )}
                   <Pressable
@@ -260,11 +263,11 @@ export function AccidentDetailSheet({
                     selectable
                     style={report.notes ? styles.body : styles.muted}
                   >
-                    {report.notes || "Aucune précision ajoutée pour le moment."}
+                    {report.notes || 'Aucune précision ajoutée pour le moment.'}
                   </Text>
                 </Section>
                 <Section
-                  title={`Photos${report.photos.length ? ` · ${report.photos.length}` : ""}`}
+                  title={`Photos${report.photos.length ? ` · ${report.photos.length}` : ''}`}
                 >
                   {report.photos.length ? (
                     report.photos.map((photo, index) => (
@@ -288,16 +291,16 @@ export function AccidentDetailSheet({
                     <Text style={styles.label}>Immatriculations</Text>
                     <Text selectable style={styles.body}>
                       {report.identifiers
-                        .filter((item) => item.kind === "registration")
+                        .filter((item) => item.kind === 'registration')
                         .map((item) => item.value)
-                        .join("\n") || "Non renseignées"}
+                        .join('\n') || 'Non renseignées'}
                     </Text>
                     <Text style={styles.label}>Numéros d’identité</Text>
                     <Text selectable style={styles.body}>
                       {report.identifiers
-                        .filter((item) => item.kind === "identity")
+                        .filter((item) => item.kind === 'identity')
                         .map((item) => item.value)
-                        .join("\n") || "Non renseignés"}
+                        .join('\n') || 'Non renseignés'}
                     </Text>
                   </Section>
                 )}
@@ -333,88 +336,88 @@ export function AccidentDetailSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: "flex-end",
-    alignItems: "center",
-    backgroundColor: "rgba(19, 28, 44, 0.42)",
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    backgroundColor: 'rgba(19, 28, 44, 0.42)',
   },
-  wideOverlay: { justifyContent: "center", padding: 24 },
+  wideOverlay: { justifyContent: 'center', padding: 24 },
   sheet: {
-    width: "100%",
+    width: '100%',
     maxWidth: 640,
     flexShrink: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   wideSheet: { borderRadius: 30 },
   handle: {
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#DDE0E5",
-    alignSelf: "center",
+    backgroundColor: '#DDE0E5',
+    alignSelf: 'center',
     marginTop: 12,
     marginBottom: 8,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F1F3",
+    borderBottomColor: '#F0F1F3',
   },
   heading: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 1.2,
-    color: "#D94235",
+    color: '#D94235',
   },
   title: {
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: -0.6,
-    color: "#202A3A",
+    color: '#202A3A',
     marginTop: 5,
   },
   close: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F3F5F7",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#F3F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: { padding: 24, paddingBottom: 12, gap: 22 },
   summary: {
-    backgroundColor: "#F8F9FB",
+    backgroundColor: '#F8F9FB',
     borderRadius: 20,
     padding: 18,
     gap: 18,
   },
-  summaryTop: { flexDirection: "row", alignItems: "center", gap: 12 },
+  summaryTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
     width: 50,
     height: 50,
     borderRadius: 17,
-    backgroundColor: "#FFF0EC",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#FFF0EC',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  label: { fontSize: 12, color: "#778293", fontWeight: "500" },
+  label: { fontSize: 12, color: '#778293', fontWeight: '500' },
   accidentTitle: {
     fontSize: 20,
-    fontWeight: "700",
-    color: "#283448",
+    fontWeight: '700',
+    color: '#283448',
     marginTop: 4,
   },
   severityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 10,
   },
   badge: {
@@ -423,10 +426,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     flexShrink: 1,
   },
-  badgeText: { fontSize: 12, fontWeight: "700" },
+  badgeText: { fontSize: 12, fontWeight: '700' },
   notice: {
-    color: "#8B662B",
-    backgroundColor: "#FFF8EA",
+    color: '#8B662B',
+    backgroundColor: '#FFF8EA',
     padding: 14,
     borderRadius: 14,
     fontSize: 13,
@@ -435,49 +438,49 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "700",
-    color: "#29364A",
+    fontWeight: '700',
+    color: '#29364A',
     marginBottom: 2,
   },
-  body: { fontSize: 14, lineHeight: 22, color: "#455168" },
-  muted: { fontSize: 13, lineHeight: 20, color: "#808999" },
-  locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
+  body: { fontSize: 14, lineHeight: 22, color: '#455168' },
+  muted: { fontSize: 13, lineHeight: 20, color: '#808999' },
+  locationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   linkButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
     minHeight: 44,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
   },
-  linkText: { color: "#C43F32", fontSize: 13, fontWeight: "600" },
+  linkText: { color: '#C43F32', fontSize: 13, fontWeight: '600' },
   status: {
-    color: "#41605C",
-    backgroundColor: "#EFF5F3",
+    color: '#41605C',
+    backgroundColor: '#EFF5F3',
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 8,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
     fontSize: 12,
-    fontWeight: "600",
+    fontWeight: '600',
   },
-  reference: { color: "#939BA7", fontSize: 10, lineHeight: 16 },
+  reference: { color: '#939BA7', fontSize: 10, lineHeight: 16 },
   photoBlock: { gap: 7, marginBottom: 6 },
   photo: {
-    width: "100%",
+    width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: "#F1F3F6",
+    backgroundColor: '#F1F3F6',
     borderRadius: 16,
   },
-  photoError: { justifyContent: "center", alignItems: "center", gap: 10 },
-  caption: { color: "#8A93A0", fontSize: 11, lineHeight: 17 },
-  state: { alignItems: "center", paddingVertical: 40, gap: 16 },
-  error: { color: "#B14832", fontSize: 13, lineHeight: 20 },
+  photoError: { justifyContent: 'center', alignItems: 'center', gap: 10 },
+  caption: { color: '#8A93A0', fontSize: 11, lineHeight: 17 },
+  state: { alignItems: 'center', paddingVertical: 40, gap: 16 },
+  error: { color: '#B14832', fontSize: 13, lineHeight: 20 },
   refresh: {
     minHeight: 46,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: "#F3F5F7",
+    backgroundColor: '#F3F5F7',
   },
-  refreshText: { fontSize: 13, fontWeight: "600", color: "#667185" },
+  refreshText: { fontSize: 13, fontWeight: '600', color: '#667185' },
 });

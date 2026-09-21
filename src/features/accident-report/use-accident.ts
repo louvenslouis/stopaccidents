@@ -1,6 +1,6 @@
-import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
-import { AppState } from "react-native";
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 /** Refresh on focus/foreground; cancel stale reads when the selection changes. */
 export function useAccident<T>(
@@ -25,7 +25,7 @@ export function useAccident<T>(
         const timeout = setTimeout(() => {
           request.abort();
           if (active && controller === request) {
-            setError("La connexion prend trop de temps. Réessayez.");
+            setError('La connexion prend trop de temps. Réessayez.');
             setLoading(false);
           }
         }, 20000);
@@ -41,7 +41,7 @@ export function useAccident<T>(
             setError(
               cause instanceof Error
                 ? cause.message
-                : "Chargement impossible. Réessayez.",
+                : 'Chargement impossible. Réessayez.',
             );
           }
         } finally {
@@ -53,12 +53,12 @@ export function useAccident<T>(
         void load();
       };
       void load();
-      const subscription = AppState.addEventListener("change", (state) => {
-        if (state === "active") void load();
+      const subscription = AppState.addEventListener('change', (state) => {
+        if (state === 'active') void load();
       });
       const interval = refreshInterval
         ? setInterval(() => {
-            if (AppState.currentState === "active") void load();
+            if (AppState.currentState === 'active') void load();
           }, refreshInterval)
         : undefined;
       return () => {

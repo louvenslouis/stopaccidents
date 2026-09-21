@@ -38,6 +38,10 @@ export default function HomeScreen() {
   const latestAccident = useAccident(readLatestAccident, !reportOpen && !selectedAccident, 30000);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
+  const reportButtonRailWidth = isWideLayout
+    ? REPORT_BUTTON_WIDTH
+    : Math.min(Math.max(width - 40, REPORT_FAB_SIZE), TAB_BAR_WIDTH);
+  const reportButtonTravel = (reportButtonRailWidth - REPORT_FAB_SIZE) / 2;
   const scrollY = useSharedValue(0);
 
   useEffect(() => {
@@ -64,7 +68,11 @@ export default function HomeScreen() {
 
     return {
       width: interpolate(progress, [0, 1], [REPORT_BUTTON_WIDTH, REPORT_FAB_SIZE]),
-      borderRadius: interpolate(progress, [0, 1], [20, REPORT_FAB_SIZE / 2]),
+      transform: [
+        {
+          translateX: interpolate(progress, [0, 1], [0, reportButtonTravel]),
+        },
+      ],
     };
   });
 
@@ -131,9 +139,7 @@ export default function HomeScreen() {
                 right: 20,
               },
         ]}>
-        <Animated.View
-          pointerEvents="box-none"
-          style={[styles.reportButtonRail, isWideLayout && styles.reportButtonRailWide]}>
+        <Animated.View pointerEvents="box-none" style={styles.reportButtonRail}>
           <Animated.View style={[styles.reportButton, reportButtonStyle]}>
             <AnimatedPressable
               accessibilityHint="Choisir le type de signalement"
@@ -189,6 +195,10 @@ const styles = StyleSheet.create({
   },
   homeContent: {
     minHeight: '115%',
+    width: '100%',
+    maxWidth: 688,
+    alignSelf: 'center',
+    paddingBottom: 208,
   },
   reportButtonPosition: {
     position: 'absolute',
@@ -197,13 +207,11 @@ const styles = StyleSheet.create({
   reportButtonRail: {
     width: '100%',
     maxWidth: 430,
-    alignItems: 'flex-end',
-  },
-  reportButtonRailWide: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   reportButton: {
     height: REPORT_FAB_SIZE,
+    borderRadius: REPORT_FAB_SIZE / 2,
     overflow: 'hidden',
     backgroundColor: '#E72D2D',
     shadowColor: '#8A1111',

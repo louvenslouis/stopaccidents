@@ -1,24 +1,25 @@
-import ArrowUpRight from "lucide-react-native/icons/arrow-up-right";
-import CarFront from "lucide-react-native/icons/car-front";
-import MapPin from "lucide-react-native/icons/map-pin";
-import RefreshCw from "lucide-react-native/icons/refresh-cw";
-import TriangleAlert from "lucide-react-native/icons/triangle-alert";
+import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
+import CarFront from 'lucide-react-native/icons/car-front';
+import MapPin from 'lucide-react-native/icons/map-pin';
+import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import {
   ActivityIndicator,
   Pressable,
   StyleSheet,
   Text,
   View,
-} from "react-native";
-import { AnimatedPressable } from "@/components/ui/animated-pressable";
-import { AppIcon } from "@/components/ui/app-icon";
+} from 'react-native';
+import { AnimatedPressable } from '@/components/ui/animated-pressable';
+import { AppIcon } from '@/components/ui/app-icon';
+import { GeocodingCredit } from '@/components/geocoding-credit';
 import {
-  accidentLocation,
   accidentSeverity,
   accidentTypeLabel,
   formatAccidentDate,
-} from "@/features/accident-report/presentation";
-import type { AccidentSummary } from "@/features/accident-report/read";
+} from '@/features/accident-report/presentation';
+import type { AccidentSummary } from '@/features/accident-report/read';
+import { useAccidentLocation } from '@/features/accident-report/use-accident-location';
 
 export function LatestAccidentCard({
   report,
@@ -34,6 +35,7 @@ export function LatestAccidentCard({
   onOpen: (id: string) => void;
 }) {
   const severity = report ? accidentSeverity(report) : null;
+  const location = useAccidentLocation(report);
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -58,7 +60,7 @@ export function LatestAccidentCard({
       {report && severity ? (
         <AnimatedPressable
           accessibilityRole="button"
-          accessibilityLabel={`Dernier accident : ${accidentTypeLabel(report)}. Lieu : ${accidentLocation(report)}. Gravité : ${severity.label}.`}
+          accessibilityLabel={`Dernier accident : ${accidentTypeLabel(report)}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}. Gravité : ${severity.label}.`}
           accessibilityHint="Ouvre la fiche complète de cet accident"
           onPress={() => onOpen(report.id)}
           pressedScale={0.985}
@@ -77,10 +79,11 @@ export function LatestAccidentCard({
           <View style={styles.locationRow}>
             <AppIcon icon={MapPin} size={19} color="#777E89" />
             <View style={styles.heading}>
-              <Text style={styles.label}>Lieu</Text>
+              <Text style={styles.label}>{location.estimated ? 'Zone estimée' : 'Lieu'}</Text>
               <Text numberOfLines={2} style={styles.location}>
-                {accidentLocation(report)}
+                {location.label}
               </Text>
+              {location.estimated && <GeocodingCredit />}
             </View>
           </View>
           <View style={styles.severityRow}>
@@ -116,16 +119,16 @@ export function LatestAccidentCard({
           </View>
           <Text style={styles.emptyTitle}>
             {loading
-              ? "Chargement des signalements…"
+              ? 'Chargement des signalements…'
               : error
-                ? "Chargement indisponible"
-                : "Aucun accident signalé"}
+                ? 'Chargement indisponible'
+                : 'Aucun accident signalé'}
           </Text>
           <Text style={styles.emptyText}>
             {loading
-              ? "Les dernières informations arrivent ici."
+              ? 'Les dernières informations arrivent ici.'
               : (error ??
-                "Le dernier accident apparaîtra ici dès qu’un signalement sera enregistré.")}
+                'Le dernier accident apparaîtra ici dès qu’un signalement sera enregistré.')}
           </Text>
           {error && !loading && (
             <Pressable
@@ -149,85 +152,85 @@ export function LatestAccidentCard({
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 30, width: "100%", maxWidth: 640, alignSelf: "center" },
+  section: { marginTop: 30, width: '100%', maxWidth: 640, alignSelf: 'center' },
   sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
   sectionTitle: {
-    color: "#24262C",
+    color: '#24262C',
     fontSize: 19,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: -0.4,
   },
   refresh: {
     width: 40,
     height: 40,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 20,
   },
   card: {
     padding: 22,
     borderRadius: 26,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: "#ECEDEF",
-    shadowColor: "#283040",
+    borderColor: '#ECEDEF',
+    shadowColor: '#283040',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.04,
     shadowRadius: 20,
     elevation: 2,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 14 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
     width: 54,
     height: 54,
     borderRadius: 18,
-    backgroundColor: "#FFF0EC",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#FFF0EC',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heading: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 10,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: 1.1,
-    color: "#888D97",
+    color: '#888D97',
   },
   type: {
-    color: "#20242C",
+    color: '#20242C',
     fontSize: 22,
-    fontWeight: "700",
+    fontWeight: '700',
     letterSpacing: -0.5,
     marginTop: 5,
   },
   locationRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 10,
     marginTop: 24,
   },
-  label: { color: "#777E89", fontSize: 12, fontWeight: "500" },
+  label: { color: '#777E89', fontSize: 12, fontWeight: '500' },
   location: {
-    color: "#3F4653",
+    color: '#3F4653',
     fontSize: 16,
     lineHeight: 23,
     marginTop: 4,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   severityRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 10,
     marginTop: 20,
   },
   badge: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 7,
     borderRadius: 10,
     paddingHorizontal: 10,
@@ -235,44 +238,44 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
-  badgeText: { fontSize: 12, fontWeight: "700", flexShrink: 1 },
+  badgeText: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
   footer: {
     marginTop: 22,
     paddingTop: 17,
     borderTopWidth: 1,
-    borderTopColor: "#F0F1F3",
+    borderTopColor: '#F0F1F3',
     gap: 12,
   },
-  date: { color: "#878C95", fontSize: 11, lineHeight: 16 },
+  date: { color: '#878C95', fontSize: 11, lineHeight: 16 },
   cta: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  ctaText: { color: "#C43F32", fontSize: 14, fontWeight: "600" },
-  empty: { alignItems: "center", paddingVertical: 32, gap: 12 },
+  ctaText: { color: '#C43F32', fontSize: 14, fontWeight: '600' },
+  empty: { alignItems: 'center', paddingVertical: 32, gap: 12 },
   emptyIcon: {
     width: 60,
     height: 60,
     borderRadius: 20,
-    backgroundColor: "#F4F5F7",
-    alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: '#F4F5F7',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 4,
   },
   emptyTitle: {
-    color: "#3E4551",
+    color: '#3E4551',
     fontSize: 17,
-    fontWeight: "600",
-    textAlign: "center",
+    fontWeight: '600',
+    textAlign: 'center',
   },
   emptyText: {
     maxWidth: 300,
-    color: "#7C8491",
+    color: '#7C8491',
     fontSize: 14,
     lineHeight: 21,
-    textAlign: "center",
+    textAlign: 'center',
   },
   retry: { padding: 12, minHeight: 44 },
-  error: { marginTop: 12, color: "#9D4C29", fontSize: 12, lineHeight: 18 },
+  error: { marginTop: 12, color: '#9D4C29', fontSize: 12, lineHeight: 18 },
 });

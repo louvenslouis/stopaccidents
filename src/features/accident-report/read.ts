@@ -1,6 +1,5 @@
-import { supabase } from "@/lib/supabase";
-import type { AccidentType, Severity } from "./model";
-import { ensureReportSession } from "./session";
+import { supabase } from '@/lib/supabase';
+import type { AccidentType, Severity } from './model';
 
 export type AccidentSummary = {
   id: string;
@@ -23,22 +22,21 @@ export type AccidentPhoto = {
 export type AccidentDetail = AccidentSummary & {
   location_accuracy_m: number | null;
   notes: string;
-  status: "received" | "reviewing" | "closed";
+  status: 'received' | 'reviewing' | 'closed';
   updated_at: string;
   is_owner: boolean;
-  identifiers: { kind: "registration" | "identity"; value: string }[];
+  identifiers: { kind: 'registration' | 'identity'; value: string }[];
   photos: AccidentPhoto[];
 };
 
 export async function readLatestAccident(
   signal: AbortSignal,
 ): Promise<AccidentSummary | null> {
-  await ensureReportSession();
   const { data, error } = await supabase
-    .rpc("read_accident")
+    .rpc('read_accident')
     .abortSignal(signal);
   if (error)
-    throw new Error("Impossible de charger le dernier accident. Réessayez.");
+    throw new Error('Impossible de charger le dernier accident. Réessayez.');
   return data;
 }
 
@@ -46,11 +44,10 @@ export async function readAccident(
   id: string,
   signal: AbortSignal,
 ): Promise<AccidentDetail | null> {
-  await ensureReportSession();
   const { data, error } = await supabase
-    .rpc("read_accident", { p_id: id })
+    .rpc('read_accident', { p_id: id })
     .abortSignal(signal);
-  if (error) throw new Error("Impossible de charger cet accident. Réessayez.");
+  if (error) throw new Error('Impossible de charger cet accident. Réessayez.');
   if (!data) return null;
   const report = data as AccidentDetail;
   let urls: {
@@ -62,7 +59,7 @@ export async function readAccident(
     // Photo failures must not hide the report. Missing images have their own fallback.
     try {
       const result = await supabase.storage
-        .from("accident-photos")
+        .from('accident-photos')
         .createSignedUrls(
           report.photos.map((photo) => photo.storage_path),
           900,

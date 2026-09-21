@@ -27,7 +27,7 @@ const draft = {
 
 test('location alone can be saved before choosing the accident subtype', () => {
   assert.ok(validateStep(draft, 0));
-  assert.equal(validateStep({ ...draft, location: 'Un carrefour' }, 0), null);
+  assert.ok(validateStep({ ...draft, location: 'Un carrefour' }, 0));
   assert.ok(validateStep(draft, 1));
   assert.equal(validateStep({ ...draft, accidentType: 'other' }, 1), null);
   assert.equal(
@@ -65,4 +65,15 @@ test('identifiers are trimmed, deduplicated and split across pasted lines', () =
       3,
     ),
   );
+});
+
+ test('location requires finite coordinates and known accuracy of at most 30 metres', () => {
+  for (const coordinates of [
+    null,
+    { latitude: 18.5, longitude: -72.3, accuracy: null },
+    { latitude: 18.5, longitude: -72.3, accuracy: 31 },
+    { latitude: NaN, longitude: -72.3, accuracy: 8 },
+    { latitude: 18.5, longitude: -181, accuracy: 8 },
+    { latitude: 18.5, longitude: -72.3, accuracy: -1 },
+  ]) assert.ok(validateStep({ ...draft, coordinates }, 0));
 });

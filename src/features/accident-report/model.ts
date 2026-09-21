@@ -1,5 +1,6 @@
 export const MAX_PHOTOS = 4;
 export const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
+export const MAX_LOCATION_ACCURACY = 30;
 export type AccidentType = 'two_cars' | 'single_car' | 'motorcycle' | 'other';
 export type Severity =
   | 'material'
@@ -21,6 +22,7 @@ export type CapturedPhoto = {
 export type ReportDraft = {
   id: string;
   location: string;
+  locationHint?: string;
   coordinates: Coordinates | null;
   accidentType: AccidentType | null;
   severity: Severity | null;
@@ -29,6 +31,26 @@ export type ReportDraft = {
   notes: string;
   photos: CapturedPhoto[];
 };
+
+export function isPreciseLocation(coordinates: Coordinates | null): boolean {
+  return Boolean(
+    coordinates &&
+      Number.isFinite(coordinates.latitude) &&
+      Math.abs(coordinates.latitude) <= 90 &&
+      Number.isFinite(coordinates.longitude) &&
+      Math.abs(coordinates.longitude) <= 180 &&
+      typeof coordinates.accuracy === 'number' &&
+      Number.isFinite(coordinates.accuracy) &&
+      coordinates.accuracy >= 0 &&
+      coordinates.accuracy <= MAX_LOCATION_ACCURACY,
+  );
+}
+
+export function locationDescription(draft: ReportDraft): string {
+  return [draft.location.trim(), draft.locationHint?.trim()]
+    .filter(Boolean)
+    .join(' — ');
+}
 
 export function splitIdentifiers(value: string) {
   return [
@@ -43,9 +65,11 @@ export function splitIdentifiers(value: string) {
 
 export function validateStep(draft: ReportDraft, step: number): string | null {
   if (step === 0) {
-    if (draft.location.trim().length < 3 && !draft.coordinates)
-      return 'Précisez le lieu de l’accident ou utilisez votre position GPS.';
+    if (!isPreciseLocation(draft.coordinates))
+      return 'Une position GPS précise à 30 mètres ou mieux est nécessaire.';
   }
+  if (locationDescription(draft).length > 500)
+    return 'Le lieu et son repère doivent contenir au maximum 500 caractères.';
   if (step === 1 && !draft.accidentType)
     return 'Choisissez le type d’accident.';
   if (step === 2 && !draft.severity)

@@ -71,11 +71,19 @@ Join our community of developers creating universal apps.
 Le bouton « SIGNALER » de l’accueil ouvre le choix du type de signalement.
 La catégorie « Accident » demande l’autorisation de localisation au choix de la
 catégorie si elle n’est pas déjà accordée, puis recherche une position précise.
-Une autorisation approximative est signalée avec un accès aux réglages natifs.
-En cas de refus ou de GPS indisponible, le lieu peut être renseigné manuellement.
+Les autorisations approximatives sont refusées avec un accès aux réglages natifs.
+Le GPS attend une mesure datant de moins de 30 secondes, avec une précision
+annoncée de 30 mètres ou mieux, pendant 35 secondes maximum. Aucune saisie
+manuelle ne remplace le GPS. La recherche s’arrête à la fermeture du formulaire.
 
-Le formulaire comporte quatre étapes : lieu, type d’accident, gravité, compléments.
-Le premier « Suivant » crée immédiatement un signalement reçu avec son lieu.
+Le lieu est nommé automatiquement via Photon/OpenStreetMap (si disponible), puis
+le signalement est enregistré avant le passage automatique au type d’accident.
+Le formulaire affiche alors trois étapes : type d’accident, gravité, compléments.
+Le lieu et la précision GPS restent visibles au-dessus du choix du type, avec un
+champ de repère facultatif. Son contenu ajuste `location_description` sur le même
+signalement au prochain « Suivant », en conservant les coordonnées d’origine.
+Si la recherche du nom échoue, les coordonnées restent utilisables et aucune
+adresse n’est inventée. Un échec d’envoi propose une reprise sans doublon.
 Chaque « Suivant » attend la confirmation Supabase avant de poursuivre. Les
 étapes suivantes ajustent ce même signalement ; revenir modifier une étape ne
 supprime pas les autres informations. Une fermeture conserve les étapes déjà
@@ -127,16 +135,30 @@ une fiche avec le lieu complet, les coordonnées et leur précision, le statut,
 les dates, les précisions et les photos. Les numéros d’identité et les
 immatriculations sont affichés seulement à leur auteur.
 
+Quand seul le GPS est renseigné, la carte et la fiche recherchent le quartier ou
+la commune via Photon (données OpenStreetMap) et l’affichent comme « Zone estimée ».
+Le lieu saisi manuellement reste prioritaire. Les coordonnées restent disponibles
+dans la fiche et servent de repli pendant la recherche, hors ligne ou si aucune
+zone n’est trouvée. Cette recherche ne demande pas accès à la position du lecteur :
+seules les coordonnées de l’accident sont envoyées au géocodeur, sans identifiant.
+Les résultats sont mis en cache en mémoire pendant 24 heures (100 positions au
+maximum), les échecs pendant une minute, et les appels simultanés sont regroupés.
+Le service public Photon convient à un trafic modéré et ne garantit pas sa
+disponibilité ; pour un trafic important, configurer une instance dédiée via
+`EXPO_PUBLIC_GEOCODING_URL` (endpoint `/reverse` compatible Photon, HTTPS et CORS
+activé pour le web). Voir les [conditions Photon](https://github.com/komoot/photon#demo-server).
+
 La migration `20260921035356_shared_accident_feed.sql` ajoute la lecture partagée
 `read_accident` : sans référence, elle renvoie uniquement le résumé du dernier
 accident ; avec une référence, elle renvoie les détails autorisés. L’implémentation
-privilégiée est isolée dans le schéma `private`, vérifie l’identité de session et
+privilégiée est isolée dans le schéma `private`, vérifie l’identité de l’auteur pour les numéros privés et
 renvoie une liste explicite de champs. Les tables conservent leurs règles RLS
 réservées à l’auteur. Seules les photos attachées sont consultables par les autres
 utilisateurs, via des URL signées de 15 minutes ; les téléversements non attachés
 restent privés. Le formulaire indique cette visibilité avant l’envoi des compléments.
 
-La session anonyme est partagée entre lecture et enregistrement. L’Accueil se
+La migration `20260921040534_public_accident_read_access.sql` autorise aussi la
+consultation sans connexion, sans créer de compte ni de session anonyme. L’Accueil se
 rafraîchit au retour sur l’onglet, au retour au premier plan, à la fermeture d’une
 fiche ou du formulaire et toutes les 30 secondes pendant sa consultation.
 Un bouton permet aussi l’actualisation manuelle. La fiche recharge ses informations

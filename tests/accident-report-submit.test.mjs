@@ -34,7 +34,7 @@ const draft = {
   location: 'Test',
   accidentType: 'other',
   severity: 'unknown',
-  coordinates: null,
+  coordinates: { latitude: 18.5, longitude: -72.3, accuracy: 8 },
   notes: '',
   registrations: '',
   identities: '',
@@ -84,7 +84,6 @@ function fixture({
   const { saveAccidentReportStep } = compile(submitSource, {
     '@/lib/supabase': { supabase: client },
     './model': model,
-    './session': { ensureReportSession: async () => 'user-id' },
     'base64-arraybuffer': { decode },
   });
   return {
@@ -150,4 +149,12 @@ test('a successful report includes camera metadata and does not delete its evide
     },
   ]);
   assert.equal(calls.removals.length, 0);
+});
+
+test('landmark updates are saved with the detected place and original coordinates', async () => {
+  const { calls, submit } = fixture();
+  await submit(0, { ...draft, locationHint: ' Devant la station ' });
+  assert.equal(calls.rpc[0].payload.p_location, 'Test — Devant la station');
+  assert.equal(calls.rpc[0].payload.p_latitude, 18.5);
+  assert.equal(calls.rpc[0].payload.p_accuracy, 8);
 });

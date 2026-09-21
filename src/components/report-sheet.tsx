@@ -1,5 +1,4 @@
 import { randomUUID } from 'expo-crypto';
-import * as Location from 'expo-location';
 import { Image } from 'expo-image';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -14,7 +13,6 @@ import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import Bike from 'lucide-react-native/icons/motorbike';
 import Plus from 'lucide-react-native/icons/plus';
-import Send from 'lucide-react-native/icons/send';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
@@ -43,11 +41,19 @@ import {
 } from '@/components/report-type-picker';
 import {
   MAX_PHOTOS,
+  isPreciseLocation,
+  locationDescription,
   validateStep,
   type AccidentType,
   type ReportDraft,
   type Severity,
 } from '@/features/accident-report/model';
+import { GeocodingCredit } from '@/components/geocoding-credit';
+import {
+  acquirePreciseLocation,
+  PreciseLocationError,
+} from '@/features/accident-report/precise-location';
+import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
 import { saveAccidentReportStep } from '@/features/accident-report/submit';
 
 const types: {
@@ -130,10 +136,11 @@ const severities: {
     tint: '#F0F2F6',
   },
 ];
-const steps = ['Lieu', 'Accident', 'Gravité', 'Détails'];
+const steps = ['Accident', 'Gravité', 'Détails'];
 const makeDraft = (): ReportDraft => ({
   id: randomUUID(),
   location: '',
+  locationHint: '',
   coordinates: null,
   accidentType: null,
   severity: null,
@@ -215,14 +222,19 @@ export function ReportSheet({
   const [receipt, setReceipt] = useState<string | null>(null);
   const [savedSteps, setSavedSteps] = useState(0);
   const [locationSettingsNeeded, setLocationSettingsNeeded] = useState(false);
+  const [locationProgress, setLocationProgress] = useState('');
+  const locationController = useRef<AbortController | null>(null);
+  const savedLocation = useRef<string | null>(null);
   const submitting = useRef(false);
   const locationRequest = useRef(0);
   const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
   useEffect(() => {
     const tracker = locationRequest;
+    const controller = locationController;
     return () => {
       tracker.current++;
+      controller.current?.abort();
     };
   }, []);
   function close() {
@@ -232,6 +244,7 @@ export function ReportSheet({
       return;
     }
     locationRequest.current++;
+    locationController.current?.abort();
     setLocating(false);
     if (receipt) {
       done();
@@ -250,80 +263,63 @@ export function ReportSheet({
     scroll.current?.scrollTo({ y: 0, animated: false });
   }
   async function locate() {
-    if (locating || !draft || submitting.current) return;
+    if (locating || submitting.current) return;
     const request = ++locationRequest.current;
+    locationController.current?.abort();
+    const controller = new AbortController();
+    locationController.current = controller;
     setLocating(true);
+    setError(null);
     setLocationError(null);
     setLocationSettingsNeeded(false);
-    let timeout: ReturnType<typeof setTimeout> | undefined;
+    changeStep(0);
+    let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      let permission = await Location.getForegroundPermissionsAsync();
+      const coordinates = isPreciseLocation(draft.coordinates)
+        ? draft.coordinates!
+        : await acquirePreciseLocation(controller.signal, setLocationProgress);
       if (locationRequest.current !== request) return;
-      if (!permission.granted && permission.canAskAgain) {
-        permission = await Location.requestForegroundPermissionsAsync();
-      }
+      setLocationProgress('Recherche du nom du lieu…');
+      const location =
+        draft.location ||
+        (await Promise.race([
+          reverseGeocodeZone(coordinates.latitude, coordinates.longitude),
+          new Promise<null>((resolve) => {
+            geocodingTimeout = setTimeout(() => resolve(null), 8000);
+          }),
+        ])) ||
+        '';
       if (locationRequest.current !== request) return;
-      if (!permission.granted) {
-        setLocationSettingsNeeded(true);
-        throw new Error(
-          'Localisation non autorisée. Activez la position exacte dans les réglages, ou précisez le lieu manuellement.',
-        );
-      }
-      if (
-        permission.ios?.accuracy === 'reduced' ||
-        permission.android?.accuracy === 'coarse'
-      ) {
-        setLocationSettingsNeeded(true);
-        setLocationError(
-          'Votre appareil partage une position approximative. Activez la position exacte dans les réglages pour améliorer la précision.',
-        );
-      }
-      if (!(await Location.hasServicesEnabledAsync())) {
-        setLocationSettingsNeeded(true);
-        throw new Error(
-          'Le GPS est désactivé. Activez la localisation de votre appareil ou saisissez le lieu manuellement.',
-        );
-      }
-      if (locationRequest.current !== request) return;
-      // The web adapter forwards browser options; require a fresh position.
-      const options =
-        Platform.OS === 'web'
-          ? {
-              accuracy: Location.Accuracy.Highest,
-              maximumAge: 0,
-              timeout: 18000,
-            }
-          : { accuracy: Location.Accuracy.Highest };
-      const position = await Promise.race([
-        Location.getCurrentPositionAsync(options),
-        new Promise<never>((_, reject) => {
-          timeout = setTimeout(
-            () =>
-              reject(
-                new Error(
-                  'La position tarde à arriver. Réessayez à l’extérieur ou indiquez le lieu manuellement.',
-                ),
-              ),
-            18000,
-          );
-        }),
-      ]);
-      if (locationRequest.current !== request) return;
-      update('coordinates', {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-      });
+      const locatedDraft = {
+        ...draft,
+        coordinates,
+        location: location.slice(0, 240),
+      };
+      setDraft(locatedDraft);
+      submitting.current = true;
+      setSending(true);
+      await saveAccidentReportStep(locatedDraft, 0, setProgress);
+      savedLocation.current = locationDescription(locatedDraft);
+      setSavedSteps((current) => Math.max(current, 1));
+      changeStep(1);
     } catch (e) {
-      if (locationRequest.current === request)
+      if (locationRequest.current === request) {
         setLocationError(
           e instanceof Error
             ? e.message
-            : 'GPS indisponible. Vous pouvez saisir le lieu manuellement.',
+            : 'Localisation indisponible. Réessayez.',
         );
+        setLocationSettingsNeeded(
+          e instanceof PreciseLocationError && e.settingsNeeded,
+        );
+      }
     } finally {
-      clearTimeout(timeout);
-      if (locationRequest.current === request) setLocating(false);
+      clearTimeout(geocodingTimeout);
+      if (locationRequest.current === request) {
+        submitting.current = false;
+        setSending(false);
+        setLocating(false);
+      }
     }
   }
   async function next() {
@@ -337,6 +333,12 @@ export function ReportSheet({
     setSending(true);
     setError(null);
     try {
+      // The landmark adjusts the existing location before saving the subtype.
+      // A failed retry keeps the same report ID and cannot erase other steps.
+      if (step === 1 && savedLocation.current !== locationDescription(draft)) {
+        await saveAccidentReportStep(draft, 0, setProgress);
+        savedLocation.current = locationDescription(draft);
+      }
       const id = await saveAccidentReportStep(draft, step, setProgress);
       setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 3) setReceipt(id);
@@ -356,6 +358,7 @@ export function ReportSheet({
     setDraft(makeDraft());
     setReceipt(null);
     setSavedSteps(0);
+    savedLocation.current = null;
     setLocationSettingsNeeded(false);
     setStep(0);
     setError(null);
@@ -394,7 +397,7 @@ export function ReportSheet({
             {
               height: Math.min(
                 height - insets.top - 18,
-                reportType === null ? 400 : 850,
+                reportType === null ? 400 : step === 0 && !receipt ? 580 : 850,
               ),
               paddingBottom: Math.max(insets.bottom, 12),
             },
@@ -404,7 +407,8 @@ export function ReportSheet({
             <ReportTypePicker
               onSelect={(type) => {
                 onSelectType(type);
-                if (!draft.coordinates) void locate();
+                if (savedSteps === 0) void locate();
+                else changeStep(Math.max(step, 1));
               }}
               onClose={close}
             />
@@ -482,37 +486,42 @@ export function ReportSheet({
                   <AppIcon icon={X} size={21} color="#667185" />
                 </Pressable>
               </View>
-              <View style={styles.steps}>
-                {steps.map((label, index) => (
-                  <Pressable
-                    key={label}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Étape ${index + 1} : ${label}`}
-                    accessibilityState={{
-                      selected: step === index,
-                      disabled: index > savedSteps || sending,
-                    }}
-                    disabled={index > savedSteps || sending}
-                    onPress={() => changeStep(index)}
-                    style={styles.stepItem}
-                  >
-                    <View
-                      style={[
-                        styles.stepBar,
-                        index <= step && styles.stepBarActive,
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.stepLabel,
-                        index === step && styles.stepLabelActive,
-                      ]}
-                    >
-                      {index + 1}. {label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              {step > 0 && (
+                <View style={styles.steps}>
+                  {steps.map((label, offset) => {
+                    const index = offset + 1;
+                    return (
+                      <Pressable
+                        key={label}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Étape ${index} : ${label}`}
+                        accessibilityState={{
+                          selected: step === index,
+                          disabled: index > savedSteps || sending,
+                        }}
+                        disabled={index > savedSteps || sending}
+                        onPress={() => changeStep(index)}
+                        style={styles.stepItem}
+                      >
+                        <View
+                          style={[
+                            styles.stepBar,
+                            index <= step && styles.stepBarActive,
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            styles.stepLabel,
+                            index === step && styles.stepLabelActive,
+                          ]}
+                        >
+                          {index}. {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
               <ScrollView
                 ref={scroll}
                 keyboardShouldPersistTaps="handled"
@@ -533,134 +542,113 @@ export function ReportSheet({
                   </View>
                 )}
                 {step === 0 && (
-                  <>
-                    <View style={styles.notice}>
-                      <AppIcon icon={ShieldCheck} size={20} color="#A66913" />
-                      <Text style={styles.noticeText}>
-                        Mettez-vous d’abord en sécurité. En cas d’urgence,
-                        contactez les secours.
-                      </Text>
+                  <View style={styles.locationSearch}>
+                    <View style={styles.locationArt}>
+                      <AppIcon icon={LocateFixed} size={46} color="#267E70" />
                     </View>
-                    <View style={styles.sectionHeading}>
-                      <View style={styles.sectionIcon}>
-                        <AppIcon icon={MapPin} color="#D94235" size={21} />
-                      </View>
-                      <View style={styles.flex}>
-                        <Text style={styles.sectionTitle}>
-                          Où a eu lieu l’accident ?
-                        </Text>
-                        <Text style={styles.small}>
-                          Un lieu ou une position GPS est nécessaire.
-                        </Text>
-                      </View>
-                    </View>
-                    <TextInput
-                      editable={!sending}
-                      accessibilityLabel="Lieu de l’accident"
-                      placeholder="Rue, quartier, commune ou point de repère"
-                      placeholderTextColor="#89919E"
-                      value={draft.location}
-                      onChangeText={(value) => update('location', value)}
-                      maxLength={500}
-                      multiline
-                      style={[styles.input, styles.locationInput]}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={locating || sending}
-                      onPress={locate}
-                      style={styles.gpsButton}
+                    <Text
+                      accessibilityRole="header"
+                      style={styles.sectionTitle}
                     >
-                      {locating ? (
-                        <ActivityIndicator color="#267E70" />
-                      ) : (
-                        <AppIcon icon={LocateFixed} color="#267E70" size={19} />
-                      )}
-                      <Text style={styles.gpsText}>
-                        {locating
-                          ? 'Recherche de votre position…'
-                          : draft.coordinates
-                            ? 'Actualiser ma position GPS'
-                            : 'Utiliser ma position GPS'}
-                      </Text>
-                    </Pressable>
-                    {locating && (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Saisir le lieu manuellement"
-                        onPress={() => {
-                          locationRequest.current++;
-                          setLocating(false);
-                        }}
-                        style={styles.laterButton}
-                      >
-                        <Text style={styles.small}>
-                          Saisir le lieu manuellement
-                        </Text>
-                      </Pressable>
-                    )}
-                    {locationError && (
-                      <Text
-                        accessibilityRole="alert"
-                        style={styles.inlineError}
-                      >
-                        {locationError}
-                      </Text>
-                    )}
-                    {locationSettingsNeeded && Platform.OS !== 'web' && (
-                      <Action
-                        label="Autoriser la position exacte"
-                        secondary
-                        icon={LocateFixed}
-                        onPress={() => {
-                          void Linking.openSettings().catch(() =>
-                            setLocationError(
-                              'Ouvrez les réglages de votre appareil pour autoriser la position exacte.',
-                            ),
-                          );
-                        }}
-                      />
-                    )}
-                    {draft.coordinates && (
-                      <View style={styles.gpsResult}>
-                        <View style={styles.flex}>
-                          <Text style={styles.gpsText}>
-                            Position ajoutée
-                            {draft.coordinates.accuracy !== null
-                              ? ` · ± ${Math.round(draft.coordinates.accuracy)} m`
-                              : ''}
-                          </Text>
-                          <Text style={styles.small}>
-                            {draft.coordinates.latitude.toFixed(5)},{' '}
-                            {draft.coordinates.longitude.toFixed(5)}
-                          </Text>
-                          <Text style={styles.small}>
-                            Vérifiez que vous êtes bien sur le lieu de
-                            l’accident.
-                          </Text>
-                        </View>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel="Retirer la position GPS"
-                          onPress={() => update('coordinates', null)}
-                          style={styles.iconButton}
+                      {locationError
+                        ? 'Position à vérifier'
+                        : 'Localisation automatique'}
+                    </Text>
+                    <Text style={styles.locationExplanation}>
+                      Restez en sécurité sur le lieu de l’accident. Autorisez la
+                      position exacte : le signalement sera enregistré dès que
+                      le GPS sera suffisamment précis.
+                    </Text>
+                    {(locating || sending) && (
+                      <>
+                        <ActivityIndicator color="#267E70" size="large" />
+                        <Text
+                          accessibilityLiveRegion="polite"
+                          style={styles.gpsText}
                         >
-                          <AppIcon icon={X} size={18} color="#267E70" />
-                        </Pressable>
-                      </View>
+                          {sending ? progress : locationProgress}
+                        </Text>
+                      </>
                     )}
-                    <View style={styles.notice}>
-                      <AppIcon icon={Send} size={19} color="#A66913" />
-                      <Text style={styles.noticeText}>
-                        En appuyant sur « Suivant », le signalement et ce lieu
-                        sont enregistrés et visibles par tous sur l’Accueil.
-                        Vous pourrez ensuite ajouter des précisions.
-                      </Text>
-                    </View>
-                  </>
+                    <Text style={styles.small}>
+                      Précision requise : 30 m ou mieux. Vous passerez ensuite
+                      automatiquement au type d’accident.
+                    </Text>
+                    {locationError && (
+                      <>
+                        <Text
+                          accessibilityRole="alert"
+                          style={styles.inlineError}
+                        >
+                          {locationError}
+                        </Text>
+                        {locationSettingsNeeded && Platform.OS !== 'web' && (
+                          <Action
+                            label="Autoriser la position exacte"
+                            secondary
+                            icon={LocateFixed}
+                            onPress={() => {
+                              void Linking.openSettings().catch(() =>
+                                setLocationError(
+                                  'Ouvrez les réglages de votre appareil pour autoriser la position exacte.',
+                                ),
+                              );
+                            }}
+                          />
+                        )}
+                        <Action
+                          label={
+                            draft.coordinates
+                              ? 'Réessayer l’enregistrement'
+                              : 'Réessayer la localisation'
+                          }
+                          icon={LocateFixed}
+                          onPress={locate}
+                        />
+                      </>
+                    )}
+                  </View>
                 )}
                 {step === 1 && (
                   <>
+                    <View style={styles.locationCard}>
+                      <View style={styles.inline}>
+                        <AppIcon icon={MapPin} size={22} color="#267E70" />
+                        <View style={styles.flex}>
+                          <Text style={styles.gpsText}>
+                            {draft.location || 'Position GPS enregistrée'}
+                          </Text>
+                          <Text style={styles.small}>
+                            Précision GPS : ±{' '}
+                            {Math.ceil(draft.coordinates?.accuracy ?? 0)} m
+                          </Text>
+                          {!draft.location && (
+                            <Text style={styles.small}>
+                              Nom du lieu indisponible ·{' '}
+                              {draft.coordinates?.latitude.toFixed(5)},{' '}
+                              {draft.coordinates?.longitude.toFixed(5)}
+                            </Text>
+                          )}
+                        </View>
+                        <AppIcon icon={CheckCheck} size={20} color="#267E70" />
+                      </View>
+                      {Boolean(draft.location) && <GeocodingCredit />}
+                      <View style={styles.sectionHeading}>
+                        <Text style={styles.label}>Un repère sur place</Text>
+                        <Text style={styles.optional}>FACULTATIF</Text>
+                      </View>
+                      <TextInput
+                        editable={!sending}
+                        accessibilityLabel="Repère précis sur le lieu de l’accident, facultatif"
+                        placeholder="Ex. : devant la station d’essence, rue Jean Pierre"
+                        placeholderTextColor="#89919E"
+                        value={draft.locationHint || ''}
+                        onChangeText={(value) => update('locationHint', value)}
+                        maxLength={250}
+                        multiline
+                        style={[styles.input, styles.landmarkInput]}
+                      />
+                    </View>
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
                     </Text>
@@ -807,7 +795,7 @@ export function ReportSheet({
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={17} color="#64748B" />
                         <Text style={[styles.small, styles.flex]}>
-                          {draft.location.trim() || 'Position GPS ajoutée'}
+                          {locationDescription(draft) || 'Position GPS ajoutée'}
                         </Text>
                       </View>
                       <Text style={styles.summaryDetails}>
@@ -930,69 +918,71 @@ export function ReportSheet({
                   </>
                 )}
               </ScrollView>
-              <View style={styles.footer}>
-                {error && (
-                  <Text accessibilityRole="alert" style={styles.inlineError}>
-                    {error}
-                  </Text>
-                )}
-                {sending && (
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    style={styles.progress}
-                  >
-                    {progress}
-                  </Text>
-                )}
-                <View style={styles.footerActions}>
-                  <Action
-                    label={step === 0 ? 'Types' : 'Retour'}
-                    secondary
-                    icon={ArrowLeft}
-                    onPress={() => {
-                      if (step === 0) {
-                        locationRequest.current++;
-                        setLocating(false);
-                        setError(null);
-                        onBackToTypes();
-                      } else changeStep(step - 1);
-                    }}
-                    disabled={sending}
-                  />
-                  <View style={styles.flex}>
-                    <Action
-                      label={
-                        sending
-                          ? 'Enregistrement…'
-                          : step === 3
-                            ? 'Enregistrer les compléments'
-                            : 'Suivant'
-                      }
-                      icon={step === 3 ? CheckCheck : ArrowRight}
-                      onPress={next}
-                      disabled={sending || locating}
-                      busy={sending}
-                    />
-                  </View>
-                </View>
-                {savedSteps > 0 && !sending && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Fermer, étapes enregistrées"
-                    onPress={close}
-                    style={styles.laterButton}
-                  >
-                    <Text style={styles.small}>
-                      Fermer, étapes enregistrées
+              {step > 0 && (
+                <View style={styles.footer}>
+                  {error && (
+                    <Text accessibilityRole="alert" style={styles.inlineError}>
+                      {error}
                     </Text>
-                  </Pressable>
-                )}
-                <Text style={styles.footerHint}>
-                  {savedSteps === 0
-                    ? 'Suivant enregistre la première étape dans la base de données.'
-                    : 'Chaque étape validée est enregistrée. Les modifications en cours attendent Suivant.'}
-                </Text>
-              </View>
+                  )}
+                  {sending && (
+                    <Text
+                      accessibilityLiveRegion="polite"
+                      style={styles.progress}
+                    >
+                      {progress}
+                    </Text>
+                  )}
+                  <View style={styles.footerActions}>
+                    <Action
+                      label={step === 1 ? 'Types' : 'Retour'}
+                      secondary
+                      icon={ArrowLeft}
+                      onPress={() => {
+                        if (step === 1) {
+                          locationRequest.current++;
+                          locationController.current?.abort();
+                          setLocating(false);
+                          setError(null);
+                          onBackToTypes();
+                        } else changeStep(step - 1);
+                      }}
+                      disabled={sending}
+                    />
+                    <View style={styles.flex}>
+                      <Action
+                        label={
+                          sending
+                            ? 'Enregistrement…'
+                            : step === 3
+                              ? 'Enregistrer les compléments'
+                              : 'Suivant'
+                        }
+                        icon={step === 3 ? CheckCheck : ArrowRight}
+                        onPress={next}
+                        disabled={sending || locating}
+                        busy={sending}
+                      />
+                    </View>
+                  </View>
+                  {savedSteps > 0 && !sending && (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Fermer, étapes enregistrées"
+                      onPress={close}
+                      style={styles.laterButton}
+                    >
+                      <Text style={styles.small}>
+                        Fermer, étapes enregistrées
+                      </Text>
+                    </Pressable>
+                  )}
+                  <Text style={styles.footerHint}>
+                    Chaque étape validée est enregistrée. Les modifications en
+                    cours attendent Suivant.
+                  </Text>
+                </View>
+              )}
             </>
           )}
         </View>
@@ -1002,6 +992,28 @@ export function ReportSheet({
 }
 
 const styles = StyleSheet.create({
+  locationSearch: { alignItems: 'center', gap: 22, paddingVertical: 32 },
+  locationArt: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#EAF6F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  locationExplanation: {
+    color: '#667185',
+    fontSize: 15,
+    lineHeight: 23,
+    textAlign: 'center',
+  },
+  locationCard: {
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: '#F0F8F5',
+    gap: 8,
+  },
+  landmarkInput: { minHeight: 65, fontSize: 13 },
   savedNotice: {
     flexDirection: 'row',
     alignItems: 'center',
