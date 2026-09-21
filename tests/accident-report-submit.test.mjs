@@ -48,7 +48,7 @@ const draft = {
   ],
 };
 function fixture({
-  existing = null,
+  existingPhotos = [],
   uploadError = null,
   rpcError = null,
 } = {}) {
@@ -72,9 +72,7 @@ function fixture({
     },
     from: () => ({
       select: () => ({
-        eq: () => ({
-          maybeSingle: async () => ({ data: existing, error: null }),
-        }),
+        eq: async () => ({ data: existingPhotos, error: null }),
       }),
     }),
     storage: { from: () => storage },
@@ -83,19 +81,49 @@ function fixture({
       return { data: rpcError ? null : 'report-id', error: rpcError };
     },
   };
-  const { submitAccidentReport } = compile(submitSource, {
+  const { saveAccidentReportStep } = compile(submitSource, {
     '@/lib/supabase': { supabase: client },
     './model': model,
     'base64-arraybuffer': { decode },
   });
-  return { calls, submit: () => submitAccidentReport(draft, () => {}) };
+  return {
+    calls,
+    submit: (step = 3, input = draft) =>
+      saveAccidentReportStep(input, step, () => {}),
+  };
 }
 
-test('a confirmed retry returns its receipt without re-uploading evidence', async () => {
-  const { calls, submit } = fixture({ existing: { id: 'report-id' } });
+test('first step persists location immediately without optional information or photo uploads', async () => {
+  const { calls, submit } = fixture();
+  assert.equal(
+    await submit(0, { ...draft, accidentType: null, severity: null }),
+    'report-id',
+  );
+  assert.equal(calls.uploads.length, 0);
+  assert.equal(calls.rpc[0].name, 'save_accident_report_step');
+  assert.equal(calls.rpc[0].payload.p_step, 1);
+  assert.equal(calls.rpc[0].payload.p_location, 'Test');
+  assert.equal('p_severity' in calls.rpc[0].payload, false);
+});
+test('each later step updates only its own fields on the same report', async () => {
+  const { calls, submit } = fixture();
+  await submit(1);
+  await submit(2);
+  assert.deepEqual(
+    calls.rpc.map((call) => call.payload),
+    [
+      { p_id: 'report-id', p_step: 2, p_accident_type: 'other' },
+      { p_id: 'report-id', p_step: 3, p_severity: 'unknown' },
+    ],
+  );
+});
+test('retry of complements retains saved photo bytes and still saves adjustments', async () => {
+  const { calls, submit } = fixture({
+    existingPhotos: [{ storage_path: 'user-id/report-id/photo-id.jpg' }],
+  });
   assert.equal(await submit(), 'report-id');
   assert.equal(calls.uploads.length, 0);
-  assert.equal(calls.rpc.length, 0);
+  assert.equal(calls.rpc.length, 1);
 });
 test('an upload failure prevents submission and cleans up attempted uploads', async () => {
   const { calls, submit } = fixture({ uploadError: { message: 'Offline' } });
@@ -107,7 +135,7 @@ test('an uncertain commit is reported as unconfirmed and is safe to retry', asyn
   const { calls, submit } = fixture({
     rpcError: { message: 'Connection lost' },
   });
-  await assert.rejects(submit, /n’a pas pu être confirmé/);
+  await assert.rejects(submit, /n’a pas pu être confirmée/);
   assert.equal(calls.rpc[0].payload.p_id, draft.id);
   assert.equal(calls.removals.length, 1);
 });

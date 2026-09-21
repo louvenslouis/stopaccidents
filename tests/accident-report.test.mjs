@@ -25,9 +25,11 @@ const draft = {
   photos: [],
 };
 
-test('requires location and accident type, but permits GPS without an address', () => {
+test('location alone can be saved before choosing the accident subtype', () => {
   assert.ok(validateStep(draft, 0));
-  assert.ok(validateStep({ ...draft, location: 'Un carrefour' }, 0));
+  assert.equal(validateStep({ ...draft, location: 'Un carrefour' }, 0), null);
+  assert.ok(validateStep(draft, 1));
+  assert.equal(validateStep({ ...draft, accidentType: 'other' }, 1), null);
   assert.equal(
     validateStep(
       {
@@ -41,11 +43,11 @@ test('requires location and accident type, but permits GPS without an address', 
   );
 });
 test('unknown severity is an explicit valid choice, not an implicit default', () => {
-  assert.ok(validateStep(draft, 1));
-  assert.equal(validateStep({ ...draft, severity: 'unknown' }, 1), null);
+  assert.ok(validateStep(draft, 2));
+  assert.equal(validateStep({ ...draft, severity: 'unknown' }, 2), null);
 });
 test('all supplementary fields and photos are optional', () => {
-  assert.equal(validateStep(draft, 2), null);
+  assert.equal(validateStep(draft, 3), null);
 });
 test('identifiers are trimmed, deduplicated and split across pasted lines', () => {
   assert.deepEqual(splitIdentifiers(' AA-1, BB-2;AA-1\n CC-3 , '), [
@@ -53,14 +55,14 @@ test('identifiers are trimmed, deduplicated and split across pasted lines', () =
     'BB-2',
     'CC-3',
   ]);
-  assert.ok(validateStep({ ...draft, identities: 'x'.repeat(81) }, 2));
+  assert.ok(validateStep({ ...draft, identities: 'x'.repeat(81) }, 3));
   assert.ok(
     validateStep(
       {
         ...draft,
         registrations: Array.from({ length: 11 }, (_, i) => `${i}`).join(','),
       },
-      2,
+      3,
     ),
   );
 });

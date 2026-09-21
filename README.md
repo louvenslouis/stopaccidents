@@ -68,11 +68,20 @@ Join our community of developers creating universal apps.
 
 ## Signalement d’accident
 
-Le bouton de l’accueil ouvre un bottom sheet en trois étapes : accident, gravité,
-puis précisions et photos. La caméra intégrée ne propose aucun accès à la galerie.
-Les coordonnées GPS ne sont demandées qu’au toucher du bouton correspondant.
-Les champs facultatifs sont les plaques, les pièces d’identité, les remarques et
-jusqu’à quatre photos JPEG de 6 Mo maximum chacune.
+Le bouton « SIGNALER » de l’accueil ouvre le choix du type de signalement.
+La catégorie « Accident » demande l’autorisation de localisation au choix de la
+catégorie si elle n’est pas déjà accordée, puis recherche une position précise.
+Une autorisation approximative est signalée avec un accès aux réglages natifs.
+En cas de refus ou de GPS indisponible, le lieu peut être renseigné manuellement.
+
+Le formulaire comporte quatre étapes : lieu, type d’accident, gravité, compléments.
+Le premier « Suivant » crée immédiatement un signalement reçu avec son lieu.
+Chaque « Suivant » attend la confirmation Supabase avant de poursuivre. Les
+étapes suivantes ajustent ce même signalement ; revenir modifier une étape ne
+supprime pas les autres informations. Une fermeture conserve les étapes déjà
+validées en base. Le brouillon en cours reste accessible pendant la session.
+La caméra intégrée ne propose aucun accès à la galerie ; jusqu’à quatre photos
+JPEG de 6 Mo chacune peuvent être ajoutées aux compléments.
 
 ### Configuration Supabase
 
@@ -88,19 +97,25 @@ La migration `supabase/migrations/20260921030629_accident_reports.sql` crée :
 - `accident_report_photos` : liens privés et date de capture ;
 - le bucket privé `accident-photos` et la fonction `submit_accident_report`.
 
-Les trois tables utilisent RLS, avec lecture limitée à l’auteur. Le statut de
-traitement est réservé au serveur. Le bucket est privé ; les photos attachées à
-un signalement ne peuvent pas être remplacées ou supprimées par le client.
-L’enregistrement des trois tables est transactionnel et une référence UUID stable
-évite les doublons lors d’une reprise. Les photos sont téléversées avant cette
-transaction ; en cas d’échec, l’application tente de supprimer les fichiers non
-attachés. Une interruption complète ou une absence prolongée de réseau peut laisser
-des téléversements privés non attachés : leur purge périodique doit être assurée
-par l’exploitation, via l’API Storage (pas en supprimant directement ses lignes SQL).
+La migration progressive ajoute `completed_step` (1 à 4), `updated_at` et la
+fonction `save_accident_report_step`. Le statut de traitement (`received`, etc.)
+reste indépendant de l’avancement du formulaire. Les signalements historiques
+sont considérés complets et l’ancienne fonction reste disponible.
 
-Le formulaire reste disponible pendant la session de l’application. Il ne constitue
-pas une file d’envoi hors ligne persistante. Un accusé de réception signifie que
-les données ont été enregistrées, sans déclenchement automatique des secours.
+Les trois tables utilisent RLS : seules les données de l’auteur sont accessibles
+au client. Les mises à jour sont limitées aux champs du signalement ; l’auteur et
+le statut de traitement ne peuvent pas être modifiés. Chaque étape écrit uniquement
+ses propres champs et utilise la même référence UUID, y compris lors des reprises.
+La dernière étape remplace les compléments dans une transaction : si un fichier ou
+un identifiant est invalide, les informations précédemment enregistrées demeurent.
+
+Le bucket est privé. Les photos sont téléversées après la création du signalement,
+puis attachées avec les autres compléments. Le contenu d’un fichier déjà attaché
+ne peut pas être écrasé. Les fichiers détachés ou les tentatives non confirmées
+font l’objet d’un nettoyage au mieux ; une interruption réseau complète peut
+nécessiter une purge d’exploitation via l’API Storage. Les étapes non validées ne
+constituent pas une file hors ligne persistante et le brouillon n’est pas restauré
+automatiquement au redémarrage. L’enregistrement ne déclenche pas les secours.
 
 ### Vérification
 
@@ -109,7 +124,7 @@ les données ont été enregistrées, sans déclenchement automatique des secour
 - `npx tsc --noEmit` et `npm run lint` ;
 - `npx expo export -p web`.
 
-`supabase/tests/accident_reports.sql` peut aussi être exécuté avec `psql` dans une
+Les scripts `supabase/tests/*.sql` peuvent aussi être exécutés avec `psql` dans une
 base de développement Supabase ; toutes ses données synthétiques sont annulées.
 La caméra et le GPS doivent être vérifiés sur appareil physique. Une nouvelle
 compilation native est nécessaire pour prendre en compte les modules et permissions

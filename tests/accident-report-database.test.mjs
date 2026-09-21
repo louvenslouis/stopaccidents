@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
@@ -25,15 +25,12 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       grant usage on schema public,auth,storage to anon,authenticated;
       grant select,insert,update,delete on storage.objects to authenticated;
     `);
-    await db.exec(
-      await readFile(
-        new URL(
-          '../supabase/migrations/20260921030629_accident_reports.sql',
-          import.meta.url,
-        ),
-        'utf8',
-      ),
-    );
+    const migrations = new URL('../supabase/migrations/', import.meta.url);
+    for (const file of (await readdir(migrations))
+      .filter((name) => name.endsWith('.sql'))
+      .sort()) {
+      await db.exec(await readFile(new URL(file, migrations), 'utf8'));
+    }
     const results = await db.exec(
       await readFile(
         new URL('../supabase/tests/accident_reports.sql', import.meta.url),
@@ -41,6 +38,16 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       ),
     );
     assert.match(results.at(-1).rows[0].result, /^PASS:/);
+    const staged = await db.exec(
+      await readFile(
+        new URL(
+          '../supabase/tests/progressive_accident_reports.sql',
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    assert.match(staged.at(-1).rows[0].result, /^PASS:/);
     const remaining = await db.query(
       'select count(*)::int as count from public.accident_reports',
     );

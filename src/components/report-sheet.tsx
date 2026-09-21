@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -37,13 +38,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { ReportCamera } from '@/components/report-camera';
 import {
+  ReportTypePicker,
+  type ReportType,
+} from '@/components/report-type-picker';
+import {
   MAX_PHOTOS,
   validateStep,
   type AccidentType,
   type ReportDraft,
   type Severity,
 } from '@/features/accident-report/model';
-import { submitAccidentReport } from '@/features/accident-report/submit';
+import { saveAccidentReportStep } from '@/features/accident-report/submit';
 
 const types: {
   value: AccidentType;
@@ -125,7 +130,7 @@ const severities: {
     tint: '#F0F2F6',
   },
 ];
-const steps = ['L’accident', 'La gravité', 'Les détails'];
+const steps = ['Lieu', 'Accident', 'Gravité', 'Détails'];
 const makeDraft = (): ReportDraft => ({
   id: randomUUID(),
   location: '',
@@ -184,11 +189,17 @@ function Action({
   );
 }
 
-export function AccidentReportSheet({
+export function ReportSheet({
   visible,
+  reportType,
+  onSelectType,
+  onBackToTypes,
   onClose,
 }: {
   visible: boolean;
+  reportType: ReportType | null;
+  onSelectType: (type: ReportType) => void;
+  onBackToTypes: () => void;
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -202,6 +213,8 @@ export function AccidentReportSheet({
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState('');
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [savedSteps, setSavedSteps] = useState(0);
+  const [locationSettingsNeeded, setLocationSettingsNeeded] = useState(false);
   const submitting = useRef(false);
   const locationRequest = useRef(0);
   const dragStartY = useRef(0);
@@ -241,15 +254,48 @@ export function AccidentReportSheet({
     const request = ++locationRequest.current;
     setLocating(true);
     setLocationError(null);
+    setLocationSettingsNeeded(false);
     let timeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const permission = await Location.requestForegroundPermissionsAsync();
-      if (!permission.granted)
+      let permission = await Location.getForegroundPermissionsAsync();
+      if (locationRequest.current !== request) return;
+      if (!permission.granted && permission.canAskAgain) {
+        permission = await Location.requestForegroundPermissionsAsync();
+      }
+      if (locationRequest.current !== request) return;
+      if (!permission.granted) {
+        setLocationSettingsNeeded(true);
         throw new Error(
-          'Localisation non autorisée. Saisissez le lieu manuellement ou autorisez la localisation dans les réglages.',
+          'Localisation non autorisée. Activez la position exacte dans les réglages, ou précisez le lieu manuellement.',
         );
+      }
+      if (
+        permission.ios?.accuracy === 'reduced' ||
+        permission.android?.accuracy === 'coarse'
+      ) {
+        setLocationSettingsNeeded(true);
+        setLocationError(
+          'Votre appareil partage une position approximative. Activez la position exacte dans les réglages pour améliorer la précision.',
+        );
+      }
+      if (!(await Location.hasServicesEnabledAsync())) {
+        setLocationSettingsNeeded(true);
+        throw new Error(
+          'Le GPS est désactivé. Activez la localisation de votre appareil ou saisissez le lieu manuellement.',
+        );
+      }
+      if (locationRequest.current !== request) return;
+      // The web adapter forwards browser options; require a fresh position.
+      const options =
+        Platform.OS === 'web'
+          ? {
+              accuracy: Location.Accuracy.Highest,
+              maximumAge: 0,
+              timeout: 18000,
+            }
+          : { accuracy: Location.Accuracy.Highest };
       const position = await Promise.race([
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High }),
+        Location.getCurrentPositionAsync(options),
         new Promise<never>((_, reject) => {
           timeout = setTimeout(
             () =>
@@ -287,15 +333,14 @@ export function AccidentReportSheet({
       setError(validation);
       return;
     }
-    if (step < 2) {
-      changeStep(step + 1);
-      return;
-    }
     submitting.current = true;
     setSending(true);
     setError(null);
     try {
-      setReceipt(await submitAccidentReport(draft, setProgress));
+      const id = await saveAccidentReportStep(draft, step, setProgress);
+      setSavedSteps((current) => Math.max(current, step + 1));
+      if (step === 3) setReceipt(id);
+      else changeStep(step + 1);
     } catch (e) {
       setError(
         e instanceof Error
@@ -310,6 +355,8 @@ export function AccidentReportSheet({
   function done() {
     setDraft(makeDraft());
     setReceipt(null);
+    setSavedSteps(0);
+    setLocationSettingsNeeded(false);
     setStep(0);
     setError(null);
     setLocationError(null);
@@ -345,12 +392,23 @@ export function AccidentReportSheet({
           style={[
             styles.sheet,
             {
-              height: Math.min(height - insets.top - 18, 850),
+              height: Math.min(
+                height - insets.top - 18,
+                reportType === null ? 400 : 850,
+              ),
               paddingBottom: Math.max(insets.bottom, 12),
             },
           ]}
         >
-          {cameraOpen ? (
+          {reportType === null ? (
+            <ReportTypePicker
+              onSelect={(type) => {
+                onSelectType(type);
+                if (!draft.coordinates) void locate();
+              }}
+              onClose={close}
+            />
+          ) : cameraOpen ? (
             <ReportCamera
               onClose={() => setCameraOpen(false)}
               onCapture={(photo) => {
@@ -368,11 +426,11 @@ export function AccidentReportSheet({
               </View>
               <Text style={styles.eyebrow}>MERCI POUR VOTRE VIGILANCE</Text>
               <Text accessibilityRole="header" style={styles.successTitle}>
-                Signalement envoyé
+                Signalement complété
               </Text>
               <Text style={styles.successBody}>
-                Vos informations{draft.photos.length ? ' et vos photos' : ''}{' '}
-                ont bien été enregistrées.
+                Vos compléments{draft.photos.length ? ' et vos photos' : ''} ont
+                été ajoutés au signalement enregistré dès la première étape.
               </Text>
               <View style={styles.receipt}>
                 <Text style={styles.small}>RÉFÉRENCE DU SIGNALEMENT</Text>
@@ -432,9 +490,9 @@ export function AccidentReportSheet({
                     accessibilityLabel={`Étape ${index + 1} : ${label}`}
                     accessibilityState={{
                       selected: step === index,
-                      disabled: index > step || sending,
+                      disabled: index > savedSteps || sending,
                     }}
-                    disabled={index > step || sending}
+                    disabled={index > savedSteps || sending}
                     onPress={() => changeStep(index)}
                     style={styles.stepItem}
                   >
@@ -461,6 +519,19 @@ export function AccidentReportSheet({
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
               >
+                {savedSteps > 0 && (
+                  <View style={styles.savedNotice}>
+                    <AppIcon icon={CheckCheck} size={19} color="#267E70" />
+                    <View style={styles.flex}>
+                      <Text style={styles.gpsText}>
+                        Signalement déjà enregistré
+                      </Text>
+                      <Text style={styles.small}>
+                        Les étapes suivantes complètent ce même signalement.
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 {step === 0 && (
                   <>
                     <View style={styles.notice}>
@@ -484,6 +555,7 @@ export function AccidentReportSheet({
                       </View>
                     </View>
                     <TextInput
+                      editable={!sending}
                       accessibilityLabel="Lieu de l’accident"
                       placeholder="Rue, quartier, commune ou point de repère"
                       placeholderTextColor="#89919E"
@@ -495,7 +567,7 @@ export function AccidentReportSheet({
                     />
                     <Pressable
                       accessibilityRole="button"
-                      disabled={locating}
+                      disabled={locating || sending}
                       onPress={locate}
                       style={styles.gpsButton}
                     >
@@ -512,6 +584,21 @@ export function AccidentReportSheet({
                             : 'Utiliser ma position GPS'}
                       </Text>
                     </Pressable>
+                    {locating && (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Saisir le lieu manuellement"
+                        onPress={() => {
+                          locationRequest.current++;
+                          setLocating(false);
+                        }}
+                        style={styles.laterButton}
+                      >
+                        <Text style={styles.small}>
+                          Saisir le lieu manuellement
+                        </Text>
+                      </Pressable>
+                    )}
                     {locationError && (
                       <Text
                         accessibilityRole="alert"
@@ -519,6 +606,20 @@ export function AccidentReportSheet({
                       >
                         {locationError}
                       </Text>
+                    )}
+                    {locationSettingsNeeded && Platform.OS !== 'web' && (
+                      <Action
+                        label="Autoriser la position exacte"
+                        secondary
+                        icon={LocateFixed}
+                        onPress={() => {
+                          void Linking.openSettings().catch(() =>
+                            setLocationError(
+                              'Ouvrez les réglages de votre appareil pour autoriser la position exacte.',
+                            ),
+                          );
+                        }}
+                      />
                     )}
                     {draft.coordinates && (
                       <View style={styles.gpsResult}>
@@ -548,6 +649,18 @@ export function AccidentReportSheet({
                         </Pressable>
                       </View>
                     )}
+                    <View style={styles.notice}>
+                      <AppIcon icon={Send} size={19} color="#A66913" />
+                      <Text style={styles.noticeText}>
+                        En appuyant sur « Suivant », le signalement et ce lieu
+                        sont enregistrés. Vous pourrez ensuite ajouter des
+                        précisions.
+                      </Text>
+                    </View>
+                  </>
+                )}
+                {step === 1 && (
+                  <>
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
                     </Text>
@@ -605,7 +718,7 @@ export function AccidentReportSheet({
                     </View>
                   </>
                 )}
-                {step === 1 && (
+                {step === 2 && (
                   <>
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
@@ -687,7 +800,7 @@ export function AccidentReportSheet({
                     )}
                   </>
                 )}
-                {step === 2 && (
+                {step === 3 && (
                   <>
                     <View style={styles.summary}>
                       <Text style={styles.summaryTitle}>Votre signalement</Text>
@@ -832,35 +945,52 @@ export function AccidentReportSheet({
                   </Text>
                 )}
                 <View style={styles.footerActions}>
-                  {step > 0 && (
-                    <Action
-                      label="Retour"
-                      secondary
-                      icon={ArrowLeft}
-                      onPress={() => changeStep(step - 1)}
-                      disabled={sending}
-                    />
-                  )}
+                  <Action
+                    label={step === 0 ? 'Types' : 'Retour'}
+                    secondary
+                    icon={ArrowLeft}
+                    onPress={() => {
+                      if (step === 0) {
+                        locationRequest.current++;
+                        setLocating(false);
+                        setError(null);
+                        onBackToTypes();
+                      } else changeStep(step - 1);
+                    }}
+                    disabled={sending}
+                  />
                   <View style={styles.flex}>
                     <Action
                       label={
                         sending
-                          ? 'Envoi en cours…'
-                          : step === 2
-                            ? 'Envoyer le signalement'
-                            : 'Continuer'
+                          ? 'Enregistrement…'
+                          : step === 3
+                            ? 'Enregistrer les compléments'
+                            : 'Suivant'
                       }
-                      icon={step === 2 ? Send : ArrowRight}
+                      icon={step === 3 ? CheckCheck : ArrowRight}
                       onPress={next}
                       disabled={sending || locating}
                       busy={sending}
                     />
                   </View>
                 </View>
+                {savedSteps > 0 && !sending && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Fermer, étapes enregistrées"
+                    onPress={close}
+                    style={styles.laterButton}
+                  >
+                    <Text style={styles.small}>
+                      Fermer, étapes enregistrées
+                    </Text>
+                  </Pressable>
+                )}
                 <Text style={styles.footerHint}>
-                  {step === 2
-                    ? 'Vérifiez les informations avant l’envoi.'
-                    : 'Vous pouvez fermer et reprendre ce formulaire dans cette session.'}
+                  {savedSteps === 0
+                    ? 'Suivant enregistre la première étape dans la base de données.'
+                    : 'Chaque étape validée est enregistrée. Les modifications en cours attendent Suivant.'}
                 </Text>
               </View>
             </>
@@ -872,6 +1002,19 @@ export function AccidentReportSheet({
 }
 
 const styles = StyleSheet.create({
+  savedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: '#EEF8F5',
+  },
+  laterButton: {
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',

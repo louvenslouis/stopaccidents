@@ -45,11 +45,12 @@ export function validateStep(draft: ReportDraft, step: number): string | null {
   if (step === 0) {
     if (draft.location.trim().length < 3 && !draft.coordinates)
       return 'Précisez le lieu de l’accident ou utilisez votre position GPS.';
-    if (!draft.accidentType) return 'Choisissez le type d’accident.';
   }
-  if (step === 1 && !draft.severity)
+  if (step === 1 && !draft.accidentType)
+    return 'Choisissez le type d’accident.';
+  if (step === 2 && !draft.severity)
     return 'Indiquez la gravité, ou choisissez « Je ne sais pas ».';
-  if (step === 2) {
+  if (step === 3) {
     for (const value of [draft.registrations, draft.identities]) {
       const items = splitIdentifiers(value);
       if (items.length > 10)

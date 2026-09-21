@@ -9,14 +9,15 @@ import {
 
 export const REPORT_PHOTO_BUCKET = 'accident-photos';
 
-export async function submitAccidentReport(
+/** Save one step only, reusing the draft ID for both retries and adjustments. */
+export async function saveAccidentReportStep(
   draft: ReportDraft,
+  step: number,
   onProgress: (message: string) => void,
 ) {
-  for (let step = 0; step < 3; step++) {
-    const error = validateStep(draft, step);
-    if (error) throw new Error(error);
-  }
+  const validation = validateStep(draft, step);
+  if (validation) throw new Error(validation);
+  if (step < 0 || step > 3) throw new Error('Étape inconnue.');
   onProgress('Connexion sécurisée…');
   const { data: sessionData, error: sessionError } =
     await supabase.auth.getSession();
@@ -25,84 +26,113 @@ export async function submitAccidentReport(
   let userId = sessionData.session?.user.id;
   if (!userId) {
     const { data, error } = await supabase.auth.signInAnonymously();
-    if (error || !data.user) {
+    if (error?.code === 'anonymous_provider_disabled') {
+      throw new Error(
+        'Le signalement sans compte n’est pas encore activé. Réessayez après son activation.',
+      );
+    }
+    if (error || !data.user)
       throw new Error(
         'Connexion impossible. Vérifiez votre connexion Internet et réessayez.',
       );
-    }
     userId = data.user.id;
   }
 
-  // A lost response after commit must not produce a second report or replace its photos.
-  const { data: existing, error: lookupError } = await supabase
-    .from('accident_reports')
-    .select('id')
-    .eq('id', draft.id)
-    .maybeSingle();
-  if (lookupError)
-    throw new Error(
-      'Le service est momentanément indisponible. Votre formulaire est conservé.',
-    );
-  if (existing) return existing.id as string;
-
-  const attemptedPaths: string[] = [];
-  try {
-    const photos: { storage_path: string; captured_at: string }[] = [];
-    for (const [index, photo] of draft.photos.entries()) {
-      onProgress(`Envoi de la photo ${index + 1} sur ${draft.photos.length}…`);
-      const bytes = decode(photo.base64);
-      if (bytes.byteLength > MAX_PHOTO_BYTES)
-        throw new Error('Une photo dépasse 6 Mo. Retirez-la et reprenez-la.');
-      const path = `${userId}/${draft.id}/${photo.id}.jpg`;
-      attemptedPaths.push(path);
-      const { error } = await supabase.storage
-        .from(REPORT_PHOTO_BUCKET)
-        .upload(path, bytes, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
-      if (error)
-        throw new Error(
-          'Une photo n’a pas pu être envoyée. Votre formulaire est conservé ; réessayez.',
-        );
-      photos.push({ storage_path: path, captured_at: photo.capturedAt });
-    }
-
-    onProgress('Enregistrement du signalement…');
-    const { data, error } = await supabase.rpc('submit_accident_report', {
-      p_id: draft.id,
+  // Sparse parameters ensure an adjustment never erases fields from other steps.
+  const payload: Record<string, unknown> = { p_id: draft.id, p_step: step + 1 };
+  if (step === 0)
+    Object.assign(payload, {
       p_location: draft.location.trim(),
       p_latitude: draft.coordinates?.latitude ?? null,
       p_longitude: draft.coordinates?.longitude ?? null,
       p_accuracy: draft.coordinates?.accuracy ?? null,
-      p_accident_type: draft.accidentType,
-      p_severity: draft.severity,
-      p_notes: draft.notes.trim(),
-      p_registrations: splitIdentifiers(draft.registrations),
-      p_identities: splitIdentifiers(draft.identities),
-      p_photos: photos,
     });
+  if (step === 1) payload.p_accident_type = draft.accidentType;
+  if (step === 2) payload.p_severity = draft.severity;
+
+  const attemptedPaths: string[] = [];
+  let obsoletePaths: string[] = [];
+  try {
+    if (step === 3) {
+      const { data: savedPhotos, error: readError } = await supabase
+        .from('accident_report_photos')
+        .select('storage_path')
+        .eq('report_id', draft.id);
+      if (readError)
+        throw new Error(
+          'Impossible de vérifier les photos. Réessayez ; les étapes précédentes sont enregistrées.',
+        );
+      const savedPaths = new Set<string>(
+        (savedPhotos ?? []).map((photo) => photo.storage_path),
+      );
+      const photos: { storage_path: string; captured_at: string }[] = [];
+      for (const [index, photo] of draft.photos.entries()) {
+        const path = `${userId}/${draft.id}/${photo.id}.jpg`;
+        if (!savedPaths.has(path)) {
+          onProgress(
+            `Envoi de la photo ${index + 1} sur ${draft.photos.length}…`,
+          );
+          const bytes = decode(photo.base64);
+          if (bytes.byteLength > MAX_PHOTO_BYTES)
+            throw new Error(
+              'Une photo dépasse 6 Mo. Retirez-la et reprenez-la.',
+            );
+          attemptedPaths.push(path);
+          const { error } = await supabase.storage
+            .from(REPORT_PHOTO_BUCKET)
+            .upload(path, bytes, {
+              contentType: 'image/jpeg',
+              upsert: true,
+            });
+          if (error)
+            throw new Error(
+              'Une photo n’a pas pu être envoyée. Les étapes précédentes restent enregistrées ; réessayez.',
+            );
+        }
+        photos.push({ storage_path: path, captured_at: photo.capturedAt });
+      }
+      obsoletePaths = [...savedPaths].filter(
+        (path) => !photos.some((photo) => photo.storage_path === path),
+      );
+      Object.assign(payload, {
+        p_notes: draft.notes.trim(),
+        p_registrations: splitIdentifiers(draft.registrations),
+        p_identities: splitIdentifiers(draft.identities),
+        p_photos: photos,
+      });
+    }
+    onProgress(
+      step === 0
+        ? 'Enregistrement du signalement…'
+        : 'Enregistrement des compléments…',
+    );
+    const { data, error } = await supabase.rpc(
+      'save_accident_report_step',
+      payload,
+    );
     if (error || !data)
       throw new Error(
-        'L’envoi n’a pas pu être confirmé. Réessayez : aucun doublon ne sera créé.',
+        'Cette étape n’a pas pu être confirmée. Réessayez : les étapes déjà enregistrées sont conservées et aucun doublon ne sera créé.',
       );
+    if (obsoletePaths.length) await cleanUnattachedPhotos(obsoletePaths);
     return data as string;
   } catch (error) {
-    // A lost commit response may leave a valid report. Storage RLS prevents
-    // deleting its evidence; only uncommitted uploads can be cleaned up.
-    if (attemptedPaths.length) {
-      let cleanupTimeout: ReturnType<typeof setTimeout> | undefined;
-      await Promise.race([
-        supabase.storage
-          .from(REPORT_PHOTO_BUCKET)
-          .remove(attemptedPaths)
-          .catch(() => undefined),
-        new Promise<void>((resolve) => {
-          cleanupTimeout = setTimeout(resolve, 3000);
-        }),
-      ]);
-      clearTimeout(cleanupTimeout);
-    }
+    // If the response was lost after commit, RLS protects referenced photos.
+    if (attemptedPaths.length) await cleanUnattachedPhotos(attemptedPaths);
     throw error;
   }
+}
+
+async function cleanUnattachedPhotos(paths: string[]) {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    supabase.storage
+      .from(REPORT_PHOTO_BUCKET)
+      .remove(paths)
+      .catch(() => undefined),
+    new Promise<void>((resolve) => {
+      timeout = setTimeout(resolve, 3000);
+    }),
+  ]);
+  clearTimeout(timeout);
 }

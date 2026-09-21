@@ -1,5 +1,6 @@
 import { AppScreen } from '@/components/app-screen';
-import { AccidentReportSheet } from '@/components/accident-report-sheet';
+import { ReportSheet } from '@/components/report-sheet';
+import type { ReportType } from '@/components/report-type-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import Bell from 'lucide-react-native/icons/bell';
@@ -17,7 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const REPORT_BUTTON_WIDTH = 224;
+const REPORT_BUTTON_WIDTH = 154;
 const REPORT_FAB_SIZE = 58;
 const TAB_BAR_WIDTH = 430;
 const WIDE_LAYOUT_BREAKPOINT = 960;
@@ -28,6 +29,7 @@ export default function HomeScreen() {
   const { width: initialWidth } = useWindowDimensions();
   const [webWidth, setWebWidth] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reportType, setReportType] = useState<ReportType | null>(null);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
   const scrollY = useSharedValue(0);
@@ -120,11 +122,14 @@ export default function HomeScreen() {
           style={[styles.reportButtonRail, isWideLayout && styles.reportButtonRailWide]}>
           <Animated.View style={[styles.reportButton, reportButtonStyle]}>
             <AnimatedPressable
-              accessibilityHint="Ouvre le signalement d'un accident"
-              accessibilityLabel="Signaler un accident"
+              accessibilityHint="Choisir le type de signalement"
+              accessibilityLabel="SIGNALER"
               accessibilityRole="button"
               haptic="warning"
-              onPress={() => setReportOpen(true)}
+              onPress={() => {
+                setReportType(null);
+                setReportOpen(true);
+              }}
               pressedOpacity={0.9}
               pressedScale={0.97}
               style={styles.reportButtonPressable}>
@@ -137,13 +142,19 @@ export default function HomeScreen() {
                 />
               </Animated.View>
               <Animated.Text numberOfLines={1} style={[styles.reportLabel, reportLabelStyle]}>
-                Signaler un Accident
+                SIGNALER
               </Animated.Text>
             </AnimatedPressable>
           </Animated.View>
         </Animated.View>
       </Animated.View>
-      <AccidentReportSheet visible={reportOpen} onClose={() => setReportOpen(false)} />
+      <ReportSheet
+        visible={reportOpen}
+        reportType={reportType}
+        onSelectType={setReportType}
+        onBackToTypes={() => setReportType(null)}
+        onClose={() => setReportOpen(false)}
+      />
     </>
   );
 }
