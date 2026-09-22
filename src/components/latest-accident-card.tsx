@@ -1,4 +1,7 @@
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
+import CalendarDays from 'lucide-react-native/icons/calendar-days';
+import Clock3 from 'lucide-react-native/icons/clock-3';
+import Hash from 'lucide-react-native/icons/hash';
 import CarFront from 'lucide-react-native/icons/car-front';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
@@ -17,7 +20,6 @@ import { GeocodingCredit } from '@/components/geocoding-credit';
 import {
   accidentSeverity,
   accidentTypeLabel,
-  formatAccidentDate,
 } from '@/features/accident-report/presentation';
 import {
   reportSelection,
@@ -92,41 +94,62 @@ export function LatestAccidentCard({
               <Text style={styles.type}>{reportLabel}</Text>
             </View>
           </View>
-          <View style={styles.locationRow}>
-            <AppIcon icon={MapPin} size={19} color="#777E89" />
-            <View style={styles.heading}>
-              <Text style={styles.label}>{location.estimated ? 'Zone estimée' : 'Lieu'}</Text>
-              <Text numberOfLines={2} style={styles.location}>
-                {location.label}
+          <View style={styles.badges}>
+            <View style={[styles.badge, { backgroundColor: isKidnapping ? '#F4ECF8' : '#EEF2FF' }]}>
+              <AppIcon icon={isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? '#7C3FA0' : '#4358C7'} />
+              <Text style={[styles.badgeText, { color: isKidnapping ? '#7C3FA0' : '#4358C7' }]}>
+                {isKidnapping ? 'Enlèvement' : 'Accident'}
               </Text>
-              {location.estimated && <GeocodingCredit />}
+            </View>
+            {severity && (
+              <View style={[styles.badge, { backgroundColor: severity.tint }]}>
+                <AppIcon icon={TriangleAlert} size={15} strokeWidth={1.6} color={severity.color} />
+                <Text style={[styles.badgeText, { color: severity.color }]}>
+                  Gravité · {severity.label}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.grid}>
+            <View style={styles.gridRow}>
+              <View style={[styles.metric, styles.metricLeft]}>
+                <View style={styles.metricLabel}>
+                  <AppIcon icon={MapPin} size={17} strokeWidth={1.6} color="#858C98" />
+                  <Text style={styles.label}>{location.estimated ? 'Zone estimée' : 'Lieu'}</Text>
+                </View>
+                <Text style={styles.value}>{location.label}</Text>
+                {location.estimated && <GeocodingCredit />}
+              </View>
+              <View style={styles.metric}>
+                <View style={styles.metricLabel}>
+                  <AppIcon icon={Hash} size={17} strokeWidth={1.6} color="#858C98" />
+                  <Text style={styles.label}>Matricule</Text>
+                </View>
+                <Text style={styles.value}>Non renseigné</Text>
+              </View>
+            </View>
+            <View style={[styles.gridRow, styles.gridRowLast]}>
+              <View style={[styles.metric, styles.metricLeft]}>
+                <View style={styles.metricLabel}>
+                  <AppIcon icon={Clock3} size={17} strokeWidth={1.6} color="#858C98" />
+                  <Text style={styles.label}>Heure</Text>
+                </View>
+                <Text style={styles.value}>
+                  {new Date(report.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+              <View style={styles.metric}>
+                <View style={styles.metricLabel}>
+                  <AppIcon icon={CalendarDays} size={17} strokeWidth={1.6} color="#858C98" />
+                  <Text style={styles.label}>Date</Text>
+                </View>
+                <Text style={styles.value}>
+                  {new Date(report.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
             </View>
           </View>
-          {severity ? (
-            <View style={styles.severityRow}>
-              <Text style={styles.label}>Gravité</Text>
-              <View style={[styles.badge, { backgroundColor: severity.tint }]}>
-                <View style={[styles.dot, { backgroundColor: severity.color }]} />
-                <Text style={[styles.badgeText, { color: severity.color }]}>
-                  {severity.label}
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.severityRow}>
-              <Text style={styles.label}>Catégorie</Text>
-              <View style={[styles.badge, styles.kidnappingBadge]}>
-                <View style={[styles.dot, styles.kidnappingDot]} />
-                <Text style={[styles.badgeText, styles.kidnappingBadgeText]}>
-                  Alerte enlèvement
-                </Text>
-              </View>
-            </View>
-          )}
           <View style={styles.footer}>
-            <Text style={styles.date}>
-              Signalé le {formatAccidentDate(report.created_at)}
-            </Text>
             <View style={styles.cta}>
               <Text style={styles.ctaText}>Voir les détails</Text>
               <AppIcon icon={ArrowUpRight} size={18} color="#D94235" />
@@ -202,15 +225,9 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 22,
-    borderRadius: 26,
+    borderRadius: 30,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#ECEDEF',
-    shadowColor: '#283040',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 20,
-    elevation: 2,
+    boxShadow: '0 6px 28px rgba(24, 35, 52, 0.055)',
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
@@ -236,27 +253,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginTop: 5,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    marginTop: 24,
-  },
-  label: { color: '#777E89', fontSize: 12, fontWeight: '500' },
-  location: {
-    color: '#3F4653',
-    fontSize: 16,
-    lineHeight: 23,
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  severityRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 20,
-  },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
+  grid: { marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E9ECF0' },
+  gridRow: { flexDirection: 'row' },
+  gridRowLast: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E9ECF0' },
+  metric: { flex: 1, minWidth: 0, paddingVertical: 18, paddingLeft: 16 },
+  metricLeft: { paddingLeft: 0, paddingRight: 16, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#E9ECF0' },
+  metricLabel: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  label: { color: '#737C89', fontSize: 12, fontWeight: '500', flexShrink: 1 },
+  value: { color: '#293241', fontSize: 14, lineHeight: 21, fontWeight: '500', marginTop: 8 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,19 +271,14 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     flexShrink: 1,
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
-  badgeText: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
-  kidnappingBadge: { backgroundColor: '#F4ECF8' },
-  kidnappingDot: { backgroundColor: '#7C3FA0' },
-  kidnappingBadgeText: { color: '#7C3FA0' },
+  badgeText: { fontSize: 12, fontWeight: '600', flexShrink: 1 },
   footer: {
-    marginTop: 22,
+    marginTop: 0,
     paddingTop: 17,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#F0F1F3',
     gap: 12,
   },
-  date: { color: '#878C95', fontSize: 11, lineHeight: 16 },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',

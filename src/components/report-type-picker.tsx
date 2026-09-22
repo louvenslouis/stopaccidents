@@ -1,8 +1,6 @@
+import { ReportIllustration } from '@/components/report-illustration';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
-import CarFront from 'lucide-react-native/icons/car-front';
-import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
-import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
 import { useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -15,13 +13,11 @@ const reportTypes = [
     id: 'accident',
     title: 'Accident',
     description: 'Collision, sortie de route ou personne renversée.',
-    icon: CarFront,
   },
   {
     id: 'kidnapping',
     title: 'Enlèvement',
     description: 'Véhicules, direction prise et indices sur la personne.',
-    icon: ShieldAlert,
   },
 ] as const;
 export type ReportType = (typeof reportTypes)[number]['id'];
@@ -82,12 +78,7 @@ export function ReportTypePicker({
             onPress={() => onSelect(type.id)}
             style={styles.card}
           >
-            <View style={styles.illustration}>
-              <AppIcon icon={type.icon} size={34} color="#D94235" />
-              <View style={styles.badge}>
-                <AppIcon icon={TriangleAlert} size={15} color="#D94235" />
-              </View>
-            </View>
+            <ReportIllustration kind={type.id} size={80} />
             <View style={styles.heading}>
               <Text style={styles.cardTitle}>{type.title}</Text>
               <Text style={styles.cardDescription}>{type.description}</Text>
@@ -146,32 +137,13 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
-    padding: 18,
+    gap: 12,
+    padding: 16,
     borderWidth: 1.5,
     borderColor: '#F0D3CB',
     borderRadius: 20,
     backgroundColor: '#FFFAF7',
     minHeight: 112,
-  },
-  illustration: {
-    width: 58,
-    height: 62,
-    borderRadius: 18,
-    backgroundColor: '#FCE9E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badge: {
-    position: 'absolute',
-    right: -4,
-    bottom: -3,
-    width: 26,
-    height: 26,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   cardTitle: {
     color: '#273347',

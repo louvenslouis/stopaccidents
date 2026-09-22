@@ -1,3 +1,4 @@
+import { ReportIllustration } from '@/components/report-illustration';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
@@ -444,11 +445,8 @@ export function ReportSheet({
             />
           ) : receipt ? (
             <View style={styles.success}>
-              <View style={styles.successArt}>
-                <AppIcon icon={ShieldCheck} size={62} color="#20846A" />
-                <View style={styles.successBadge}>
-                  <AppIcon icon={Check} size={20} color="#fff" />
-                </View>
+              <View style={{ alignItems: 'center' }}>
+                <ReportIllustration kind="success" size={112} />
               </View>
               <Text style={styles.eyebrow}>MERCI POUR VOTRE VIGILANCE</Text>
               <Text accessibilityRole="header" style={styles.successTitle}>
@@ -1353,29 +1351,6 @@ const styles = StyleSheet.create({
   inlineError: { color: '#BA3540', fontSize: 12, lineHeight: 18 },
   progress: { color: '#637087', fontSize: 12, textAlign: 'center' },
   success: { flex: 1, justifyContent: 'center', padding: 30, gap: 22 },
-  successArt: {
-    width: 122,
-    height: 122,
-    alignSelf: 'center',
-    borderRadius: 42,
-    backgroundColor: '#E9F6EF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  successBadge: {
-    position: 'absolute',
-    bottom: 3,
-    right: -5,
-    backgroundColor: '#20846A',
-    borderRadius: 20,
-    width: 35,
-    height: 35,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#fff',
-  },
   successTitle: {
     color: '#243147',
     fontSize: 29,
