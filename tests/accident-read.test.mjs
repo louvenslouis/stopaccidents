@@ -103,3 +103,34 @@ test('an absent report is distinct from a network error', async () => {
     /Impossible de charger/,
   );
 });
+
+test('map feed preserves empty/truncated results and distinguishes RPC failures', async () => {
+  let response = { data: { reports: [], truncated: false }, error: null };
+  const signal = new AbortController().signal;
+  const { readMapAccidents } = await compile('read', {
+    '@/lib/supabase': {
+      supabase: {
+        rpc: (name) => {
+          assert.equal(name, 'read_map_accidents');
+          return {
+            abortSignal: async (received) => {
+              assert.equal(received, signal);
+              return response;
+            },
+          };
+        },
+      },
+    },
+  });
+  assert.deepEqual(await readMapAccidents(signal), {
+    reports: [],
+    truncated: false,
+  });
+  response.data = { reports: [{ id: 'real-report' }], truncated: true };
+  assert.equal((await readMapAccidents(signal)).truncated, true);
+  response.error = { message: 'Offline' };
+  await assert.rejects(
+    () => readMapAccidents(signal),
+    /Impossible de charger les accidents/,
+  );
+});

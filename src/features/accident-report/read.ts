@@ -12,6 +12,23 @@ export type AccidentSummary = {
   completed_step: number;
 };
 
+export type MapAccidents = {
+  reports: AccidentSummary[];
+  truncated: boolean;
+};
+
+export async function readMapAccidents(
+  signal: AbortSignal,
+): Promise<MapAccidents> {
+  const { data, error } = await supabase
+    .rpc('read_map_accidents')
+    .abortSignal(signal);
+  if (error || !data || !Array.isArray(data.reports)) {
+    throw new Error('Impossible de charger les accidents. Réessayez.');
+  }
+  return data;
+}
+
 export type AccidentPhoto = {
   id: string;
   storage_path: string;

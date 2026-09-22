@@ -66,6 +66,39 @@ Join our community of developers creating universal apps.
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
 
+## Carte OpenStreetMap
+
+L’onglet Carte affiche les tuiles OpenStreetMap avec Leaflet 1.9.4, avec déplacement,
+zoom et attribution visible. La navigation est limitée au rectangle autour d’Haïti
+(18, −74.55) à (20.1, −71.6). Le zoom minimum s’adapte à la taille de la carte pour
+garder la vue dans cette zone, y compris après redimensionnement. Ce rectangle ne
+masque pas les portions de pays voisins à l’intérieur de ses limites.
+Le web utilise une iframe avec un document contrôlé par l’application et
+iOS/Android utilisent `react-native-webview` (inclus dans Expo Go ; recompiler les
+builds de développement existants après installation). Aucune clé API ni permission
+de localisation n’est nécessaire. La carte nécessite une connexion Internet ; un
+bouton permet aussi de l’ouvrir dans OpenStreetMap.
+
+La fonction `read_map_accidents` renvoie les 500 signalements géolocalisés les plus
+récents dans cette zone, y compris les formulaires partiels. Une mention indique
+quand cette limite est atteinte. Le flux public conserve les champs du résumé de
+l’accueil ; les tables gardent leurs règles RLS et aucun identifiant privé n’est
+envoyé à la carte. Les accidents sans coordonnées ou hors zone sont exclus.
+Les marqueurs reprennent les couleurs de gravité et ouvrent la fiche existante.
+Les marqueurs proches sont regroupés selon le zoom, avec un choix des accidents
+et la couleur de la gravité la plus élevée du groupe.
+La carte se centre une fois sur le dernier accident ; les actualisations suivantes
+conservent le zoom et la position. Le flux est actualisé toutes les 30 secondes
+pendant la consultation, au retour sur l’onglet et après fermeture des détails.
+Un échec conserve les derniers résultats avec un message et un bouton Actualiser.
+
+L’intégration respecte le cache HTTP du navigateur/WebView et identifie l’application
+native avec `StopAccidents/1.0`. Aucun téléchargement hors ligne n’est effectué.
+Le service public reste soumis à la [politique des tuiles OSM](https://operations.osmfoundation.org/policies/tiles/).
+Leaflet est chargé depuis unpkg avec une version et des empreintes SRI fixes.
+Le chargement est confirmé par la première tuile affichée ; les erreurs remontent
+à l’application. Le lien externe ouvre le site OSM, hors de ces restrictions.
+
 ## Signalement d’accident
 
 Le bouton « SIGNALER » de l’accueil ouvre le choix du type de signalement.
