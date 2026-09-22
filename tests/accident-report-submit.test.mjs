@@ -83,6 +83,7 @@ function fixture({
   };
   const { saveAccidentReportStep } = compile(submitSource, {
     '@/lib/supabase': { supabase: client },
+    '@/features/report-events/api': { prepareReportEvent: async () => {} },
     './model': model,
     'base64-arraybuffer': { decode },
   });

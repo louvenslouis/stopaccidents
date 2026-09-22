@@ -1,8 +1,7 @@
-import { GUNFIRE_ART_URI } from './gunfire-art';
 import { Image } from 'expo-image';
 
 const illustrations = {
-  gunfire: { uri: GUNFIRE_ART_URI },
+  gunfire: require('../../assets/images/report-illustrations/gunfire.png'),
   suspicious_vehicle: require('../../assets/images/report-illustrations/suspicious-vehicle.png'),
   armed_presence: require('../../assets/images/report-illustrations/armed-presence.png'),
   barricade: require('../../assets/images/barricade-types/other.png'),

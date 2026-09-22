@@ -1,3 +1,6 @@
+import { useReportDraft } from '@/features/report-events/use-report-draft';
+import { useEventChoice } from '@/features/report-events/use-event-choice';
+import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { AccidentTypePicker, accidentTypes as types } from '@/components/accident-type-picker';
 import { ReportReward } from '@/components/report-reward';
 import { randomUUID } from 'expo-crypto';
@@ -20,7 +23,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -52,10 +54,7 @@ import {
   type Severity,
 } from '@/features/accident-report/model';
 import { GeocodingCredit } from '@/components/geocoding-credit';
-import {
-  acquirePreciseLocation,
-  PreciseLocationError,
-} from '@/features/accident-report/precise-location';
+import { acquirePreciseLocation } from '@/features/accident-report/precise-location';
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
 import { saveAccidentReportStep } from '@/features/accident-report/submit';
 import { useAppLocation } from '@/features/location/app-location';
@@ -186,17 +185,14 @@ export function ReportSheet({
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
-  const [draft, setDraft] = useState<ReportDraft>(makeDraft);
-  const [step, setStep] = useState(0);
+  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
+  const eventChoice = useEventChoice('accident');
   const [cameraOpen, setCameraOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState('');
-  const [receipt, setReceipt] = useState<string | null>(null);
-  const [savedSteps, setSavedSteps] = useState(0);
-  const [locationSettingsNeeded, setLocationSettingsNeeded] = useState(false);
   const [locationProgress, setLocationProgress] = useState('');
   const locationController = useRef<AbortController | null>(null);
   const savedLocation = useRef<string | null>(null);
@@ -204,6 +200,10 @@ export function ReportSheet({
   const locationRequest = useRef(0);
   const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (visible && reportType === 'accident' && ready && savedSteps === 0) void locate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, reportType, ready]);
   useEffect(() => {
     const tracker = locationRequest;
     const controller = locationController;
@@ -238,7 +238,7 @@ export function ReportSheet({
     scroll.current?.scrollTo({ y: 0, animated: false });
   }
   async function locate() {
-    if (locating || submitting.current) return;
+    if (!ready || locating || submitting.current) return;
     const defaultLocation = isPreciseLocation(draft.coordinates)
       ? null
       : reusableAppLocation(appLocation);
@@ -249,7 +249,6 @@ export function ReportSheet({
     setLocating(true);
     setError(null);
     setLocationError(null);
-    setLocationSettingsNeeded(false);
     changeStep(defaultLocation ? 1 : 0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -279,28 +278,31 @@ export function ReportSheet({
           : '') ||
         '';
       if (locationRequest.current !== request) return;
-      const locatedDraft = {
+      let locatedDraft = {
         ...draft,
         coordinates,
         location: location.slice(0, 240),
       };
+      setLocationProgress('Recherche des événements proches…');
+      locatedDraft = await eventChoice.choose(locatedDraft, controller.signal);
+      if (locationRequest.current !== request) return;
       setDraft(locatedDraft);
       submitting.current = true;
       setSending(true);
+      await checkpoint(locatedDraft);
+      if (locationRequest.current !== request) return;
       await saveAccidentReportStep(locatedDraft, 0, setProgress);
       savedLocation.current = locationDescription(locatedDraft);
       setSavedSteps((current) => Math.max(current, 1));
       changeStep(1);
     } catch (e) {
       if (locationRequest.current === request) {
+        setDraft((current) => ({ ...current, eventChoiceMade: false }));
         changeStep(0);
         setLocationError(
           e instanceof Error
             ? e.message
             : 'Localisation indisponible. Réessayez.',
-        );
-        setLocationSettingsNeeded(
-          e instanceof PreciseLocationError && e.settingsNeeded,
         );
       }
     } finally {
@@ -323,6 +325,7 @@ export function ReportSheet({
     setSending(true);
     setError(null);
     try {
+      await checkpoint(draft);
       // The landmark adjusts the existing location before saving the subtype.
       // A failed retry keeps the same report ID and cannot erase other steps.
       if (step === 1 && savedLocation.current !== locationDescription(draft)) {
@@ -349,7 +352,6 @@ export function ReportSheet({
     setReceipt(null);
     setSavedSteps(0);
     savedLocation.current = null;
-    setLocationSettingsNeeded(false);
     setStep(0);
     setError(null);
     setLocationError(null);
@@ -400,13 +402,15 @@ export function ReportSheet({
               onSelect={(type) => {
                 onSelectType(type);
                 if (type === 'accident') {
-                  if (savedSteps === 0) void locate();
+                  if (ready && savedSteps === 0) void locate();
                   else changeStep(Math.max(step, 1));
                 }
               }}
               onClose={close}
             />
-          ) : cameraOpen ? (
+          ) : !ready ? (
+            <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
+          ) : eventChoice.panel ? eventChoice.panel : cameraOpen ? (
             <ReportCamera
               onClose={() => setCameraOpen(false)}
               onCapture={(photo) => {
@@ -493,12 +497,13 @@ export function ReportSheet({
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
               >
+                {storageError && <Text accessibilityRole="alert" style={{ color: "#BD2E40" }}>{storageError}</Text>}
                 {savedSteps > 0 && (
                   <View style={styles.savedNotice}>
                     <AppIcon icon={CheckCheck} size={19} color="#267E70" />
                     <View style={styles.flex}>
                       <Text style={styles.gpsText}>
-                        Signalement déjà enregistré
+                        {draft.eventId ? 'Témoignage rattaché à l’événement' : 'Signalement déjà enregistré'}
                       </Text>
                       <Text style={styles.small}>
                         Les étapes suivantes complètent ce même signalement.
@@ -508,38 +513,7 @@ export function ReportSheet({
                 )}
                 {step === 0 && (
                   <View style={styles.locationSearch}>
-                    <View style={styles.locationArt}>
-                      <AppIcon icon={LocateFixed} size={46} color="#267E70" />
-                    </View>
-                    <Text
-                      accessibilityRole="header"
-                      style={styles.sectionTitle}
-                    >
-                      {locationError
-                        ? 'Position à vérifier'
-                        : 'Localisation automatique'}
-                    </Text>
-                    <Text style={styles.locationExplanation}>
-                      Restez en sécurité sur le lieu de l’accident. Autorisez la
-                      position exacte : le signalement sera enregistré dès que
-                      le GPS sera suffisamment précis.
-                    </Text>
-                    {(locating || sending) && (
-                      <>
-                        <ActivityIndicator color="#267E70" size="large" />
-                        <Text
-                          accessibilityLiveRegion="polite"
-                          style={styles.gpsText}
-                        >
-                          {sending ? progress : locationProgress}
-                        </Text>
-                      </>
-                    )}
-                    <Text style={styles.small}>
-                      Précision requise : 30 m ou mieux. Vous passerez ensuite
-                      automatiquement au type d’accident.
-                    </Text>
-                    {locationError && (
+                    {locationError ? (
                       <>
                         <Text
                           accessibilityRole="alert"
@@ -547,29 +521,37 @@ export function ReportSheet({
                         >
                           {locationError}
                         </Text>
-                        {locationSettingsNeeded && Platform.OS !== 'web' && (
-                          <Action
-                            label="Autoriser la position exacte"
-                            secondary
-                            icon={LocateFixed}
-                            onPress={() => {
-                              void Linking.openSettings().catch(() =>
-                                setLocationError(
-                                  'Ouvrez les réglages de votre appareil pour autoriser la position exacte.',
-                                ),
-                              );
-                            }}
-                          />
-                        )}
                         <Action
-                          label={
-                            draft.coordinates
-                              ? 'Réessayer l’enregistrement'
-                              : 'Réessayer la localisation'
-                          }
+                          label="Réessayer"
                           icon={LocateFixed}
                           onPress={locate}
                         />
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.locationArt}>
+                          <AppIcon icon={LocateFixed} size={46} color="#267E70" />
+                        </View>
+                        <Text accessibilityRole="header" style={styles.sectionTitle}>
+                          Localisation automatique
+                        </Text>
+                        <Text style={styles.locationExplanation}>
+                          Restez en sécurité sur le lieu de l’accident. Autorisez la
+                          position exacte : le signalement sera enregistré dès que
+                          le GPS sera suffisamment précis.
+                        </Text>
+                        {(locating || sending) && (
+                          <>
+                            <ActivityIndicator color="#267E70" size="large" />
+                            <Text accessibilityLiveRegion="polite" style={styles.gpsText}>
+                              {sending ? progress : locationProgress}
+                            </Text>
+                          </>
+                        )}
+                        <Text style={styles.small}>
+                          Précision requise : 30 m ou mieux. Vous passerez ensuite
+                          automatiquement au type d’accident.
+                        </Text>
                       </>
                     )}
                   </View>

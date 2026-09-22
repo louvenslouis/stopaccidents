@@ -1,3 +1,6 @@
+import { useReportDraft } from '@/features/report-events/use-report-draft';
+import { useEventChoice } from '@/features/report-events/use-event-choice';
+import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { ReportReward } from "@/components/report-reward";
 import { randomUUID } from "expo-crypto";
 import ArrowLeft from "lucide-react-native/icons/arrow-left";
@@ -14,7 +17,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -38,10 +40,7 @@ import {
   validateGunfireStep,
   type GunfireReportDraft,
 } from "@/features/gunfire-report/model";
-import {
-  acquirePreciseLocation,
-  PreciseLocationError,
-} from "@/features/accident-report/precise-location";
+import { acquirePreciseLocation } from "@/features/accident-report/precise-location";
 import { reverseGeocodeZone } from "@/features/accident-report/reverse-geocode";
 import { isPreciseLocation } from "@/features/accident-report/model";
 import { saveGunfireReportStep } from "@/features/gunfire-report/submit";
@@ -166,17 +165,14 @@ export function GunfireReportSheet({
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
-  const [draft, setDraft] = useState<GunfireReportDraft>(makeDraft);
-  const [step, setStep] = useState(0);
-  const [savedSteps, setSavedSteps] = useState(0);
+  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('gunfire', makeDraft, visible);
+  const eventChoice = useEventChoice('gunfire');
   const [locating, setLocating] = useState(false);
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState("");
   const [locationProgress, setLocationProgress] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [locationSettingsNeeded, setLocationSettingsNeeded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<string | null>(null);
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
@@ -190,12 +186,12 @@ export function GunfireReportSheet({
       locationController.current?.abort();
       return;
     }
-    if (savedSteps === 0) {
+    if (ready && savedSteps === 0) {
       void locate();
     }
     // The report is intentionally resumed, rather than restarted, when reopened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }, [visible, ready]);
 
   useEffect(() => {
     const tracker = locationRequest;
@@ -239,7 +235,7 @@ export function GunfireReportSheet({
   }
 
   async function locate() {
-    if (locating || submitting.current) return;
+    if (!ready || locating || submitting.current) return;
     const defaultLocation = isPreciseLocation(draft.coordinates)
       ? null
       : reusableAppLocation(appLocation);
@@ -250,7 +246,6 @@ export function GunfireReportSheet({
     setLocating(true);
     setError(null);
     setLocationError(null);
-    setLocationSettingsNeeded(false);
     changeStep(defaultLocation ? 1 : 0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -280,28 +275,31 @@ export function GunfireReportSheet({
           : "") ||
         "";
       if (locationRequest.current !== request) return;
-      const locatedDraft = {
+      let locatedDraft = {
         ...draft,
         coordinates,
         location: location.slice(0, 240),
       };
+      setLocationProgress('Recherche des événements proches…');
+      locatedDraft = await eventChoice.choose(locatedDraft, controller.signal);
+      if (locationRequest.current !== request) return;
       setDraft(locatedDraft);
       submitting.current = true;
       setSending(true);
+      await checkpoint(locatedDraft);
+      if (locationRequest.current !== request) return;
       await saveGunfireReportStep(locatedDraft, 0, setProgress);
       savedLocation.current = gunfireLocationDescription(locatedDraft);
       setSavedSteps((current) => Math.max(current, 1));
       changeStep(1);
     } catch (cause) {
       if (locationRequest.current === request) {
+        setDraft((current) => ({ ...current, eventChoiceMade: false }));
         changeStep(0);
         setLocationError(
           cause instanceof Error
             ? cause.message
             : "Localisation indisponible. Réessayez.",
-        );
-        setLocationSettingsNeeded(
-          cause instanceof PreciseLocationError && cause.settingsNeeded,
         );
       }
     } finally {
@@ -325,6 +323,7 @@ export function GunfireReportSheet({
     setSending(true);
     setError(null);
     try {
+      await checkpoint(draft);
       if (
         step === 1 &&
         savedLocation.current !== gunfireLocationDescription(draft)
@@ -359,7 +358,6 @@ export function GunfireReportSheet({
     setSending(false);
     setError(null);
     setLocationError(null);
-    setLocationSettingsNeeded(false);
     setReceipt(null);
     savedLocation.current = null;
     onClose();
@@ -397,7 +395,9 @@ export function GunfireReportSheet({
             },
           ]}
         >
-          {receipt ? (
+          {!ready ? (
+            <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
+          ) : eventChoice.panel ? eventChoice.panel : receipt ? (
             <ReportReward
               reportId={receipt}
               reportKind="gunfire"
@@ -481,12 +481,13 @@ export function GunfireReportSheet({
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
               >
+                {storageError && <Text accessibilityRole="alert" style={{ color: "#BD2E40" }}>{storageError}</Text>}
                 {savedSteps > 0 && (
                   <View style={styles.savedNotice}>
                     <AppIcon icon={CheckCheck} size={19} color="#267E70" />
                     <View style={styles.flex}>
                       <Text style={styles.gpsText}>
-                        Signalement déjà enregistré
+                        {draft.eventId ? 'Témoignage rattaché à l’événement' : 'Signalement déjà enregistré'}
                       </Text>
                       <Text style={styles.small}>
                         Chaque étape ajoute ses observations à la même
@@ -497,6 +498,8 @@ export function GunfireReportSheet({
                 )}
                 {step === 0 && (
                   <View style={styles.locationSearch}>
+                    {!locationError && (
+                      <>
                     <View style={styles.locationArt}>
                       <AppIcon icon={LocateFixed} size={46} color="#267E70" />
                     </View>
@@ -504,9 +507,7 @@ export function GunfireReportSheet({
                       accessibilityRole="header"
                       style={styles.sectionTitle}
                     >
-                      {locationError
-                        ? "Position à vérifier"
-                        : "Localisation automatique"}
+                      Localisation automatique
                     </Text>
                     <Text style={styles.locationExplanation}>
                       Votre position indique le lieu où vous entendez les tirs,
@@ -528,6 +529,8 @@ export function GunfireReportSheet({
                       Précision requise : 30 m ou mieux. Vous passerez ensuite
                       automatiquement aux questions sur les tirs entendus.
                     </Text>
+                      </>
+                    )}
                     {locationError && (
                       <>
                         <Text
@@ -536,26 +539,8 @@ export function GunfireReportSheet({
                         >
                           {locationError}
                         </Text>
-                        {locationSettingsNeeded && Platform.OS !== "web" && (
-                          <Action
-                            label="Autoriser la position exacte"
-                            secondary
-                            icon={LocateFixed}
-                            onPress={() => {
-                              void Linking.openSettings().catch(() =>
-                                setLocationError(
-                                  "Ouvrez les réglages de votre appareil pour autoriser la position exacte.",
-                                ),
-                              );
-                            }}
-                          />
-                        )}
                         <Action
-                          label={
-                            draft.coordinates
-                              ? "Réessayer l’enregistrement"
-                              : "Réessayer la localisation"
-                          }
+                          label="Réessayer"
                           icon={LocateFixed}
                           onPress={locate}
                         />

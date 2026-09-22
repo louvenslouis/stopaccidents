@@ -159,7 +159,7 @@ export const supabase = createClient(url, publishableKey, {
     autoRefreshToken: true,
     detectSessionInUrl: false,
     flowType: 'pkce',
-    persistSession: isNative,
+    persistSession: true,
     storage: isNative ? nativeSecureStorage : undefined,
   },
 });

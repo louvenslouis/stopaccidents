@@ -1,3 +1,4 @@
+import { EventContributions } from '@/components/event-contributions';
 import { Image } from 'expo-image';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import CarFront from 'lucide-react-native/icons/car-front';
@@ -76,9 +77,11 @@ function Photo({ photo, index }: { photo: AccidentPhoto; index: number }) {
 export function AccidentDetailSheet({
   id,
   onClose,
+  hideContributions = false,
 }: {
   id: string;
   onClose: () => void;
+  hideContributions?: boolean;
 }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -174,6 +177,7 @@ export function AccidentDetailSheet({
               </View>
             ) : (
               <>
+                {!hideContributions && <EventContributions kind='accident' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.summaryTop}>
                     <View style={styles.iconBox}>

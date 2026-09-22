@@ -1,10 +1,9 @@
-import { GUNFIRE_ART_URI } from './gunfire-art';
 import { Asset } from 'expo-asset';
 
 import type { AccidentMarker } from './map-frame-props';
 
 const markerSources = {
-  gunfire: { uri: GUNFIRE_ART_URI },
+  gunfire: require('../../assets/images/report-illustrations/gunfire.png'),
   suspicious_vehicle: require('../../assets/images/report-illustrations/suspicious-vehicle.png'),
   armed_presence: require('../../assets/images/report-illustrations/armed-presence.png'),
   barricade: require('../../assets/images/barricade-types/other.png'),

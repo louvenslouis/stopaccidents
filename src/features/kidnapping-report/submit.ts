@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { supabase } from '@/lib/supabase';
 import {
   kidnappingLocationDescription,
@@ -34,6 +35,8 @@ export async function saveKidnappingReportStep(
       );
     }
   }
+
+  if (step === 0) await prepareReportEvent('kidnapping', draft);
 
   const payload: Record<string, unknown> = {
     p_id: draft.id,

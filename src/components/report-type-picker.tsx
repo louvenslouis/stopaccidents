@@ -103,7 +103,7 @@ function ReportTypeChoice({
       <AnimatedPressable
         accessibilityRole="button"
         accessibilityLabel={type.title}
-        accessibilityHint={`${type.description} Localise automatiquement et enregistre le signalement avant les compléments.`}
+        accessibilityHint={`${type.description} Localise automatiquement et propose les événements proches.`}
         haptic="light"
         pressedScale={0.9}
         pressedOpacity={0.9}
@@ -162,12 +162,9 @@ export function ReportTypePicker({
         <View style={styles.handle} />
       </View>
       <View style={styles.header}>
-        <View style={styles.heading}>
-          <Text style={styles.eyebrow}>NOUVEAU SIGNALEMENT</Text>
-          <Text accessibilityRole="header" style={styles.title}>
-            Que souhaitez-vous signaler ?
-          </Text>
-        </View>
+        <Text accessibilityRole="header" style={styles.title}>
+          Nouveau signalement
+        </Text>
         <AnimatedPressable
           accessibilityRole="button"
           accessibilityLabel="Fermer les types de signalement"
@@ -181,9 +178,6 @@ export function ReportTypePicker({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.description}>
-          Choisissez le type de situation pour commencer.
-        </Text>
         <View
           style={styles.grid}
           onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
@@ -201,8 +195,7 @@ export function ReportTypePicker({
         <View style={styles.note}>
           <AppIcon icon={ShieldCheck} size={18} color="#7C8797" />
           <Text style={styles.noteText}>
-            Chaque parcours commence par une localisation précise et enregistre
-            immédiatement le signalement.
+            Ces signalements resteront anonymes pour le public.
           </Text>
         </View>
       </ScrollView>
@@ -215,21 +208,14 @@ const styles = StyleSheet.create({
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D8DDE5" },
   header: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 12,
     paddingHorizontal: 24,
     paddingTop: 7,
     paddingBottom: 8,
   },
-  heading: { flex: 1 },
-  eyebrow: {
-    color: "#AD5044",
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 1.3,
-    marginBottom: 9,
-  },
   title: {
+    flex: 1,
     color: "#1C2637",
     fontSize: 24,
     lineHeight: 30,
@@ -245,7 +231,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   content: { padding: 24, paddingTop: 8, gap: 20 },
-  description: { color: "#768091", fontSize: 14, lineHeight: 21 },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",

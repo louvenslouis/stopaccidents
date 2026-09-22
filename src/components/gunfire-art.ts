@@ -1,2 +1,0 @@
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><circle cx="48" cy="48" r="42" fill="#FFE3DD"/><path d="M18 45h12l16-13v32L30 51H18z" fill="#D64C3E" stroke="#A93332" stroke-width="3" stroke-linejoin="round"/><g fill="none" stroke="#D64C3E" stroke-width="5" stroke-linecap="round"><path d="M57 36q12 12 0 24M67 26q22 22 0 44M77 17q30 31 0 62"/></g></svg>`;
-export const GUNFIRE_ART_URI = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;

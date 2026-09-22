@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { supabase } from '@/lib/supabase';
 import {
   barricadeLocationDescription,
@@ -35,6 +36,8 @@ export async function saveBarricadeReportStep(
       );
     }
   }
+
+  if (step === 0) await prepareReportEvent('barricade', draft);
 
   const payload: Record<string, unknown> = {
     p_id: draft.id,

@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { supabase } from '@/lib/supabase';
 import {
   armedPresenceLocationDescription,
@@ -34,6 +35,8 @@ export async function saveArmedPresenceReportStep(
       );
     }
   }
+
+  if (step === 0) await prepareReportEvent('armed_presence', draft);
 
   const payload: Record<string, unknown> = {
     p_id: draft.id,

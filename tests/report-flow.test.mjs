@@ -57,7 +57,17 @@ function fixture(appLocation = null) {
   const gps = deferred(),
     firstSave = deferred();
   const calls = { locate: 0, reverseGeocode: 0, save: [], closed: 0 };
+  function state(initial) {
+    const index = cursor++;
+    if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
+    return [hooks[index], value => { hooks[index] = typeof value === 'function' ? value(hooks[index]) : value; }];
+  }
   const { ReportSheet } = compile(source, {
+    '@/features/report-events/use-report-draft': { useReportDraft: (_kind, factory) => {
+      const [draft, setDraft] = state(factory), [step, setStep] = state(0), [savedSteps, setSavedSteps] = state(0), [receipt, setReceipt] = state(null);
+      return { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready: true, checkpoint: async () => {}, storageError: null };
+    } },
+    '@/features/report-events/use-event-choice': { useEventChoice: () => ({ panel: null, choose: async (draft) => ({ ...draft, eventChoiceMade: true, eventId: null }) }) },
     react: {
       useState: (initial) => {
         const index = cursor++;
@@ -183,6 +193,7 @@ test('a fresh app location skips the GPS screen and opens the first report quest
     capturedAt: Date.now(),
   });
   f.pick();
+  await flush();
   f.render();
   assert.equal(f.calls.locate, 0);
   assert.equal(f.calls.reverseGeocode, 0);
@@ -246,7 +257,7 @@ test('an unconfirmed save stays on recovery; retry saves the same position witho
   f.render();
   assert.equal(f.text('Quel type d’accident ?'), null);
   assert.ok(f.text('Envoi non confirmé'));
-  await f.button('Réessayer l’enregistrement').props.onPress();
+  await f.button('Réessayer').props.onPress();
   f.render();
   assert.ok(f.text('Quel type d’accident ?'));
   assert.equal(f.calls.locate, 1);

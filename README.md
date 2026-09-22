@@ -143,7 +143,7 @@ adresse n’est inventée. Un échec d’envoi propose une reprise sans doublon.
 Chaque « Suivant » attend la confirmation Supabase avant de poursuivre. Les
 étapes suivantes ajustent ce même signalement ; revenir modifier une étape ne
 supprime pas les autres informations. Une fermeture conserve les étapes déjà
-validées en base. Le brouillon en cours reste accessible pendant la session.
+validées en base. Le brouillon en cours reste accessible après fermeture ou redémarrage de l’application.
 La caméra intégrée ne propose aucun accès à la galerie ; jusqu’à quatre photos
 JPEG de 6 Mo chacune peuvent être ajoutées aux compléments.
 
@@ -152,7 +152,7 @@ JPEG de 6 Mo chacune peuvent être ajoutées aux compléments.
 Sur le projet `vqzmzblwmbhmfoikpbhy`, activer **Authentication → Sign In / Providers
 → Allow anonymous sign-ins**. Chaque visiteur obtient ainsi une identité Supabase
 sans formulaire d’inscription. Les sessions natives utilisent le stockage sécurisé
-existant ; la session web reste en mémoire.
+existant ; les sessions web et natives sont persistantes pour reprendre les brouillons.
 
 La migration `supabase/migrations/20260921030629_accident_reports.sql` crée :
 
@@ -322,3 +322,75 @@ Chaque nouveau parcours terminé donne 25 points de vigilance (accident : étape
 Appliquer les migrations dans leur ordre, jusqu’à `20260922072734_report_rewards.sql`, avant de publier cette interface. Cette migration dépend des tables barricades, présence armée et véhicules suspects créées par les migrations précédentes. Aucun rattrapage des anciens signalements n’est effectué. Les clients ne peuvent ni ajouter ni modifier des points et ne peuvent lire que leur propre solde.
 
 Validation : `npm test`, `npx tsc --noEmit`, `npm run lint`. Les tests de récompenses couvrent les cinq catégories, les étapes incomplètes, les nouvelles tentatives, l’annulation transactionnelle et l’isolation entre comptes.
+
+## Événements, témoignages et doublons
+
+Un événement regroupe plusieurs signalements sans supprimer les témoignages ni
+leurs photos. Les anciennes fiches sont reprises individuellement ; aucune fusion
+fondée uniquement sur la proximité n’est effectuée. La carte et l’accueil affichent
+un résumé par événement, le nombre de témoignages et la date du dernier témoignage.
+La fiche permet de consulter séparément les détails autorisés de chaque source.
+Le nombre de témoins compte les identités distinctes, sans rendre ces identités publiques.
+
+Après la localisation, avant le premier enregistrement, le formulaire propose au
+maximum cinq événements récents de la même catégorie. L’utilisateur peut ajouter
+son témoignage à une fiche ou choisir explicitement un événement distinct.
+Les seuils initiaux sont configurés dans `private.report_event_rules` :
+
+| Catégorie | Rayon de base | Fenêtre depuis le témoignage |
+| --- | ---: | ---: |
+| Accident | 150 m | 30 minutes |
+| Enlèvement | 150 m | 20 minutes |
+| Route barricadée | 100 m | 6 heures |
+| Présence d’hommes armés | 200 m | 30 minutes |
+| Voiture suspecte | 100 m | 10 minutes |
+| Tirs entendus | 500 m | 10 minutes |
+
+La recherche ajoute l’incertitude GPS des deux positions (30 m maximum chacune),
+ignore les témoignages clôturés et utilise l’heure du premier enregistrement,
+pas celle d’une correction. Pour les tirs, les positions restent des lieux d’écoute.
+Ces seuils sont des paramètres de départ à ajuster avec les retours terrain.
+
+La réservation d’événement est idempotente pour chaque identifiant de signalement.
+Une réservation dont le formulaire n’a pas été enregistré ne crée pas de marqueur.
+Les anciens clients restent compatibles : les déclencheurs associent leurs nouveaux
+signalements à un événement. Le contrôle serveur protège l’auteur et valide le
+rattachement demandé, même si le client contourne le formulaire.
+
+Les brouillons complets, y compris les photos en cours, sont sauvegardés avant
+l’envoi et après les modifications : IndexedDB sur le web ; fichier dans l’espace
+privé de l’application avec pointeur SecureStore sur mobile. Un nouveau fichier
+est écrit avant le remplacement du pointeur ; les versions précédentes sont ensuite
+supprimées. Les brouillons sont séparés par identité et catégorie. Une erreur de
+restauration bloque le parcours avec un bouton de reprise au lieu de recréer une
+fiche. La session web est désormais persistante pour retrouver le même auteur après
+un rechargement. Effacer les données du navigateur ou désinstaller l’application
+peut supprimer cette capacité de reprise.
+
+Les points restent attribués à la fin du parcours : une seule récompense par
+identité et événement. Une nouvelle fiche proche, récente et de même catégorie
+créée par cette identité n’ouvre pas de seconde récompense, même si elle a été
+présentée comme distincte. Cela conserve le témoignage mais limite les récompenses
+répétées. Les créations depuis des identités différentes ne peuvent pas être
+reconnues comme provenant d’une même personne par ce mécanisme.
+
+### Modération et annulation d’une fusion
+
+La migration `20260922113709_report_events.sql` ajoute une liste de modérateurs
+privée. Aucun droit de modération n’est accordé automatiquement. Pour habiliter un
+compte, un administrateur de la base ajoute son UUID Auth à
+`private.report_event_moderators(user_id)`. Une identité invitée peut techniquement
+y figurer, mais un compte durable facilite l’administration.
+
+Les modérateurs voient dans la fiche l’identifiant de l’événement, un champ pour
+l’identifiant de destination et un motif obligatoire. `merge_report_events` regroupe
+uniquement des événements de même catégorie. L’opération conserve les sources,
+est journalisée et peut être annulée depuis la fiche avec `undo_report_event_merge`.
+Les liens sont sérialisés pour éviter les cycles. L’annulation restaure les groupes
+antérieurs ; les contributions ajoutées directement au groupe de destination y
+restent. Le journal des points est conservé : les récompenses d’une même identité
+sont comptées une fois par groupe fusionné, puis recalculées après une annulation.
+
+Vérification : `npm test` couvre le SQL réel dans PostgreSQL/PGlite, la recherche
+par catégorie, les droits, les réservations répétées, les récompenses et les fusions
+réversibles, ainsi que la restauration des brouillons et le choix d’un événement.

@@ -2,6 +2,10 @@ import { supabase } from '@/lib/supabase';
 import type { AccidentType, Severity } from '@/features/accident-report/model';
 
 type ReportLocation = {
+  event_id?: string;
+  testimony_count?: number;
+  witness_count?: number;
+  last_observed_at?: string;
   id: string;
   location_description: string;
   latitude: number | null;

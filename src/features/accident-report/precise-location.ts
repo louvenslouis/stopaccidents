@@ -33,7 +33,7 @@ export function acquirePreciseLocation(
         finish(
           undefined,
           new PreciseLocationError(
-            'Impossible d’obtenir une position assez précise. Vérifiez l’autorisation de position exacte et réessayez dans un endroit dégagé, en sécurité.',
+            'La position GPS n’est pas assez précise.',
           ),
         ),
       35000,
@@ -56,14 +56,14 @@ export function acquirePreciseLocation(
         permission.android?.accuracy === 'coarse'
       )
         throw new PreciseLocationError(
-          'Autorisez la localisation et activez « Position exacte » dans les réglages de votre appareil ou navigateur.',
+          'L’accès à la position exacte n’est pas autorisé.',
           true,
         );
       const enabled = await Location.hasServicesEnabledAsync();
       if (settled) return;
       if (!enabled)
         throw new PreciseLocationError(
-          'Activez la localisation de votre appareil pour continuer.',
+          'La localisation de l’appareil est désactivée.',
           true,
         );
       onProgress('Recherche d’une position précise…');
@@ -93,9 +93,7 @@ export function acquirePreciseLocation(
         () =>
           finish(
             undefined,
-            new PreciseLocationError(
-              'GPS indisponible. Vérifiez la localisation puis réessayez.',
-            ),
+            new PreciseLocationError('Le signal GPS est indisponible.'),
           ),
       );
       // A callback or cancellation may arrive before the subscription resolves.
@@ -106,7 +104,7 @@ export function acquirePreciseLocation(
         error instanceof PreciseLocationError
           ? error
           : new PreciseLocationError(
-              'Localisation indisponible. Vérifiez vos autorisations puis réessayez.',
+              'La localisation est indisponible.',
               true,
             ),
       ),

@@ -37,6 +37,7 @@ test('armed presence saves each stage under the same ID and safely retries failu
   let fail = false;
   const { saveArmedPresenceReportStep } = await compile('features/armed-presence-report/submit', {
     './model': model,
+    '@/features/report-events/api': { prepareReportEvent: async () => {} },
     '@/lib/supabase': { supabase: {
       auth: { getSession: async () => ({ data: { session: { user: { id: 'owner' } } }, error: null }) },
       rpc: async (name, payload) => {

@@ -20,6 +20,7 @@ import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import {
+  formatAccidentDate,
   accidentSeverity,
   accidentTypeLabel,
 } from '@/features/accident-report/presentation';
@@ -100,6 +101,7 @@ export function LatestAccidentCard({
               <Text style={styles.type}>{reportLabel}</Text>
             </View>
           </View>
+          {report.testimony_count && <Text style={{ color: '#267E70', fontSize: 13, paddingHorizontal: 18, paddingBottom: 12 }}>{report.testimony_count} témoignage{report.testimony_count > 1 ? 's' : ''} · dernier témoignage {formatAccidentDate(report.last_observed_at ?? report.created_at)}</Text>}
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: isKidnapping ? '#F4ECF8' : '#EEF2FF' }]}>
               <AppIcon icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? '#7C3FA0' : '#4358C7'} />

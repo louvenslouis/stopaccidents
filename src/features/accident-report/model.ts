@@ -28,6 +28,8 @@ export type CapturedPhoto = {
   capturedAt: string;
 };
 export type ReportDraft = {
+  eventId?: string | null;
+  eventChoiceMade?: boolean;
   id: string;
   location: string;
   locationHint?: string;

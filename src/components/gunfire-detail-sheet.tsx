@@ -1,3 +1,4 @@
+import { EventContributions } from '@/components/event-contributions';
 import {
   PROXIMITY_OPTIONS,
   SHOT_COUNT_OPTIONS,
@@ -48,9 +49,11 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function GunfireDetailSheet({
   id,
   onClose,
+  hideContributions = false,
 }: {
   id: string;
   onClose: () => void;
+  hideContributions?: boolean;
 }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -145,6 +148,7 @@ export function GunfireDetailSheet({
               </View>
             ) : (
               <>
+                {!hideContributions && <EventContributions kind='gunfire' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
                     <AppIcon icon={ShieldAlert} size={27} color="#AF3848" />

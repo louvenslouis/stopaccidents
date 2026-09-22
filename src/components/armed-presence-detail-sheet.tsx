@@ -1,3 +1,4 @@
+import { EventContributions } from '@/components/event-contributions';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
@@ -39,7 +40,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function ArmedPresenceDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
+export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = false }: { id: string; onClose: () => void; hideContributions?: boolean }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback((signal: AbortSignal) => readArmedPresenceReport(id, signal), [id]);
@@ -115,6 +116,7 @@ export function ArmedPresenceDetailSheet({ id, onClose }: { id: string; onClose:
               </View>
             ) : (
               <>
+                {!hideContributions && <EventContributions kind='armed_presence' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
                     <AppIcon icon={ShieldAlert} size={27} color="#AF3848" />

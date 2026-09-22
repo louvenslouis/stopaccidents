@@ -1,3 +1,4 @@
+import { EventContributions } from '@/components/event-contributions';
 import { Image } from 'expo-image';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import MapPin from 'lucide-react-native/icons/map-pin';
@@ -40,7 +41,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function SuspiciousVehicleDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
+export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = false }: { id: string; onClose: () => void; hideContributions?: boolean }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback((signal: AbortSignal) => readSuspiciousVehicleReport(id, signal), [id]);
@@ -116,6 +117,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose }: { id: string; onCl
               </View>
             ) : (
               <>
+                {!hideContributions && <EventContributions kind='suspicious_vehicle' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
                     <AppIcon icon={ShieldAlert} size={27} color="#95621C" />

@@ -1,3 +1,4 @@
+import { EventContributions } from '@/components/event-contributions';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
@@ -39,7 +40,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function KidnappingDetailSheet({ id, onClose }: { id: string; onClose: () => void }) {
+export function KidnappingDetailSheet({ id, onClose, hideContributions = false }: { id: string; onClose: () => void; hideContributions?: boolean }) {
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback((signal: AbortSignal) => readKidnappingReport(id, signal), [id]);
@@ -115,6 +116,7 @@ export function KidnappingDetailSheet({ id, onClose }: { id: string; onClose: ()
               </View>
             ) : (
               <>
+                {!hideContributions && <EventContributions kind='kidnapping' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
                     <AppIcon icon={UserRoundSearch} size={27} color="#7C3FA0" />

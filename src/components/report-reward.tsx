@@ -215,6 +215,7 @@ export function RewardCelebration({
         Signalement complété. Merci d’aider la communauté à mieux s’informer et
         à se déplacer en sécurité.
       </Text>
+      {summary && summary.earned === 0 && <Text style={styles.body}>Votre témoignage est conservé. Aucun point supplémentaire n’est attribué pour un événement déjà récompensé ou un signalement similaire récent.</Text>}
       <View style={styles.balance}>
         <View>
           <Text style={styles.balanceLabel}>VOTRE SOLDE</Text>

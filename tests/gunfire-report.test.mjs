@@ -77,6 +77,7 @@ test("gunfire saves each stage under the same ID and safely retries failures", a
     "features/gunfire-report/submit",
     {
       "./model": model,
+      "@/features/report-events/api": { prepareReportEvent: async () => {} },
       "@/lib/supabase": {
         supabase: {
           auth: {

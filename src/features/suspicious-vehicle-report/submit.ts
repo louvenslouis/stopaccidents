@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { completeSuspiciousVehicleReport } from './photos';
 import { supabase } from '@/lib/supabase';
 import {
@@ -39,6 +40,8 @@ export async function saveSuspiciousVehicleReportStep(
     userId = data.user.id;
   }
   if (step === 2) return completeSuspiciousVehicleReport(draft, userId, onProgress);
+
+  if (step === 0) await prepareReportEvent('suspicious_vehicle', draft);
 
   const payload: Record<string, unknown> = {
     p_id: draft.id,

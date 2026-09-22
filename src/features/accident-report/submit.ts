@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '@/lib/supabase';
 import {
@@ -40,6 +41,8 @@ export async function saveAccidentReportStep(
   }
 
   // Sparse parameters ensure an adjustment never erases fields from other steps.
+  if (step === 0) await prepareReportEvent('accident', draft);
+
   const payload: Record<string, unknown> = { p_id: draft.id, p_step: step + 1 };
   if (step === 0)
     Object.assign(payload, {

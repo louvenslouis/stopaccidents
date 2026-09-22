@@ -40,6 +40,7 @@ test('suspicious vehicle saves each stage under the same ID and safely retries f
   let fail = false;
   const { saveSuspiciousVehicleReportStep } = await compile('features/suspicious-vehicle-report/submit', {
     './model': model,
+    '@/features/report-events/api': { prepareReportEvent: async () => {} },
     './photos': { completeSuspiciousVehicleReport: async (value) => { calls.push({ payload: { p_id: value.id, p_details: value.details, p_photos: [] } }); return value.id; } },
     '@/lib/supabase': { supabase: {
       auth: { getSession: async () => ({ data: { session: { user: { id: 'owner' } } }, error: null }) },
@@ -99,7 +100,8 @@ async function photoFixture({ saved = [], uploadError = false, rpcError = false 
     storage: { from: () => ({ upload: async (path) => { calls.uploads.push(path); return { error: uploadError }; }, remove: async (paths) => { calls.removals.push(paths); return {}; } }) },
     rpc: async (name, payload) => { calls.rpc.push({ name, payload }); return { data: rpcError ? null : payload.p_id, error: rpcError }; },
   };
-  const photos = await compile('features/suspicious-vehicle-report/photos', { './model': model, '@/lib/supabase': { supabase }, 'base64-arraybuffer': { decode: () => new ArrayBuffer(5) } });
+  const photos = await compile('features/suspicious-vehicle-report/photos', { './model': model,
+    '@/features/report-events/api': { prepareReportEvent: async () => {} }, '@/lib/supabase': { supabase }, 'base64-arraybuffer': { decode: () => new ArrayBuffer(5) } });
   return { calls, complete: (value) => photos.completeSuspiciousVehicleReport(value, 'owner', () => {}) };
 }
 const photoDraft = { ...draft, photo: { id: 'photo', base64: 'aGVsbG8=', capturedAt: '2026-09-22T00:00:00Z' } };

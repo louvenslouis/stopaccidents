@@ -47,6 +47,8 @@ function isPreciseLocation(coordinates: Coordinates | null) {
 }
 
 export type GunfireReportDraft = {
+  eventId?: string | null;
+  eventChoiceMade?: boolean;
   id: string;
   location: string;
   locationHint: string;

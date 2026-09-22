@@ -1,3 +1,4 @@
+import { prepareReportEvent } from '@/features/report-events/api';
 import { supabase } from "@/lib/supabase";
 import {
   gunfireLocationDescription,
@@ -34,6 +35,8 @@ export async function saveGunfireReportStep(
       );
     }
   }
+
+  if (step === 0) await prepareReportEvent('gunfire', draft);
 
   const payload: Record<string, unknown> = {
     p_id: draft.id,

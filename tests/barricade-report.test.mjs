@@ -37,6 +37,7 @@ test('barricade steps preserve the ID across failed saves and retries', async ()
   let fail = false;
   const { saveBarricadeReportStep } = await compile('features/barricade-report/submit', {
     './model': model,
+    '@/features/report-events/api': { prepareReportEvent: async () => {} },
     '@/lib/supabase': { supabase: {
       auth: { getSession: async () => ({ data: { session: { user: { id: 'owner' } } }, error: null }) },
       rpc: async (name, payload) => {
