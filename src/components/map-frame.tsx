@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
 
 import type { MapFrameProps } from './map-frame-props';
+import { illustratedMapMarkers } from './map-marker-assets';
 import { MAP_DOCUMENT, readMapMessage } from './map-document';
 
 const source = { html: MAP_DOCUMENT };
@@ -18,7 +19,7 @@ export function MapFrame({
 }: MapFrameProps) {
   const frame = useRef<WebView>(null);
   const updateMarkers = useCallback(() => {
-    const json = JSON.stringify(markers)
+    const json = JSON.stringify(illustratedMapMarkers(markers))
       .replace(/</g, '\\u003c')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');

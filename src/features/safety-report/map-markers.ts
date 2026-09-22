@@ -8,7 +8,7 @@ import {
 import { reportSelection, type SafetyReportSummary } from './read';
 
 export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMarker[] {
-  return reports.flatMap((report) => {
+  return reports.flatMap((report): AccidentMarker[] => {
     const { latitude, longitude } = report;
     if (
       typeof latitude !== 'number' ||
@@ -31,6 +31,7 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
           longitude,
           color: '#7C3FA0',
           priority: 5,
+          illustration: 'kidnapping',
           title: `Enlèvement · ${formatAccidentDate(report.created_at)}`,
         },
       ];
@@ -50,6 +51,7 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
           serious: 3,
           fatal: 4,
         }[report.completed_step < 3 ? 'unknown' : report.severity],
+        illustration: 'accident',
         title: `${accidentTypeLabel(report)} · ${severity.label} · ${formatAccidentDate(report.created_at)}`,
       },
     ];

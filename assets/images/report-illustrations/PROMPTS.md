@@ -12,7 +12,9 @@ Subject: two small coral-red and pale blue cars in a minor collision, tiny amber
 
 ## kidnapping.png
 
-Subject: a lavender protective shield with a simple dark navy person silhouette in its center, small coral alert badge with exclamation symbol at lower right. Represents an abduction safety report respectfully, no villain, no weapons, no comedy.
+Use case: style-transfer and background-extraction.
+
+Subject: an alarmed adult recoiling with one defensive hand raised beside an open vehicle door, with a threatening figure kept in shadow behind the door. Polished semi-realistic 3D mobile illustration, expressive and urgent without graphic violence. Coral alert accents, dark navy outlines, muted lavender vehicle, genuine transparent background. No text, logo, watermark, weapon, blood, restraint, or physical assault.
 
 ## success.png
 

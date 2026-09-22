@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { MapFrameProps } from './map-frame-props';
+import { illustratedMapMarkers } from './map-marker-assets';
 import { MAP_DOCUMENT, readMapMessage } from './map-document';
 
 export function MapFrame({
@@ -20,7 +21,12 @@ export function MapFrame({
       const message = readMapMessage(event.data);
       if (message?.status === 'ready') {
         frame.current?.contentWindow?.postMessage(
-          { source: 'stopaccidents-app', markers, location, placeFocus },
+          {
+            source: 'stopaccidents-app',
+            markers: illustratedMapMarkers(markers),
+            location,
+            placeFocus,
+          },
           window.location.origin,
         );
         onLoad();
@@ -39,7 +45,7 @@ export function MapFrame({
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
-      { source: 'stopaccidents-app', markers },
+      { source: 'stopaccidents-app', markers: illustratedMapMarkers(markers) },
       window.location.origin,
     );
   }, [markers]);

@@ -203,7 +203,7 @@ export function LatestAccidentCard({
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 30, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  section: { marginTop: 12, width: '100%', maxWidth: 640, alignSelf: 'center' },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',

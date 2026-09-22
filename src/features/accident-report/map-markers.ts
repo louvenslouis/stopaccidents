@@ -35,6 +35,7 @@ export function accidentMarkers(reports: AccidentSummary[]): AccidentMarker[] {
           serious: 3,
           fatal: 4,
         }[report.completed_step < 3 ? 'unknown' : report.severity],
+        illustration: 'accident',
         title: `${accidentTypeLabel(report)} · ${severity.label} · ${formatAccidentDate(report.created_at)}`,
       },
     ];

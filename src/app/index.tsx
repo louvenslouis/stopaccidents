@@ -96,9 +96,8 @@ export default function HomeScreen() {
   return (
     <>
       <AppScreen
-        eyebrow="STOP ACCIDENTS"
         title="Accueil"
-        description="Votre espace de prévention et de sécurité routière."
+        hideIntro
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerRight={
@@ -198,6 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   homeContent: {
+    paddingTop: 16,
     minHeight: '115%',
     width: '100%',
     maxWidth: 688,

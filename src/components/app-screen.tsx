@@ -7,9 +7,10 @@ import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AppScreenProps = {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
+  hideIntro?: boolean;
   headerRight?: ReactNode;
   children?: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
@@ -20,6 +21,7 @@ export function AppScreen({
   eyebrow,
   title,
   description,
+  hideIntro = false,
   headerRight,
   children,
   contentContainerStyle,
@@ -39,18 +41,18 @@ export function AppScreen({
         showsVerticalScrollIndicator={false}>
         <Animated.View
           entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
-          style={styles.header}>
-          <View style={styles.heading}>
+          style={[styles.header, hideIntro && styles.compactHeader]}>
+          {!hideIntro && <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
             <Text style={styles.title}>{title}</Text>
-          </View>
+          </View>}
           {headerRight}
         </Animated.View>
-        <Animated.Text
+        {!hideIntro && description && <Animated.Text
           entering={FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System)}
           style={styles.description}>
           {description}
-        </Animated.Text>
+        </Animated.Text>}
         <Animated.View
           entering={FadeInDown.delay(120).duration(340).reduceMotion(ReduceMotion.System)}>
           {children}
@@ -79,6 +81,9 @@ const styles = StyleSheet.create({
   },
   heading: {
     flex: 1,
+  },
+  compactHeader: {
+    justifyContent: 'flex-end',
   },
   eyebrow: {
     color: '#FF5A45',

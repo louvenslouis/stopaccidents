@@ -15,8 +15,15 @@ export const MAP_DOCUMENT = `<!doctype html>
   <style>
     html, body, #map { height: 100%; width: 100%; margin: 0; background: #E8EEF0; }
     .leaflet-control-attribution { font: 11px/1.5 system-ui, sans-serif; }
-    .accident-pin { border-radius: 50%; border: 3px solid white; box-sizing: border-box;
-      color: white; text-align: center; font: bold 16px/28px system-ui; box-shadow: 0 2px 8px #0006; }
+    .report-pin { position: relative; width: 54px; height: 62px; box-sizing: border-box;
+      border: 3px solid white; border-radius: 20px 20px 20px 6px; background: #fff;
+      box-shadow: 0 3px 12px #17203355; transform: rotate(-45deg); overflow: visible; }
+    .report-pin-image { width: 48px; height: 48px; display: block; object-fit: contain;
+      transform: rotate(45deg); }
+    .report-pin-count { position: absolute; top: -9px; right: -9px; min-width: 24px; height: 24px;
+      padding: 0 5px; box-sizing: border-box; border: 2px solid white; border-radius: 12px;
+      color: white; text-align: center; font: 800 12px/20px system-ui; transform: rotate(45deg);
+      box-shadow: 0 2px 5px #17203344; }
     .accident-choices { max-height: 220px; overflow-y: auto; display: grid; gap: 8px; }
     .accident-choice { min-height: 44px; padding: 10px; border: 1px solid #ddd;
       border-radius: 8px; background: white; text-align: left; cursor: pointer; }
@@ -135,16 +142,26 @@ export const MAP_DOCUMENT = `<!doctype html>
           else groups.push([report]);
         });
         groups.forEach(function (group) {
-          var report = group[0];
-          var pin = document.createElement('div');
-          pin.className = 'accident-pin';
-          pin.style.backgroundColor = group.reduce(function (highest, item) {
+          var report = group.reduce(function (highest, item) {
             return item.priority > highest.priority ? item : highest;
-          }, report).color;
-          pin.textContent = group.length > 1 ? String(group.length) : '!';
-          var label = group.length > 1 ? group.length + ' accidents dans cette zone' : report.title;
+          }, group[0]);
+          var pin = document.createElement('div');
+          pin.className = 'report-pin';
+          var pinImage = document.createElement('img');
+          pinImage.className = 'report-pin-image';
+          pinImage.src = report.illustrationUri;
+          pinImage.alt = '';
+          pin.appendChild(pinImage);
+          if (group.length > 1) {
+            var count = document.createElement('span');
+            count.className = 'report-pin-count';
+            count.style.backgroundColor = report.color;
+            count.textContent = String(group.length);
+            pin.appendChild(count);
+          }
+          var label = group.length > 1 ? group.length + ' signalements dans cette zone' : report.title;
           var marker = L.marker([report.latitude, report.longitude], {
-            icon: L.divIcon({ html: pin, className: '', iconSize: [34, 34], iconAnchor: [17, 17] }),
+            icon: L.divIcon({ html: pin, className: '', iconSize: [54, 62], iconAnchor: [10, 58] }),
             title: label,
             alt: label,
             keyboard: true

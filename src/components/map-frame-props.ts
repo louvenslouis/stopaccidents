@@ -5,6 +5,7 @@ export type AccidentMarker = {
   title: string;
   color: string;
   priority: number;
+  illustration: 'accident' | 'kidnapping';
 };
 
 export const MAP_PAGE_URL =

@@ -198,6 +198,7 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     title: '<img src=x onerror=alert(1)>',
     color: '#657084',
     priority: 0,
+    illustrationUri: '/assets/accident.png',
   };
   const send = (source, reports) =>
     listeners.message({
@@ -219,11 +220,12 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     { ...report, id: 'third', latitude: 19 },
   ]);
   assert.equal(markers.length, 2, 'Colocated reports must share one marker');
-  assert.equal(markers[0].options.icon.html.textContent, '2');
+  assert.equal(markers[0].options.icon.html.children[0].src, '/assets/accident.png');
+  assert.equal(markers[0].options.icon.html.children[1].textContent, '2');
   assert.equal(
-    markers[0].options.icon.html.style.backgroundColor,
+    markers[0].options.icon.html.children[1].style.backgroundColor,
     '#BD2E40',
-    'Groups show the highest reported severity',
+    'The group badge shows the highest reported severity',
   );
   assert.equal(markers[0].popup.children[0].textContent, report.title);
   assert.equal(markers[0].popup.children[0].innerHTML, undefined);
