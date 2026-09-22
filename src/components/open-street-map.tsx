@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -10,6 +11,8 @@ import {
 
 import { MapFrame } from './map-frame';
 import { MAP_PAGE_URL, type AccidentMarker } from './map-frame-props';
+import { useMapLocation } from '@/features/map/use-map-location';
+import { LocateFixed, Navigation, Square } from 'lucide-react-native';
 
 export function OpenStreetMap({
   markers,
@@ -23,6 +26,8 @@ export function OpenStreetMap({
     'loading',
   );
   const [linkError, setLinkError] = useState(false);
+  const gps = useMapLocation();
+  const stopLocation = gps.stop;
   const onLoad = useCallback(
     () => setStatus((current) => (current === 'error' ? current : 'ready')),
     [],
@@ -35,8 +40,95 @@ export function OpenStreetMap({
     return () => clearTimeout(timeout);
   }, [status, attempt]);
 
+  useEffect(() => {
+    if (status === 'error') stopLocation();
+  }, [status, stopLocation]);
+
   return (
     <View style={styles.section}>
+      <View style={styles.locationControls}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            gps.tracking ? 'Recentrer sur ma position' : 'Me localiser'
+          }
+          disabled={status !== 'ready' || gps.locating}
+          onPress={gps.locate}
+          style={[
+            styles.locationButton,
+            (status !== 'ready' || gps.locating) && styles.disabled,
+          ]}
+        >
+          {gps.locating ? (
+            <ActivityIndicator size="small" color="#1767A6" />
+          ) : (
+            <LocateFixed size={18} color="#1767A6" />
+          )}
+          <Text style={styles.linkLabel}>
+            {gps.locating
+              ? 'Localisation…'
+              : gps.tracking
+                ? 'Recentrer'
+                : 'Me localiser'}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: gps.tracking }}
+          disabled={status !== 'ready'}
+          onPress={() =>
+            gps.tracking || gps.locating ? gps.stop() : gps.start(true)
+          }
+          style={[
+            styles.locationButton,
+            styles.followButton,
+            status !== 'ready' && styles.disabled,
+          ]}
+        >
+          {gps.tracking || gps.locating ? (
+            <Square size={16} color="#FFFFFF" />
+          ) : (
+            <Navigation size={18} color="#FFFFFF" />
+          )}
+          <Text style={styles.retryLabel}>
+            {gps.tracking
+              ? 'Arrêter le suivi'
+              : gps.locating
+                ? 'Annuler'
+                : 'Suivre mon déplacement'}
+          </Text>
+        </Pressable>
+      </View>
+      <Text style={styles.hint} accessibilityLiveRegion="polite">
+        {gps.locating
+          ? 'Recherche de votre position…'
+          : gps.tracking
+            ? gps.location.following
+              ? 'Suivi en temps réel actif.'
+              : 'Suivi actif · Touchez Recentrer pour suivre votre position à l’écran.'
+            : gps.location.position
+              ? 'Position relevée · Activez le suivi pour la mettre à jour en continu.'
+              : 'Activez le suivi pour garder la carte centrée sur vous.'}
+        {gps.location.position?.accuracy != null
+          ? ` Précision : ± ${Math.round(gps.location.position.accuracy)} m.`
+          : ''}
+      </Text>
+      {gps.error && (
+        <Text accessibilityRole="alert" style={styles.locationError}>
+          {gps.error.message}
+        </Text>
+      )}
+      {gps.error?.settingsNeeded && Platform.OS !== 'web' && (
+        <Pressable
+          accessibilityRole="button"
+          style={styles.link}
+          onPress={() => {
+            void Linking.openSettings().catch(() => setLinkError(true));
+          }}
+        >
+          <Text style={styles.linkLabel}>Ouvrir les réglages</Text>
+        </Pressable>
+      )}
       <View style={styles.map}>
         {status !== 'error' && (
           <MapFrame
@@ -45,6 +137,8 @@ export function OpenStreetMap({
             onError={onError}
             markers={markers}
             onSelect={onSelect}
+            location={gps.location}
+            onPan={gps.pauseFollowing}
           />
         )}
         {status !== 'ready' && (
@@ -76,7 +170,10 @@ export function OpenStreetMap({
         )}
       </View>
       <Text style={styles.hint}>
-        Navigation limitée à la zone d’Haïti. Utilisez + ou − pour zoomer.
+        Navigation limitée à la zone d’Haïti. Utilisez + ou − pour zoomer. Le
+        point bleu indique votre position et le cercle sa précision. Le suivi
+        s’arrête lorsque vous quittez la carte ou mettez l’application en
+        arrière-plan.
       </Text>
       <Pressable
         accessibilityRole="link"
@@ -90,7 +187,7 @@ export function OpenStreetMap({
       </Pressable>
       {linkError && (
         <Text accessibilityRole="alert" style={styles.message}>
-          Impossible d’ouvrir OpenStreetMap.
+          Impossible d’ouvrir le lien ou les réglages.
         </Text>
       )}
     </View>
@@ -99,6 +196,21 @@ export function OpenStreetMap({
 
 const styles = StyleSheet.create({
   section: { marginTop: 24, gap: 10 },
+  locationControls: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  locationButton: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: '#E7F1FA',
+  },
+  followButton: { backgroundColor: '#1767A6' },
+  disabled: { opacity: 0.5 },
+  locationError: { color: '#B94025', fontSize: 14, lineHeight: 21 },
   map: {
     height: 440,
     borderRadius: 20,

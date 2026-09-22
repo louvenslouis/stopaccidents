@@ -8,6 +8,8 @@ export function MapFrame({
   onError,
   markers,
   onSelect,
+  location,
+  onPan,
 }: MapFrameProps) {
   const frame = useRef<HTMLIFrameElement>(null);
 
@@ -17,12 +19,13 @@ export function MapFrame({
       const message = readMapMessage(event.data);
       if (message?.status === 'ready') {
         frame.current?.contentWindow?.postMessage(
-          { source: 'stopaccidents-app', markers },
+          { source: 'stopaccidents-app', markers, location },
           window.location.origin,
         );
         onLoad();
       }
       if (message?.status === 'error') onError();
+      if (message?.status === 'pan') onPan();
       if (
         message?.status === 'select' &&
         markers.some((marker) => marker.id === message.id)
@@ -31,7 +34,7 @@ export function MapFrame({
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [onLoad, onError, markers, onSelect]);
+  }, [onLoad, onError, markers, onSelect, location, onPan]);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
@@ -39,6 +42,13 @@ export function MapFrame({
       window.location.origin,
     );
   }, [markers]);
+
+  useEffect(() => {
+    frame.current?.contentWindow?.postMessage(
+      { source: 'stopaccidents-app', location },
+      window.location.origin,
+    );
+  }, [location]);
 
   return (
     <iframe

@@ -83,6 +83,10 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
   const markers = [];
   const messages = [];
   const views = [];
+  const pans = [];
+  const circles = [];
+  const removed = [];
+  const mapEvents = {};
   const listeners = {};
   const layer = {
     addTo: () => layer,
@@ -96,7 +100,11 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     getMinZoom: () => 8,
     getBoundsZoom: () => 8,
     setView: (...args) => views.push(args),
-    on() {},
+    on: (name, callback) => {
+      mapEvents[name] = callback;
+    },
+    panTo: (point) => pans.push(point),
+    removeLayer: (layer) => removed.push(layer),
     latLngToLayerPoint: ([lat, lon]) => ({
       lat,
       lon,
@@ -137,6 +145,8 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
       layerGroup: () => layer,
       tileLayer: () => tiles,
       divIcon: (options) => options,
+      circle: (point, options) => makeCircle(point, options),
+      circleMarker: (point, options) => makeCircle(point, options),
       marker: (position, options) => {
         const marker = {
           position,
@@ -157,6 +167,26 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
       },
     },
   });
+  function makeCircle(point, options) {
+    const circle = {
+      point,
+      options,
+      addTo() {
+        circles.push(this);
+        return this;
+      },
+      bindTooltip() {},
+      setLatLng(point) {
+        this.point = point;
+        return this;
+      },
+      setRadius(radius) {
+        this.options.radius = radius;
+        return this;
+      },
+    };
+    return circle;
+  }
   for (const [, script] of documentModule.MAP_DOCUMENT.matchAll(
     /<script>([\s\S]*?)<\/script>/g,
   ))
@@ -179,12 +209,22 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
   assert.equal(markers.length, 0, 'Unrelated windows must be ignored');
   send(parent, [
     report,
-    { ...report, id: 'second', latitude: 18.50001, color: '#BD2E40', priority: 4 },
+    {
+      ...report,
+      id: 'second',
+      latitude: 18.50001,
+      color: '#BD2E40',
+      priority: 4,
+    },
     { ...report, id: 'third', latitude: 19 },
   ]);
   assert.equal(markers.length, 2, 'Colocated reports must share one marker');
   assert.equal(markers[0].options.icon.html.textContent, '2');
-  assert.equal(markers[0].options.icon.html.style.backgroundColor, '#BD2E40', 'Groups show the highest reported severity');
+  assert.equal(
+    markers[0].options.icon.html.style.backgroundColor,
+    '#BD2E40',
+    'Groups show the highest reported severity',
+  );
   assert.equal(markers[0].popup.children[0].textContent, report.title);
   assert.equal(markers[0].popup.children[0].innerHTML, undefined);
   markers[0].popup.children[1].onclick();
@@ -197,4 +237,55 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
   send(parent, [report]);
   assert.equal(markers.length, 1, 'Refresh must remove stale markers');
   assert.equal(views.length, 2, 'Refresh must preserve viewport');
+
+  const locate = (
+    position,
+    following = true,
+    focusRequest = 1,
+    source = parent,
+  ) =>
+    listeners.message({
+      source,
+      data: {
+        source: 'stopaccidents-app',
+        location: { position, following, focusRequest },
+      },
+    });
+  const position = { latitude: 18.51, longitude: -72.31, accuracy: 15 };
+  locate(position, true, 1, {});
+  assert.equal(circles.length, 0, 'Unrelated windows cannot set user location');
+  locate(position);
+  assert.equal(circles.length, 2, 'Position has a dot and accuracy circle');
+  assert.equal(views.length, 3, 'First fix centers the map');
+  assert.equal(views.at(-1)[1], 16);
+  locate({ ...position, latitude: 18.52, accuracy: 23 });
+  assert.equal(pans.length, 1, 'Movement follows the user');
+  assert.equal(circles[0].options.radius, 23);
+  assert.equal(circles[1].point[0], 18.52);
+  send(parent, [report]);
+  assert.equal(
+    circles.length,
+    2,
+    'Accident refresh does not recreate GPS marker',
+  );
+  assert.equal(views.length, 3, 'Accident refresh never steals location focus');
+  mapEvents.dragstart();
+  assert.equal(messages.at(-1).status, 'pan');
+  locate({ ...position, latitude: 18.53 }, false);
+  assert.equal(
+    pans.length,
+    1,
+    'Exploring pauses automatic centering, not GPS updates',
+  );
+  assert.equal(circles[1].point[0], 18.53);
+  locate(position, true, 2);
+  assert.equal(views.length, 4, 'Recenter applies a new focus request');
+  locate(null, false, 2);
+  assert.equal(removed.length, 2, 'Stopping clears GPS layers');
+  locate({ ...position, latitude: 40 });
+  assert.equal(
+    circles.length,
+    2,
+    'Out-of-area positions are not plotted in Haiti',
+  );
 });

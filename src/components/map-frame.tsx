@@ -12,6 +12,8 @@ export function MapFrame({
   onError,
   markers,
   onSelect,
+  location,
+  onPan,
 }: MapFrameProps) {
   const frame = useRef<WebView>(null);
   const updateMarkers = useCallback(() => {
@@ -24,6 +26,12 @@ export function MapFrame({
     );
   }, [markers]);
   useEffect(updateMarkers, [updateMarkers]);
+  const updateLocation = useCallback(() => {
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsLocate && window.stopAccidentsLocate(${JSON.stringify(location)}); true;`,
+    );
+  }, [location]);
+  useEffect(updateLocation, [updateLocation]);
   const openLink = (url: string) => {
     if (url.startsWith('https://')) {
       void Linking.openURL(url).catch(onError);
@@ -46,10 +54,12 @@ export function MapFrame({
       onMessage={({ nativeEvent }) => {
         const message = readMapMessage(nativeEvent.data);
         if (message?.status === 'ready') {
+          updateLocation();
           updateMarkers();
           onLoad();
         }
         if (message?.status === 'error') onError();
+        if (message?.status === 'pan') onPan();
         if (
           message?.status === 'select' &&
           markers.some((marker) => marker.id === message.id)

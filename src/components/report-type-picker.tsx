@@ -1,5 +1,6 @@
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import CarFront from 'lucide-react-native/icons/car-front';
+import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
@@ -15,6 +16,12 @@ const reportTypes = [
     title: 'Accident',
     description: 'Collision, sortie de route ou personne renversée.',
     icon: CarFront,
+  },
+  {
+    id: 'kidnapping',
+    title: 'Enlèvement',
+    description: 'Véhicules, direction prise et indices sur la personne.',
+    icon: ShieldAlert,
   },
 ] as const;
 export type ReportType = (typeof reportTypes)[number]['id'];
@@ -91,7 +98,8 @@ export function ReportTypePicker({
         <View style={styles.note}>
           <AppIcon icon={ShieldCheck} size={18} color="#7C8797" />
           <Text style={styles.noteText}>
-            Accident lance la localisation précise et enregistre le signalement.
+            Chaque parcours commence par une localisation précise et enregistre
+            immédiatement le signalement.
           </Text>
         </View>
       </ScrollView>

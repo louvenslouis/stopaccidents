@@ -10,9 +10,23 @@ export type AccidentMarker = {
 export const MAP_PAGE_URL =
   'https://www.openstreetmap.org/#map=8/19.05/-73.075';
 
+export type UserPosition = {
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+};
+
+export type MapLocation = {
+  position: UserPosition | null;
+  following: boolean;
+  focusRequest: number;
+};
+
 export type MapFrameProps = {
   onLoad: () => void;
   onError: () => void;
   markers: AccidentMarker[];
   onSelect: (id: string) => void;
+  location: MapLocation;
+  onPan: () => void;
 };

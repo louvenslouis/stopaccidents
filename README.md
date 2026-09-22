@@ -143,7 +143,23 @@ fonction `save_accident_report_step`. Le statut de traitement (`received`, etc.)
 reste indépendant de l’avancement du formulaire. Les signalements historiques
 sont considérés complets et l’ancienne fonction reste disponible.
 
-Les trois tables utilisent RLS : seules les données de l’auteur sont accessibles
+### Signalements d’enlèvement
+
+Le sélecteur **Signaler** propose aussi **Enlèvement**, après **Accident**. Ce
+parcours enregistre successivement la localisation, les indices sur le ou les
+véhicules avec leur direction, puis les indices sur la personne enlevée. Chaque
+étape réutilise la même référence UUID et peut être reprise sans dupliquer le cas.
+
+La migration `20260922042322_kidnapping_reports.sql` crée la table privée
+`kidnapping_reports` et la fonction progressive
+`save_kidnapping_report_step`. Les règles RLS limitent la lecture et la mise à
+jour au seul auteur côté client ; ces données sensibles ne rejoignent ni le flux
+public ni la carte des accidents. Le statut opérationnel et l’auteur ne peuvent
+pas être modifiés par le client. Le formulaire rappelle de ne pas suivre le
+véhicule et de contacter immédiatement les autorités compétentes, car l’envoi ne
+les alerte pas automatiquement.
+
+Les trois tables d’accidents utilisent RLS : seules les données de l’auteur sont accessibles
 au client. Les mises à jour sont limitées aux champs du signalement ; l’auteur et
 le statut de traitement ne peuvent pas être modifiés. Chaque étape écrit uniquement
 ses propres champs et utilise la même référence UUID, y compris lors des reprises.

@@ -62,6 +62,13 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       ),
     );
     assert.match(map.at(-1).rows[0].result, /^PASS:/);
+    const kidnapping = await db.exec(
+      await readFile(
+        new URL('../supabase/tests/kidnapping_reports.sql', import.meta.url),
+        'utf8',
+      ),
+    );
+    assert.match(kidnapping.at(-1).rows[0].result, /^PASS:/);
     const remaining = await db.query(
       'select count(*)::int as count from public.accident_reports',
     );

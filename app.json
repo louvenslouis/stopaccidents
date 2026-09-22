@@ -51,7 +51,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Autorisez Stop Accidents à préciser le lieu de l’accident lorsque vous le demandez."
+          "locationWhenInUsePermission": "Autorisez Stop Accidents à afficher votre position, suivre votre déplacement sur la carte et préciser le lieu d’un accident lorsque vous le demandez."
         }
       ]
     ],

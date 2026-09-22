@@ -57,6 +57,52 @@ export const MAP_DOCUMENT = `<!doctype html>
       var markers = L.layerGroup().addTo(map);
       var hasFocused = false;
       var currentReports = [];
+      var userDot = null;
+      var accuracyCircle = null;
+      var lastFocusRequest = -1;
+      var autoFollow = false;
+      function clearPosition() {
+        if (userDot) map.removeLayer(userDot);
+        if (accuracyCircle) map.removeLayer(accuracyCircle);
+        userDot = null;
+        accuracyCircle = null;
+      }
+      window.stopAccidentsLocate = function (state) {
+        if (!state) return;
+        var position = state.position;
+        autoFollow = state.following === true;
+        if (!position || !Number.isFinite(position.latitude) || !Number.isFinite(position.longitude) ||
+            !bounds.contains([position.latitude, position.longitude])) {
+          clearPosition();
+          return;
+        }
+        var point = [position.latitude, position.longitude];
+        var radius = Number.isFinite(position.accuracy) && position.accuracy >= 0 ? position.accuracy : 0;
+        if (!userDot) {
+          accuracyCircle = L.circle(point, {
+            radius: radius, color: '#208AEF', weight: 1, fillColor: '#208AEF', fillOpacity: 0.12, interactive: false
+          }).addTo(map);
+          userDot = L.circleMarker(point, {
+            radius: 8, color: '#FFFFFF', weight: 3, fillColor: '#208AEF', fillOpacity: 1, interactive: false
+          }).addTo(map);
+          userDot.bindTooltip('Votre position');
+        } else {
+          userDot.setLatLng(point);
+          accuracyCircle.setLatLng(point).setRadius(radius);
+        }
+        // Location takes precedence over the initial accident focus and refreshes.
+        hasFocused = true;
+        if (state.focusRequest !== lastFocusRequest) {
+          lastFocusRequest = state.focusRequest;
+          map.setView(point, Math.max(map.getMinZoom(), 16), { animate: false });
+        } else if (autoFollow) {
+          map.panTo(point, { animate: false });
+        }
+      };
+      map.on('dragstart', function () {
+        autoFollow = false;
+        notify('pan');
+      });
       function renderMarkers() {
         markers.clearLayers();
         var groups = [];
@@ -117,8 +163,9 @@ export const MAP_DOCUMENT = `<!doctype html>
         // about:srcdoc reports a null location.origin despite inheriting the parent origin.
         // Accept updates only from the embedding application window.
         if (event.source !== window.parent) return;
-        if (event.data && event.data.source === 'stopaccidents-app' && Array.isArray(event.data.markers)) {
-          window.stopAccidentsUpdate(event.data.markers);
+        if (event.data && event.data.source === 'stopaccidents-app') {
+          if (event.data.location) window.stopAccidentsLocate(event.data.location);
+          if (Array.isArray(event.data.markers)) window.stopAccidentsUpdate(event.data.markers);
         }
       });
       var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -136,7 +183,7 @@ export const MAP_DOCUMENT = `<!doctype html>
 </html>`;
 
 export type MapMessage =
-  | { status: 'ready' | 'error' }
+  | { status: 'ready' | 'error' | 'pan' }
   | { status: 'select'; id: string };
 
 export function readMapMessage(message: unknown): MapMessage | null {
@@ -144,7 +191,11 @@ export function readMapMessage(message: unknown): MapMessage | null {
   try {
     const value = JSON.parse(message);
     if (value?.source !== 'stopaccidents-map') return null;
-    if (value.status === 'ready' || value.status === 'error')
+    if (
+      value.status === 'ready' ||
+      value.status === 'error' ||
+      value.status === 'pan'
+    )
       return { status: value.status };
     if (value.status === 'select' && typeof value.id === 'string') {
       return { status: 'select', id: value.id };

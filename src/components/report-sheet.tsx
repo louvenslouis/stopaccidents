@@ -35,6 +35,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { ReportCamera } from '@/components/report-camera';
+import { KidnappingReportSheet } from '@/components/kidnapping-report-sheet';
 import {
   ReportTypePicker,
   type ReportType,
@@ -372,8 +373,9 @@ export function ReportSheet({
   );
   const narrow = width < 370;
   return (
+    <>
     <Modal
-      visible={visible}
+      visible={visible && reportType !== 'kidnapping'}
       transparent
       animationType="slide"
       statusBarTranslucent
@@ -397,7 +399,7 @@ export function ReportSheet({
             {
               height: Math.min(
                 height - insets.top - 18,
-                reportType === null ? 400 : step === 0 && !receipt ? 580 : 850,
+                reportType === null ? 560 : step === 0 && !receipt ? 580 : 850,
               ),
               paddingBottom: Math.max(insets.bottom, 12),
             },
@@ -407,8 +409,10 @@ export function ReportSheet({
             <ReportTypePicker
               onSelect={(type) => {
                 onSelectType(type);
-                if (savedSteps === 0) void locate();
-                else changeStep(Math.max(step, 1));
+                if (type === 'accident') {
+                  if (savedSteps === 0) void locate();
+                  else changeStep(Math.max(step, 1));
+                }
               }}
               onClose={close}
             />
@@ -988,6 +992,12 @@ export function ReportSheet({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+    <KidnappingReportSheet
+      visible={visible && reportType === 'kidnapping'}
+      onBackToTypes={onBackToTypes}
+      onClose={onClose}
+    />
+    </>
   );
 }
 
