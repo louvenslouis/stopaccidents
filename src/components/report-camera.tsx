@@ -21,9 +21,11 @@ import {
 export function ReportCamera({
   onCapture,
   onClose,
+  subject = 'l’accident',
 }: {
   onCapture: (photo: CapturedPhoto) => void;
   onClose: () => void;
+  subject?: string;
 }) {
   const camera = useRef<CameraView>(null);
   const taking = useRef(false);
@@ -101,7 +103,7 @@ export function ReportCamera({
             <AppIcon icon={Camera} size={48} color="#fff" />
             <Text style={styles.title}>Une photo prise sur place</Text>
             <Text style={styles.explanation}>
-              Autorisez la caméra pour documenter l’accident. Aucune photo ne
+              Autorisez la caméra pour documenter {subject}. Aucune photo ne
               sera choisie dans votre galerie.
             </Text>
             <Pressable
@@ -145,7 +147,7 @@ export function ReportCamera({
       )}
       <View style={styles.footer}>
         <Text style={styles.explanation}>
-          Vue d’ensemble ou dégâts visibles.{'\n'}Évitez les visages et les
+          Vue d’ensemble ou détails visibles.{'\n'}Évitez les visages et les
           documents personnels.
         </Text>
         {permission?.granted && (

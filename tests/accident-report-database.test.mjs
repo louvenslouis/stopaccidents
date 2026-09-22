@@ -14,7 +14,7 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       create schema storage;
       create table auth.users (id uuid primary key);
       create function auth.uid() returns uuid language sql stable as $$
-        select (current_setting('request.jwt.claims', true)::jsonb->>'sub')::uuid
+        select (nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'sub')::uuid
       $$;
       create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
       create table storage.objects(id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets(id), name text, unique(bucket_id,name));
@@ -76,6 +76,14 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       ),
     );
     assert.match(safetyFeed.at(-1).rows[0].result, /^PASS:/);
+    const barricade = await db.exec(await readFile(new URL('../supabase/tests/barricade_reports.sql', import.meta.url), 'utf8'));
+    assert.match(barricade.at(-1).rows[0].result, /^PASS:/);
+    const armedPresence = await db.exec(await readFile(new URL('../supabase/tests/armed_presence_reports.sql', import.meta.url), 'utf8'));
+    assert.match(armedPresence.at(-1).rows[0].result, /^PASS:/);
+    const suspiciousVehicle = await db.exec(await readFile(new URL('../supabase/tests/suspicious_vehicle_reports.sql', import.meta.url), 'utf8'));
+    assert.match(suspiciousVehicle.at(-1).rows[0].result, /^PASS:/);
+    const vehiclePhotos = await db.exec(await readFile(new URL('../supabase/tests/suspicious_vehicle_photos.sql', import.meta.url), 'utf8'));
+    assert.match(vehiclePhotos.at(-1).rows[0].result, /^PASS:/);
     const savedPlaces = await db.exec(
       await readFile(
         new URL('../supabase/tests/user_saved_places.sql', import.meta.url),
@@ -83,6 +91,8 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
       ),
     );
     assert.match(savedPlaces.at(-1).rows[0].result, /^PASS:/);
+    const gunfire = await db.exec(await readFile(new URL('../supabase/tests/gunfire_reports.sql', import.meta.url), 'utf8'));
+    assert.match(gunfire.at(-1).rows[0].result, /^PASS:/);
     const remaining = await db.query(
       'select count(*)::int as count from public.accident_reports',
     );

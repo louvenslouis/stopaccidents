@@ -1,8 +1,13 @@
-import { Image } from 'react-native';
+import { GUNFIRE_ART_URI } from './gunfire-art';
+import { Asset } from 'expo-asset';
 
 import type { AccidentMarker } from './map-frame-props';
 
 const markerSources = {
+  gunfire: { uri: GUNFIRE_ART_URI },
+  suspicious_vehicle: require('../../assets/images/report-illustrations/suspicious-vehicle.png'),
+  armed_presence: require('../../assets/images/report-illustrations/armed-presence.png'),
+  barricade: require('../../assets/images/barricade-types/other.png'),
   accident: require('../../assets/images/report-illustrations/accident.png'),
   kidnapping: require('../../assets/images/report-illustrations/kidnapping.png'),
 } as const;
@@ -12,8 +17,8 @@ export type IllustratedMapMarker = AccidentMarker & { illustrationUri: string };
 export function illustratedMapMarkers(
   markers: AccidentMarker[],
 ): IllustratedMapMarker[] {
-  return markers.map((marker) => ({
-    ...marker,
-    illustrationUri: Image.resolveAssetSource(markerSources[marker.illustration]).uri,
-  }));
+  return markers.map((marker) => {
+    const asset = Asset.fromModule(markerSources[marker.illustration]);
+    return { ...marker, illustrationUri: asset.localUri ?? asset.uri };
+  });
 }

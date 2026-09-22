@@ -32,8 +32,9 @@ export const MAP_DOCUMENT = `<!doctype html>
 <body>
   <div id="map" aria-label="Carte interactive d’Haïti"></div>
   <script>
-    function notify(status, id) {
-      var message = JSON.stringify({ source: 'stopaccidents-map', status: status, id: id });
+    function notify(status, id, center) {
+      var message = JSON.stringify({ source: 'stopaccidents-map', status: status, id: id,
+        latitude: center && center.lat, longitude: center && center.lng });
       if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(message);
       else window.parent.postMessage(message, '*');
     }
@@ -61,6 +62,8 @@ export const MAP_DOCUMENT = `<!doctype html>
       map.setView(bounds.getCenter(), Math.min(19, map.getBoundsZoom(bounds, true)));
       constrainView();
       map.on('resize', constrainView);
+      function notifyCenter() { notify('center', undefined, map.getCenter()); }
+      map.on('moveend', notifyCenter);
       var markers = L.layerGroup().addTo(map);
       var hasFocused = false;
       var currentReports = [];
@@ -70,6 +73,36 @@ export const MAP_DOCUMENT = `<!doctype html>
       var lastFocusRequest = -1;
       var lastPlaceRequest = -1;
       var autoFollow = false;
+      var routeLayer = null;
+      var lastRouteFit = -1;
+      window.stopAccidentsRoute = function (route) {
+        if (routeLayer) { routeLayer.clearLayers(); map.removeLayer(routeLayer); }
+        routeLayer = null;
+        if (!route) { lastRouteFit = -1; return; }
+        if (!Array.isArray(route.coordinates) || route.coordinates.length < 2 ||
+            !route.coordinates.every(function (point) {
+              return Array.isArray(point) && Number.isFinite(point[0]) && Number.isFinite(point[1]) && bounds.contains([point[1], point[0]]);
+            })) return;
+        var points = route.coordinates.map(function (point) { return [point[1], point[0]]; });
+        routeLayer = L.layerGroup().addTo(map);
+        L.polyline(points, { color: '#FFFFFF', weight: 10, opacity: 0.95, interactive: false }).addTo(routeLayer);
+        L.polyline(points, { color: '#1767A6', weight: 6, opacity: 0.95, interactive: false }).addTo(routeLayer);
+        [points[0], points[points.length - 1]].forEach(function (point, index) {
+          var marker = L.circleMarker(point, { radius: 12, color: '#FFFFFF', weight: 3,
+            fillColor: index === 0 ? '#1767A6' : '#E75840', fillOpacity: 1 }).addTo(routeLayer);
+          marker.bindTooltip(index === 0 ? 'A · Départ' : 'B · Arrivée', { permanent: true, direction: 'top' });
+        });
+        hasFocused = true;
+        if (route.fitRequest !== lastRouteFit) {
+          lastRouteFit = route.fitRequest;
+          autoFollow = false;
+          var size = map.getSize();
+          map.fitBounds(L.latLngBounds(points), {
+            paddingTopLeft: [24, Math.max(24, Math.min(size.y * 0.60, size.y - 220))],
+            paddingBottomRight: [70, 130], maxZoom: 16, animate: false
+          });
+        }
+      };
       function clearPosition() {
         if (userDot) map.removeLayer(userDot);
         if (accuracyCircle) map.removeLayer(accuracyCircle);
@@ -112,6 +145,7 @@ export const MAP_DOCUMENT = `<!doctype html>
         if (!focus) {
           if (placeMarker) map.removeLayer(placeMarker);
           placeMarker = null;
+          lastPlaceRequest = -1;
           return;
         }
         if (!Number.isFinite(focus.latitude) || !Number.isFinite(focus.longitude) ||
@@ -203,6 +237,7 @@ export const MAP_DOCUMENT = `<!doctype html>
         if (event.data && event.data.source === 'stopaccidents-app') {
           if (event.data.location) window.stopAccidentsLocate(event.data.location);
           if ('placeFocus' in event.data) window.stopAccidentsFocus(event.data.placeFocus);
+          if ('route' in event.data) window.stopAccidentsRoute(event.data.route);
           if (Array.isArray(event.data.markers)) window.stopAccidentsUpdate(event.data.markers);
         }
       });
@@ -212,7 +247,7 @@ export const MAP_DOCUMENT = `<!doctype html>
         noWrap: true,
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a>'
       });
-      tiles.once('tileload', function () { notify('ready'); });
+      tiles.once('tileload', function () { notify('ready'); notifyCenter(); });
       tiles.on('tileerror', function () { notify('error'); });
       tiles.addTo(map);
     } catch (error) { notify('error'); }
@@ -221,6 +256,7 @@ export const MAP_DOCUMENT = `<!doctype html>
 </html>`;
 
 export type MapMessage =
+  | { status: 'center'; latitude: number; longitude: number }
   | { status: 'ready' | 'error' | 'pan' }
   | { status: 'select'; id: string };
 
@@ -229,6 +265,12 @@ export function readMapMessage(message: unknown): MapMessage | null {
   try {
     const value = JSON.parse(message);
     if (value?.source !== 'stopaccidents-map') return null;
+    if (value.status === 'center' &&
+        Number.isFinite(value.latitude) && Number.isFinite(value.longitude) &&
+        value.latitude >= HAITI_BOUNDS[0][0] && value.latitude <= HAITI_BOUNDS[1][0] &&
+        value.longitude >= HAITI_BOUNDS[0][1] && value.longitude <= HAITI_BOUNDS[1][1]) {
+      return { status: 'center', latitude: value.latitude, longitude: value.longitude };
+    }
     if (
       value.status === 'ready' ||
       value.status === 'error' ||

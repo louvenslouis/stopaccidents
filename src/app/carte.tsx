@@ -19,7 +19,7 @@ export default function MapScreen() {
           <title>Carte — Stop Accidents</title>
         </Head>
         <StatusBar style="dark" />
-        <OpenStreetMap markers={markers} onSelect={setSelectedReport} />
+        <OpenStreetMap markers={markers} onSelect={setSelectedReport} reportsState={{ loading: reports.loading, error: reports.error, truncated: reports.data?.truncated ?? false, available: reports.data !== null, refresh: reports.refresh }} />
       </View>
       {selectedReport && (
         <SafetyReportDetailSheet

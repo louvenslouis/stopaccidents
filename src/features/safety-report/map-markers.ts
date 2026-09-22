@@ -23,6 +23,18 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
       return [];
     }
 
+    if (report.report_kind === 'suspicious_vehicle') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#95621C', priority: 3, illustration: 'suspicious_vehicle', title: `Voiture suspecte · ${formatAccidentDate(report.created_at)}` }];
+    }
+    if (report.report_kind === 'gunfire') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#AF3848', priority: 5, illustration: 'gunfire', title: `Tirs entendus · lieu d’écoute · ${formatAccidentDate(report.created_at)}` }];
+    }
+    if (report.report_kind === 'armed_presence') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#AF3848', priority: 5, illustration: 'armed_presence', title: `Présence d’hommes armés · ${formatAccidentDate(report.created_at)}` }];
+    }
+    if (report.report_kind === 'barricade') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#B96B16', priority: 4, illustration: 'barricade', title: `Route barricadée · ${formatAccidentDate(report.created_at)}` }];
+    }
     if (report.report_kind === 'kidnapping') {
       return [
         {

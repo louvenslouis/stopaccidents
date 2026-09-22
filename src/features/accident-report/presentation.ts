@@ -5,6 +5,10 @@ export const accidentTypeLabels: Record<AccidentType, string> = {
   two_cars: 'Deux voitures',
   single_car: 'Une seule voiture',
   motorcycle: 'Motocyclette',
+  car_motorcycle: 'Voiture et moto',
+  car_pedestrian: 'Voiture et piéton',
+  car_tuktuk: 'Voiture et tuk-tuk',
+  single_motorcycle: 'Moto seule',
   other: 'Autre accident',
 };
 

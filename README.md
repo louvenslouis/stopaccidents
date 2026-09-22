@@ -68,6 +68,29 @@ Join our community of developers creating universal apps.
 
 ## Carte OpenStreetMap
 
+### Météo
+
+Une pastille discrète en haut à droite affiche la température en °C, les conditions
+en français et le vent en km/h à la position connue par l’application, indiquée
+par « Votre position ». Déplacer la carte ou rechercher un lieu ne change pas
+cette référence. En l’absence de position connue, elle utilise le centre de la
+carte, indiqué explicitement. Ce comportement est commun au web et au natif. Les conditions actuelles
+proviennent des modèles de [Open-Meteo](https://open-meteo.com/en/docs), dont le
+[serveur est open source](https://github.com/open-meteo/open-meteo).
+Le lien d’attribution reste visible dans la pastille.
+
+Les coordonnées sont arrondies à deux décimales ; les appels attendent 650 ms après
+un changement de zone et sont mis en cache 15 minutes (32 zones maximum en mémoire).
+La météo s’actualise pendant la consultation et au retour dans l’application.
+Les requêtes sont annulées en quittant la carte ou en arrière-plan. Une erreur,
+un délai supérieur à 8 secondes ou des données de plus d’une heure affichent
+« Indisponible » ; aucune valeur fictive n’est utilisée.
+
+Aucune clé n’est nécessaire pour l’API publique, réservée à l’usage non commercial
+selon les [conditions Open-Meteo](https://open-meteo.com/en/terms).
+`EXPO_PUBLIC_WEATHER_URL` permet de choisir un serveur auto-hébergé ou un proxy
+compatible `/v1/forecast`. Ne jamais mettre une clé privée dans cette URL publique.
+
 L’onglet Carte affiche les tuiles OpenStreetMap avec Leaflet 1.9.4, avec déplacement,
 zoom et attribution visible. La navigation est limitée au rectangle autour d’Haïti
 (18, −74.55) à (20.1, −71.6). Le zoom minimum s’adapte à la taille de la carte pour
@@ -243,3 +266,59 @@ base de développement Supabase ; toutes ses données synthétiques sont annulé
 La caméra et le GPS doivent être vérifiés sur appareil physique. Une nouvelle
 compilation native est nécessaire pour prendre en compte les modules et permissions
 ajoutés ; les navigateurs nécessitent HTTPS ou localhost pour ces fonctions.
+
+## Itinéraires sur la carte
+
+Après une recherche ou le choix Domicile/Travail, « Itinéraire » ouvre le panneau
+avec l’arrivée sélectionnée. Le départ peut être la position GPS ou un lieu saisi.
+On peut modifier et inverser les deux lieux, calculer un trajet en voiture,
+comparer jusqu’à trois propositions, consulter les directions et lancer le guidage.
+La prévisualisation entre deux adresses fonctionne sans permission GPS.
+
+Le service configurable `EXPO_PUBLIC_ROUTING_URL` doit accepter le protocole
+[OSRM Route](https://project-osrm.org/docs/v5.24.0/api/#route-service). Il renvoie
+les chemins sur le réseau routier OpenStreetMap, la géométrie GeoJSON complète,
+les manœuvres, les distances en mètres et les durées en secondes. L’URL par défaut
+est le serveur de démonstration public OSRM ; prévoir un service dédié pour le
+volume de production. Aucune clé secrète ne doit figurer dans cette variable.
+Les coordonnées des deux extrémités sont envoyées à ce service au calcul.
+Le rattachement à une route est limité à 100 m. Une absence de route ou une panne
+réseau produit une erreur avec possibilité de réessayer, jamais un tracé à vol d’oiseau.
+Les requêtes expirent après 15 s ; changer les lieux ou fermer annule le calcul.
+
+`route-geometry.ts` indexe les segments du trajet dans une grille locale de 250 m.
+Chaque signalement chargé est projeté sur les segments voisins : ceux dont la
+distance au tracé est au plus de 60 m sont dédupliqués puis triés par distance
+cumulée depuis le départ. Les marqueurs et la liste utilisent le même résultat,
+actualisé avec le flux existant `read_map_reports` toutes les 30 s. La proximité
+est géométrique : elle ne permet pas de distinguer une rue parallèle, un pont ou
+un sens de circulation. Les listes indisponibles, périmées ou tronquées sont
+signalées ; « aucun signalement chargé » ne garantit pas une route sans danger.
+Les signalements ne ferment pas automatiquement les routes et ne modifient pas
+le classement du routeur, qui privilégie le temps estimé hors trafic réel.
+
+Le guidage obtient une nouvelle position GPS, conserve l’alternative sélectionnée
+si le départ est à moins de 75 m, sinon recalcule depuis la position actuelle.
+Il exige une précision connue d’au plus 50 m, suit la progression le long des
+segments avec continuité aux croisements/boucles, affiche les manœuvres à venir
+et les signalements restants. Un écart supérieur à max(75 m, 2 × précision GPS)
+pendant 5 s déclenche un recalcul, au plus une fois toutes les 20 s. Les mesures
+imprécises suspendent la progression ; une attente initiale de 25 s sans position
+suffisante propose de réessayer. L’arrivée est détectée à moins de 50 m du dernier
+point routier et avec au plus 40 m de tracé restant. Le suivi s’arrête à l’arrivée,
+à la fermeture, au changement d’onglet ou en arrière-plan ; il faut le relancer
+au retour. Ce comportement utilise la localisation au premier plan d’
+[Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/location/#locationwatchpositionasyncoptions-callback-errorhandler).
+
+Les tests `tests/routing.test.mjs` vérifient la projection, les limites du couloir,
+les boucles, l’arrivée, les réponses du routeur, les annulations, les erreurs GPS
+et le recalcul temporisé. Les ponts iframe/WebView partagent le même document
+Leaflet pour le tracé, les repères A/B et le cadrage.
+
+### Récompenses de signalement
+
+Chaque nouveau parcours terminé donne 25 points de vigilance (accident : étape 4 ; autres catégories : étape 3). Le serveur crédite les points dans la transaction de la dernière étape ; le bouton « Récolter » anime uniquement leur affichage. Une nouvelle tentative ou une correction du même signalement ne crédite pas une seconde récompense. Le solde et le niveau (250 points par niveau) apparaissent dans le profil, y compris pour la session invitée. Les points restent propres à chaque identité Supabase ; aucune fusion invité/compte n’est effectuée.
+
+Appliquer les migrations dans leur ordre, jusqu’à `20260922072734_report_rewards.sql`, avant de publier cette interface. Cette migration dépend des tables barricades, présence armée et véhicules suspects créées par les migrations précédentes. Aucun rattrapage des anciens signalements n’est effectué. Les clients ne peuvent ni ajouter ni modifier des points et ne peuvent lire que leur propre solde.
+
+Validation : `npm test`, `npx tsc --noEmit`, `npm run lint`. Les tests de récompenses couvrent les cinq catégories, les étapes incomplètes, les nouvelles tentatives, l’annulation transactionnelle et l’isolation entre comptes.

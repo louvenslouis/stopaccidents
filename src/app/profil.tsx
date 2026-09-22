@@ -1,3 +1,4 @@
+import { RewardsCard } from '@/components/rewards-card';
 import { AppScreen } from '@/components/app-screen';
 import { SavedPlacePicker } from '@/components/saved-place-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -231,6 +232,7 @@ export default function ProfileScreen() {
           description="Connectez-vous pour retrouver vos informations sur tous vos appareils."
           contentContainerStyle={styles.screenContent}>
           <View style={styles.content}>
+            <RewardsCard />
             {checkingSession ? (
               <View accessibilityLiveRegion="polite" style={styles.loadingCard}>
                 <ActivityIndicator color="#E14D3E" />

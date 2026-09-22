@@ -15,6 +15,17 @@ do $$ begin
 end $$;
 -- Same UUID retries update the location without a duplicate.
 select public.save_accident_report_step('33333333-3333-4333-8333-333333333333',1,'Lieu corrigé',18.6,-72.2,8);
+-- Every illustrated situation must round-trip through the public save endpoint.
+do $$ declare kind text; begin
+  foreach kind in array array['car_motorcycle','car_pedestrian','car_tuktuk','single_motorcycle'] loop
+    perform public.save_accident_report_step('33333333-3333-4333-8333-333333333333',2,p_accident_type=>kind);
+    assert (select accident_type=kind from public.accident_reports where id='33333333-3333-4333-8333-333333333333'), 'Illustrated accident type was not saved';
+  end loop;
+  begin
+    perform public.save_accident_report_step('33333333-3333-4333-8333-333333333333',2,p_accident_type=>'invalid_type');
+    raise exception 'Unknown accident type accepted';
+  exception when check_violation then null; end;
+end $$;
 select public.save_accident_report_step('33333333-3333-4333-8333-333333333333',2,p_accident_type=>'motorcycle');
 select public.save_accident_report_step('33333333-3333-4333-8333-333333333333',3,p_severity=>'injuries');
 -- Upload after the parent exists: storage policies must allow this now.

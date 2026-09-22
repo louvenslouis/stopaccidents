@@ -1,3 +1,5 @@
+import ShieldAlert from 'lucide-react-native/icons/shield-alert';
+import Construction from 'lucide-react-native/icons/construction';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import CalendarDays from 'lucide-react-native/icons/calendar-days';
 import Clock3 from 'lucide-react-native/icons/clock-3';
@@ -40,10 +42,14 @@ export function LatestAccidentCard({
   onRefresh: () => void;
   onOpen: (id: string) => void;
 }) {
+  const isSuspiciousVehicle = report?.report_kind === 'suspicious_vehicle';
+  const isGunfire = report?.report_kind === 'gunfire';
+  const isArmedPresence = report?.report_kind === 'armed_presence';
+  const isBarricade = report?.report_kind === 'barricade';
   const isKidnapping = report?.report_kind === 'kidnapping';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
-  const reportLabel = isKidnapping
+  const reportLabel = isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Voiture suspecte' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isKidnapping
     ? 'Enlèvement'
     : report?.report_kind === 'accident'
       ? accidentTypeLabel(report)
@@ -82,23 +88,23 @@ export function LatestAccidentCard({
           <View style={styles.cardHeader}>
             <View style={[styles.iconBox, isKidnapping && styles.kidnappingIconBox]}>
               <AppIcon
-                icon={isKidnapping ? UserRoundSearch : CarFront}
+                icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isKidnapping ? UserRoundSearch : CarFront}
                 size={26}
                 color={isKidnapping ? '#7C3FA0' : '#D94235'}
               />
             </View>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>
-                {isKidnapping ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
+                {report.report_kind !== 'accident' ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
               </Text>
               <Text style={styles.type}>{reportLabel}</Text>
             </View>
           </View>
           <View style={styles.badges}>
             <View style={[styles.badge, { backgroundColor: isKidnapping ? '#F4ECF8' : '#EEF2FF' }]}>
-              <AppIcon icon={isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? '#7C3FA0' : '#4358C7'} />
+              <AppIcon icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? '#7C3FA0' : '#4358C7'} />
               <Text style={[styles.badgeText, { color: isKidnapping ? '#7C3FA0' : '#4358C7' }]}>
-                {isKidnapping ? 'Enlèvement' : 'Accident'}
+                {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Voiture suspecte' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isKidnapping ? 'Enlèvement' : 'Accident'}
               </Text>
             </View>
             {severity && (

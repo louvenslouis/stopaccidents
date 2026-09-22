@@ -64,9 +64,13 @@ test('map bridge rejects malformed messages and accepts only known event shapes'
     '{}',
     JSON.stringify({ source: 'other', status: 'ready' }),
     JSON.stringify({ source: 'stopaccidents-map', status: 'select', id: 1 }),
+    JSON.stringify({ source: 'stopaccidents-map', status: 'center', latitude: null, longitude: -72 }),
+    JSON.stringify({ source: 'stopaccidents-map', status: 'center', latitude: 40, longitude: -72 }),
   ]) {
     assert.equal(parse(value), null);
   }
+  assert.deepEqual(parse(JSON.stringify({ source: 'stopaccidents-map', status: 'center', latitude: 18.54, longitude: -72.34 })),
+    { status: 'center', latitude: 18.54, longitude: -72.34 });
   assert.deepEqual(
     parse(
       JSON.stringify({
@@ -95,6 +99,7 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     },
   };
   const map = {
+    getCenter: () => ({ lat: 18.54, lng: -72.34 }),
     setMinZoom() {},
     panInsideBounds() {},
     getMinZoom: () => 8,
@@ -236,6 +241,8 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     ['second', 'third'],
   );
   assert.equal(views.length, 2, 'Initial map view plus first accident focus');
+  mapEvents.moveend();
+  assert.deepEqual(messages.at(-1), { source: 'stopaccidents-map', status: 'center', latitude: 18.54, longitude: -72.34 });
   send(parent, [report]);
   assert.equal(markers.length, 1, 'Refresh must remove stale markers');
   assert.equal(views.length, 2, 'Refresh must preserve viewport');

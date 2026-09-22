@@ -22,6 +22,12 @@ const model = compile(
   await readFile('src/features/accident-report/model.ts', 'utf8'),
   {},
 );
+const picker = compile(
+  await readFile('src/components/accident-type-picker.tsx', 'utf8'),
+  {
+    'react-native': { StyleSheet: { create: (styles) => styles } },
+  },
+);
 const source = await readFile('src/components/report-sheet.tsx', 'utf8');
 const flush = async () => {
   for (let i = 0; i < 15; i++) await Promise.resolve();
@@ -89,6 +95,7 @@ function fixture(appLocation = null) {
     },
     'expo-crypto': { randomUUID: () => 'stable-report-id' },
     '@/components/report-type-picker': { ReportTypePicker: 'TypePicker' },
+    '@/components/accident-type-picker': picker,
     '@/features/accident-report/model': model,
     '@/features/accident-report/precise-location': {
       PreciseLocationError: Error,
@@ -153,6 +160,11 @@ function fixture(appLocation = null) {
     render,
     pick,
     button,
+    chooseType: (value) =>
+      find(
+        tree,
+        (node) => node.type === picker.AccidentTypePicker,
+      ).props.onChange(value),
     text,
     input: () =>
       find(
@@ -214,7 +226,7 @@ test('Accident automatically locates and saves before showing the subtype and op
   assert.ok(f.input());
   assert.equal(f.button('Utiliser ma position GPS'), null);
   f.input().props.onChangeText('Devant la station');
-  f.button('Deux voitures').props.onPress();
+  f.chooseType('two_cars');
   f.render();
   await f.button('Suivant').props.onPress();
   assert.deepEqual(

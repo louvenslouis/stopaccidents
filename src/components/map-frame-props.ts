@@ -5,7 +5,7 @@ export type AccidentMarker = {
   title: string;
   color: string;
   priority: number;
-  illustration: 'accident' | 'kidnapping';
+  illustration: 'gunfire' | 'accident' | 'kidnapping' | 'barricade' | 'armed_presence' | 'suspicious_vehicle';
 };
 
 export const MAP_PAGE_URL =
@@ -31,6 +31,7 @@ export type MapPlaceFocus = {
 } | null;
 
 export type MapFrameProps = {
+  onCenterChange: (center: { latitude: number; longitude: number }) => void;
   onLoad: () => void;
   onError: () => void;
   markers: AccidentMarker[];
@@ -38,4 +39,12 @@ export type MapFrameProps = {
   location: MapLocation;
   placeFocus: MapPlaceFocus;
   onPan: () => void;
+  route?: MapRoute;
 };
+
+export type MapRoute = {
+  coordinates: [number, number][];
+  origin: [number, number];
+  destination: [number, number];
+  fitRequest: number;
+} | null;

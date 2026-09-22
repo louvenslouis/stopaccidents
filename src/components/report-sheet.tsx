@@ -1,19 +1,17 @@
-import { ReportIllustration } from '@/components/report-illustration';
+import { AccidentTypePicker, accidentTypes as types } from '@/components/accident-type-picker';
+import { ReportReward } from '@/components/report-reward';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Camera from 'lucide-react-native/icons/camera';
 import Car from 'lucide-react-native/icons/car';
-import CarFront from 'lucide-react-native/icons/car-front';
 import Check from 'lucide-react-native/icons/check';
 import CheckCheck from 'lucide-react-native/icons/check-check';
 import CircleHelp from 'lucide-react-native/icons/circle-question-mark';
 import HeartPulse from 'lucide-react-native/icons/heart-pulse';
 import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import MapPin from 'lucide-react-native/icons/map-pin';
-import Bike from 'lucide-react-native/icons/motorbike';
-import Plus from 'lucide-react-native/icons/plus';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
@@ -36,6 +34,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { ReportCamera } from '@/components/report-camera';
+import { SuspiciousVehicleReportSheet } from '@/components/suspicious-vehicle-report-sheet';
+import { GunfireReportSheet } from '@/components/gunfire-report-sheet';
+import { ArmedPresenceReportSheet } from '@/components/armed-presence-report-sheet';
+import { BarricadeReportSheet } from '@/components/barricade-report-sheet';
 import { KidnappingReportSheet } from '@/components/kidnapping-report-sheet';
 import {
   ReportTypePicker,
@@ -46,7 +48,6 @@ import {
   isPreciseLocation,
   locationDescription,
   validateStep,
-  type AccidentType,
   type ReportDraft,
   type Severity,
 } from '@/features/accident-report/model';
@@ -60,37 +61,6 @@ import { saveAccidentReportStep } from '@/features/accident-report/submit';
 import { useAppLocation } from '@/features/location/app-location';
 import { reusableAppLocation } from '@/features/location/app-location-model';
 
-const types: {
-  value: AccidentType;
-  label: string;
-  description: string;
-  icon: AppIconComponent;
-}[] = [
-  {
-    value: 'two_cars',
-    label: 'Deux voitures',
-    description: 'Collision entre véhicules',
-    icon: CarFront,
-  },
-  {
-    value: 'single_car',
-    label: 'Une seule voiture',
-    description: 'Sortie de route, obstacle…',
-    icon: Car,
-  },
-  {
-    value: 'motorcycle',
-    label: 'Motocyclette',
-    description: 'Une moto est impliquée',
-    icon: Bike,
-  },
-  {
-    value: 'other',
-    label: 'Autre',
-    description: 'Piéton, camion, vélo…',
-    icon: Plus,
-  },
-];
 const severities: {
   value: Severity;
   label: string;
@@ -214,7 +184,7 @@ export function ReportSheet({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { height, width } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
   const [draft, setDraft] = useState<ReportDraft>(makeDraft);
   const [step, setStep] = useState(0);
@@ -386,15 +356,16 @@ export function ReportSheet({
     onClose();
   }
   if (!draft) return null;
-  const selectedType = types.find((item) => item.value === draft.accidentType);
+  // Keep the reporting flow usable while the illustrated picker module is
+  // still loading (notably in lightweight/test runtimes).
+  const selectedType = types?.find((item) => item.value === draft.accidentType);
   const selectedSeverity = severities.find(
     (item) => item.value === draft.severity,
   );
-  const narrow = width < 370;
   return (
     <>
     <Modal
-      visible={visible && reportType !== 'kidnapping'}
+      visible={visible && (reportType === null || reportType === 'accident')}
       transparent
       animationType="slide"
       statusBarTranslucent
@@ -444,33 +415,7 @@ export function ReportSheet({
               }}
             />
           ) : receipt ? (
-            <View style={styles.success}>
-              <View style={{ alignItems: 'center' }}>
-                <ReportIllustration kind="success" size={112} />
-              </View>
-              <Text style={styles.eyebrow}>MERCI POUR VOTRE VIGILANCE</Text>
-              <Text accessibilityRole="header" style={styles.successTitle}>
-                Signalement complété
-              </Text>
-              <Text style={styles.successBody}>
-                Vos compléments{draft.photos.length ? ' et vos photos' : ''} ont
-                été ajoutés au signalement enregistré dès la première étape.
-              </Text>
-              <View style={styles.receipt}>
-                <Text style={styles.small}>RÉFÉRENCE DU SIGNALEMENT</Text>
-                <Text selectable style={styles.reference}>
-                  {receipt.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.notice}>
-                <AppIcon icon={TriangleAlert} size={20} color="#A66913" />
-                <Text style={styles.noticeText}>
-                  Cet envoi ne déclenche pas automatiquement l’intervention des
-                  secours.
-                </Text>
-              </View>
-              <Action label="Terminer" icon={CheckCheck} onPress={done} />
-            </View>
+            <ReportReward reportId={receipt} reportKind="accident" onDone={done} visible={visible} />
           ) : (
             <>
               <View
@@ -672,58 +617,8 @@ export function ReportSheet({
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
                     </Text>
-                    <View style={styles.typeGrid}>
-                      {types.map((item) => {
-                        const selected = draft.accidentType === item.value;
-                        return (
-                          <Pressable
-                            key={item.value}
-                            accessibilityRole="radio"
-                            accessibilityLabel={item.label}
-                            accessibilityState={{ checked: selected }}
-                            onPress={() => update('accidentType', item.value)}
-                            style={[
-                              styles.typeCard,
-                              narrow && { width: '100%' },
-                              selected && styles.typeCardSelected,
-                            ]}
-                          >
-                            <View style={styles.cardTop}>
-                              <View
-                                style={[
-                                  styles.typeIcon,
-                                  selected && styles.typeIconSelected,
-                                ]}
-                              >
-                                <AppIcon
-                                  icon={item.icon}
-                                  color={selected ? '#D94235' : '#68758A'}
-                                  size={28}
-                                />
-                              </View>
-                              <View
-                                style={[
-                                  styles.radio,
-                                  selected && styles.radioSelected,
-                                ]}
-                              >
-                                {selected && (
-                                  <AppIcon
-                                    icon={Check}
-                                    size={12}
-                                    color="#fff"
-                                  />
-                                )}
-                              </View>
-                            </View>
-                            <Text style={styles.cardTitle}>{item.label}</Text>
-                            <Text style={styles.cardDescription}>
-                              {item.description}
-                            </Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
+                    <Text style={styles.small}>Choisissez la situation qui correspond à ce que vous voyez.</Text>
+                    <AccidentTypePicker value={draft.accidentType} disabled={sending} onChange={(value) => update('accidentType', value)} />
                   </>
                 )}
                 {step === 2 && (
@@ -1008,6 +903,10 @@ export function ReportSheet({
         </View>
       </KeyboardAvoidingView>
     </Modal>
+    <SuspiciousVehicleReportSheet visible={visible && reportType === 'suspicious_vehicle'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <GunfireReportSheet visible={visible && reportType === 'gunfire'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <ArmedPresenceReportSheet visible={visible && reportType === 'armed_presence'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <BarricadeReportSheet visible={visible && reportType === 'barricade'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <KidnappingReportSheet
       visible={visible && reportType === 'kidnapping'}
       onBackToTypes={onBackToTypes}
@@ -1193,32 +1092,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DCEEE7',
   },
-  typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  typeCard: {
-    width: '48%',
-    flexGrow: 1,
-    borderRadius: 17,
-    borderWidth: 1.5,
-    borderColor: '#E6E9EE',
-    padding: 15,
-    gap: 5,
-  },
-  typeCardSelected: { borderColor: '#E36555', backgroundColor: '#FFFAF7' },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 7,
-  },
-  typeIcon: {
-    width: 47,
-    height: 44,
-    backgroundColor: '#F1F4F7',
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  typeIconSelected: { backgroundColor: '#FCE7DE' },
   radio: {
     width: 19,
     height: 19,
@@ -1228,7 +1101,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  radioSelected: { backgroundColor: '#DD5847', borderColor: '#DD5847' },
   cardTitle: { color: '#273347', fontSize: 14, fontWeight: '700' },
   cardDescription: {
     color: '#86909E',

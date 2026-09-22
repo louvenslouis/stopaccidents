@@ -16,6 +16,8 @@ export function MapFrame({
   location,
   placeFocus,
   onPan,
+  route = null,
+  onCenterChange,
 }: MapFrameProps) {
   const frame = useRef<WebView>(null);
   const updateMarkers = useCallback(() => {
@@ -40,6 +42,12 @@ export function MapFrame({
     );
   }, [placeFocus]);
   useEffect(updatePlaceFocus, [updatePlaceFocus]);
+  const updateRoute = useCallback(() => {
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsRoute && window.stopAccidentsRoute(${JSON.stringify(route)}); true;`,
+    );
+  }, [route]);
+  useEffect(updateRoute, [updateRoute]);
   const openLink = (url: string) => {
     if (url.startsWith('https://')) {
       void Linking.openURL(url).catch(onError);
@@ -65,10 +73,12 @@ export function MapFrame({
           updateLocation();
           updatePlaceFocus();
           updateMarkers();
+          updateRoute();
           onLoad();
         }
         if (message?.status === 'error') onError();
         if (message?.status === 'pan') onPan();
+        if (message?.status === 'center') onCenterChange(message);
         if (
           message?.status === 'select' &&
           markers.some((marker) => marker.id === message.id)

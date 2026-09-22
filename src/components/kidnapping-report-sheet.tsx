@@ -1,4 +1,4 @@
-import { ReportIllustration } from '@/components/report-illustration';
+import { ReportReward } from '@/components/report-reward';
 import { randomUUID } from 'expo-crypto';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -350,33 +350,7 @@ export function KidnappingReportSheet({
           ]}
         >
           {receipt ? (
-            <View style={styles.success}>
-              <View style={{ alignItems: 'center' }}>
-                <ReportIllustration kind="success" size={112} />
-              </View>
-              <Text style={styles.eyebrow}>MERCI POUR VOTRE VIGILANCE</Text>
-              <Text accessibilityRole="header" style={styles.successTitle}>
-                Signalement complété
-              </Text>
-              <Text style={styles.successBody}>
-                Les indices sur les véhicules, leur direction et la personne
-                enlevée ont été ajoutés au même signalement.
-              </Text>
-              <View style={styles.receipt}>
-                <Text style={styles.small}>RÉFÉRENCE DU SIGNALEMENT</Text>
-                <Text selectable style={styles.reference}>
-                  {receipt.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.warning}>
-                <AppIcon icon={ShieldAlert} size={20} color="#B63838" />
-                <Text style={styles.warningText}>
-                  Cet envoi ne contacte pas automatiquement la police ou les
-                  secours. Alertez immédiatement les autorités compétentes.
-                </Text>
-              </View>
-              <Action label="Terminer" icon={CheckCheck} onPress={done} />
-            </View>
+            <ReportReward reportId={receipt} reportKind="kidnapping" onDone={done} visible={visible} />
           ) : (
             <>
               <View
