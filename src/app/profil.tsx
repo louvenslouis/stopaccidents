@@ -1,8 +1,14 @@
 import { AppScreen } from '@/components/app-screen';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
+import {
+  readSavedPlaces,
+  saveSavedPlaces,
+  validateSavedPlaces,
+} from '@/features/profile/saved-places';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import BriefcaseBusiness from 'lucide-react-native/icons/briefcase-business';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
@@ -10,6 +16,8 @@ import LockKeyhole from 'lucide-react-native/icons/lock-keyhole';
 import LogIn from 'lucide-react-native/icons/log-in';
 import LogOut from 'lucide-react-native/icons/log-out';
 import Mail from 'lucide-react-native/icons/mail';
+import MapPinHouse from 'lucide-react-native/icons/map-pin-house';
+import Save from 'lucide-react-native/icons/save';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import UserRound from 'lucide-react-native/icons/user-round';
 import { useEffect, useState } from 'react';
@@ -41,6 +49,11 @@ export default function ProfileScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [homeAddress, setHomeAddress] = useState('');
+  const [workAddress, setWorkAddress] = useState('');
+  const [placesLoading, setPlacesLoading] = useState(false);
+  const [placesSaving, setPlacesSaving] = useState(false);
+  const [placesFeedback, setPlacesFeedback] = useState<Feedback | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -73,11 +86,72 @@ export default function ProfileScreen() {
 
   const accountEmail = session?.user.email;
 
+  useEffect(() => {
+    if (!accountEmail) return;
+
+    let active = true;
+    void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setPlacesLoading(true);
+      setPlacesFeedback(null);
+      try {
+        const places = await readSavedPlaces();
+        if (!active) return;
+        setHomeAddress(places.homeAddress);
+        setWorkAddress(places.workAddress);
+      } catch (error) {
+        if (!active) return;
+        setPlacesFeedback({
+          message: error instanceof Error ? error.message : 'Impossible de charger vos adresses.',
+          tone: 'error',
+        });
+      } finally {
+        if (active) setPlacesLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [accountEmail, session?.user.id]);
+
+  async function savePlaces() {
+    if (!session?.user.id) return;
+    const places = { homeAddress, workAddress };
+    const validation = validateSavedPlaces(places);
+    if (validation) {
+      setPlacesFeedback({ message: validation, tone: 'error' });
+      return;
+    }
+
+    setPlacesFeedback(null);
+    setPlacesSaving(true);
+    try {
+      const saved = await saveSavedPlaces(session.user.id, places);
+      setHomeAddress(saved.homeAddress);
+      setWorkAddress(saved.workAddress);
+      setPlacesFeedback({
+        message: 'Vos adresses ont été enregistrées.',
+        tone: 'success',
+      });
+    } catch (error) {
+      setPlacesFeedback({
+        message: error instanceof Error ? error.message : 'Impossible d’enregistrer vos adresses.',
+        tone: 'error',
+      });
+    } finally {
+      setPlacesSaving(false);
+    }
+  }
+
   async function signIn() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!isValidEmail(normalizedEmail)) {
-      setFeedback({ message: 'Saisissez une adresse e-mail valide.', tone: 'error' });
+      setFeedback({
+        message: 'Saisissez une adresse e-mail valide.',
+        tone: 'error',
+      });
       return;
     }
 
@@ -144,47 +218,142 @@ export default function ProfileScreen() {
               <Text style={styles.supportingText}>Vérification de votre session…</Text>
             </View>
           ) : accountEmail ? (
-            <View style={styles.card}>
-              <View style={styles.accountIcon}>
-                <AppIcon icon={UserRound} color="#267E70" size={29} strokeWidth={2.1} />
-              </View>
-              <View style={styles.accountHeading}>
-                <View style={styles.connectedRow}>
-                  <AppIcon icon={CircleCheck} color="#267E70" size={17} />
-                  <Text style={styles.connectedLabel}>CONNECTÉ</Text>
+            <>
+              <View style={styles.card}>
+                <View style={styles.accountIcon}>
+                  <AppIcon icon={UserRound} color="#267E70" size={29} strokeWidth={2.1} />
                 </View>
-                <Text style={styles.cardTitle}>Votre compte</Text>
-                <Text selectable style={styles.accountEmail}>
-                  {accountEmail}
-                </Text>
+                <View style={styles.accountHeading}>
+                  <View style={styles.connectedRow}>
+                    <AppIcon icon={CircleCheck} color="#267E70" size={17} />
+                    <Text style={styles.connectedLabel}>CONNECTÉ</Text>
+                  </View>
+                  <Text style={styles.cardTitle}>Votre compte</Text>
+                  <Text selectable style={styles.accountEmail}>
+                    {accountEmail}
+                  </Text>
+                </View>
+
+                {feedback && (
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
+                    style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
+                    {feedback.message}
+                  </Text>
+                )}
+
+                <AnimatedPressable
+                  accessibilityLabel="Se déconnecter"
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  haptic="light"
+                  onPress={() => void signOut()}
+                  style={[styles.secondaryButton, submitting && styles.disabled]}>
+                  {submitting ? (
+                    <ActivityIndicator color="#485469" />
+                  ) : (
+                    <>
+                      <AppIcon icon={LogOut} color="#485469" size={19} />
+                      <Text style={styles.secondaryButtonText}>Se déconnecter</Text>
+                    </>
+                  )}
+                </AnimatedPressable>
               </View>
 
-              {feedback && (
-                <Text
-                  accessibilityLiveRegion="polite"
-                  accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
-                  style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
-                  {feedback.message}
-                </Text>
-              )}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.placeIcon}>
+                    <AppIcon icon={MapPinHouse} color="#1767A6" size={24} strokeWidth={2.1} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>Vos lieux enregistrés</Text>
+                    <Text style={styles.supportingText}>
+                      Enregistrez votre domicile et votre lieu de travail sur votre compte.
+                    </Text>
+                  </View>
+                </View>
 
-              <AnimatedPressable
-                accessibilityLabel="Se déconnecter"
-                accessibilityRole="button"
-                disabled={submitting}
-                haptic="light"
-                onPress={() => void signOut()}
-                style={[styles.secondaryButton, submitting && styles.disabled]}>
-                {submitting ? (
-                  <ActivityIndicator color="#485469" />
+                {placesLoading ? (
+                  <View accessibilityLiveRegion="polite" style={styles.placesLoading}>
+                    <ActivityIndicator color="#1767A6" />
+                    <Text style={styles.supportingText}>Chargement de vos adresses…</Text>
+                  </View>
                 ) : (
                   <>
-                    <AppIcon icon={LogOut} color="#485469" size={19} />
-                    <Text style={styles.secondaryButtonText}>Se déconnecter</Text>
+                    <View style={styles.field}>
+                      <Text style={styles.label}>Adresse du domicile</Text>
+                      <View style={styles.inputShell}>
+                        <AppIcon icon={MapPinHouse} color="#89919E" size={19} />
+                        <TextInput
+                          accessibilityLabel="Adresse du domicile"
+                          autoCapitalize="words"
+                          autoComplete="street-address"
+                          editable={!placesSaving}
+                          enterKeyHint="next"
+                          maxLength={500}
+                          onChangeText={setHomeAddress}
+                          placeholder="Ex. 12, rue Capois, Port-au-Prince"
+                          placeholderTextColor="#9AA1AC"
+                          returnKeyType="next"
+                          style={styles.input}
+                          textContentType="fullStreetAddress"
+                          value={homeAddress}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.field}>
+                      <Text style={styles.label}>Lieu de travail</Text>
+                      <View style={styles.inputShell}>
+                        <AppIcon icon={BriefcaseBusiness} color="#89919E" size={19} />
+                        <TextInput
+                          accessibilityLabel="Lieu de travail"
+                          autoCapitalize="words"
+                          editable={!placesSaving}
+                          maxLength={500}
+                          onChangeText={setWorkAddress}
+                          onSubmitEditing={() => void savePlaces()}
+                          placeholder="Ex. Delmas 33, Port-au-Prince"
+                          placeholderTextColor="#9AA1AC"
+                          returnKeyType="done"
+                          style={styles.input}
+                          value={workAddress}
+                        />
+                      </View>
+                    </View>
+
+                    {placesFeedback && (
+                      <Text
+                        accessibilityLiveRegion="polite"
+                        accessibilityRole={placesFeedback.tone === 'error' ? 'alert' : undefined}
+                        style={
+                          placesFeedback.tone === 'error' ? styles.errorText : styles.successText
+                        }>
+                        {placesFeedback.message}
+                      </Text>
+                    )}
+
+                    <AnimatedPressable
+                      accessibilityLabel="Enregistrer mes adresses"
+                      accessibilityRole="button"
+                      disabled={placesSaving}
+                      haptic="light"
+                      onPress={() => void savePlaces()}
+                      style={[styles.placesButton, placesSaving && styles.disabled]}>
+                      {placesSaving ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <AppIcon icon={Save} color="#FFFFFF" size={19} />
+                          <Text style={styles.primaryButtonText}>Enregistrer mes adresses</Text>
+                        </>
+                      )}
+                    </AnimatedPressable>
                   </>
                 )}
-              </AnimatedPressable>
-            </View>
+              </View>
+            </>
           ) : (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -251,17 +420,15 @@ export default function ProfileScreen() {
                     hitSlop={8}
                     onPress={() => setPasswordVisible((visible) => !visible)}
                     style={styles.visibilityButton}>
-                    <AppIcon
-                      icon={passwordVisible ? EyeOff : Eye}
-                      color="#6F7887"
-                      size={20}
-                    />
+                    <AppIcon icon={passwordVisible ? EyeOff : Eye} color="#6F7887" size={20} />
                   </Pressable>
                 </View>
               </View>
 
               {session?.user.is_anonymous && (
-                <Text style={styles.guestText}>Vous utilisez actuellement l’app en mode invité.</Text>
+                <Text style={styles.guestText}>
+                  Vous utilisez actuellement l’app en mode invité.
+                </Text>
               )}
 
               {feedback && (
@@ -313,6 +480,7 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     alignSelf: 'center',
     marginTop: 30,
+    gap: 18,
   },
   loadingCard: {
     minHeight: 128,
@@ -350,6 +518,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFF0EB',
+  },
+  placeIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E7F1FA',
+  },
+  placesLoading: {
+    minHeight: 100,
+    gap: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardTitle: {
     color: '#243147',
@@ -430,6 +612,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     fontWeight: '700',
+  },
+  placesButton: {
+    minHeight: 54,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 16,
+    backgroundColor: '#1767A6',
   },
   securityNote: {
     flexDirection: 'row',

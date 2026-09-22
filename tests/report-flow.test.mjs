@@ -43,14 +43,14 @@ function find(node, predicate) {
   }
   return null;
 }
-function fixture() {
+function fixture(appLocation = null) {
   let cursor = 0,
     category = null,
     tree;
   const hooks = [];
   const gps = deferred(),
     firstSave = deferred();
-  const calls = { locate: 0, save: [], closed: 0 };
+  const calls = { locate: 0, reverseGeocode: 0, save: [], closed: 0 };
   const { ReportSheet } = compile(source, {
     react: {
       useState: (initial) => {
@@ -98,7 +98,10 @@ function fixture() {
       },
     },
     '@/features/accident-report/reverse-geocode': {
-      reverseGeocodeZone: async () => 'Bois Verna, Port-au-Prince',
+      reverseGeocodeZone: async () => {
+        calls.reverseGeocode++;
+        return 'Bois Verna, Port-au-Prince';
+      },
     },
     '@/features/accident-report/submit': {
       saveAccidentReportStep: async (draft, step) => {
@@ -106,6 +109,12 @@ function fixture() {
         if (calls.save.length === 1) return firstSave.promise;
         return draft.id;
       },
+    },
+    '@/features/location/app-location': {
+      useAppLocation: () => ({ location: appLocation }),
+    },
+    '@/features/location/app-location-model': {
+      reusableAppLocation: (location) => location,
     },
   });
   function render() {
@@ -154,6 +163,29 @@ function fixture() {
       ),
   };
 }
+
+test('a fresh app location skips the GPS screen and opens the first report question', async () => {
+  const f = fixture({
+    coordinates: { latitude: 18.54, longitude: -72.31, accuracy: 9 },
+    location: 'Pétion-Ville, Ouest',
+    capturedAt: Date.now(),
+  });
+  f.pick();
+  f.render();
+  assert.equal(f.calls.locate, 0);
+  assert.equal(f.calls.reverseGeocode, 0);
+  assert.equal(f.calls.save.length, 1);
+  assert.equal(f.calls.save[0].step, 0);
+  assert.deepEqual(f.calls.save[0].draft.coordinates, {
+    latitude: 18.54,
+    longitude: -72.31,
+    accuracy: 9,
+  });
+  assert.ok(f.text('Quel type d’accident ?'));
+  assert.ok(f.text('Pétion-Ville, Ouest'));
+  f.firstSave.resolve('stable-report-id');
+  await flush();
+});
 
 test('Accident automatically locates and saves before showing the subtype and optional landmark', async () => {
   const f = fixture();

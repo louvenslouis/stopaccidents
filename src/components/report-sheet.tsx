@@ -56,6 +56,8 @@ import {
 } from '@/features/accident-report/precise-location';
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
 import { saveAccidentReportStep } from '@/features/accident-report/submit';
+import { useAppLocation } from '@/features/location/app-location';
+import { reusableAppLocation } from '@/features/location/app-location-model';
 
 const types: {
   value: AccidentType;
@@ -212,6 +214,7 @@ export function ReportSheet({
 }) {
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
+  const { location: appLocation } = useAppLocation();
   const [draft, setDraft] = useState<ReportDraft>(makeDraft);
   const [step, setStep] = useState(0);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -265,6 +268,9 @@ export function ReportSheet({
   }
   async function locate() {
     if (locating || submitting.current) return;
+    const defaultLocation = isPreciseLocation(draft.coordinates)
+      ? null
+      : reusableAppLocation(appLocation);
     const request = ++locationRequest.current;
     locationController.current?.abort();
     const controller = new AbortController();
@@ -273,22 +279,33 @@ export function ReportSheet({
     setError(null);
     setLocationError(null);
     setLocationSettingsNeeded(false);
-    changeStep(0);
+    changeStep(defaultLocation ? 1 : 0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const coordinates = isPreciseLocation(draft.coordinates)
         ? draft.coordinates!
-        : await acquirePreciseLocation(controller.signal, setLocationProgress);
+        : defaultLocation?.coordinates ??
+          (await acquirePreciseLocation(
+            controller.signal,
+            setLocationProgress,
+          ));
       if (locationRequest.current !== request) return;
-      setLocationProgress('Recherche du nom du lieu…');
+      setLocationProgress(
+        defaultLocation
+          ? 'Position de l’application utilisée…'
+          : 'Recherche du nom du lieu…',
+      );
       const location =
         draft.location ||
-        (await Promise.race([
-          reverseGeocodeZone(coordinates.latitude, coordinates.longitude),
-          new Promise<null>((resolve) => {
-            geocodingTimeout = setTimeout(() => resolve(null), 8000);
-          }),
-        ])) ||
+        defaultLocation?.location ||
+        (!defaultLocation
+          ? await Promise.race([
+              reverseGeocodeZone(coordinates.latitude, coordinates.longitude),
+              new Promise<null>((resolve) => {
+                geocodingTimeout = setTimeout(() => resolve(null), 8000);
+              }),
+            ])
+          : '') ||
         '';
       if (locationRequest.current !== request) return;
       const locatedDraft = {
@@ -305,6 +322,7 @@ export function ReportSheet({
       changeStep(1);
     } catch (e) {
       if (locationRequest.current === request) {
+        changeStep(0);
         setLocationError(
           e instanceof Error
             ? e.message

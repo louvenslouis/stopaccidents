@@ -44,6 +44,8 @@ import {
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
 import { isPreciseLocation } from '@/features/accident-report/model';
 import { saveKidnappingReportStep } from '@/features/kidnapping-report/submit';
+import { useAppLocation } from '@/features/location/app-location';
+import { reusableAppLocation } from '@/features/location/app-location-model';
 
 const stepLabels = ['Véhicules', 'Personne'];
 const makeDraft = (): KidnappingReportDraft => ({
@@ -115,6 +117,7 @@ export function KidnappingReportSheet({
 }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const { location: appLocation } = useAppLocation();
   const [draft, setDraft] = useState<KidnappingReportDraft>(makeDraft);
   const [step, setStep] = useState(0);
   const [savedSteps, setSavedSteps] = useState(0);
@@ -189,6 +192,9 @@ export function KidnappingReportSheet({
 
   async function locate() {
     if (locating || submitting.current) return;
+    const defaultLocation = isPreciseLocation(draft.coordinates)
+      ? null
+      : reusableAppLocation(appLocation);
     const request = ++locationRequest.current;
     locationController.current?.abort();
     const controller = new AbortController();
@@ -197,22 +203,33 @@ export function KidnappingReportSheet({
     setError(null);
     setLocationError(null);
     setLocationSettingsNeeded(false);
-    changeStep(0);
+    changeStep(defaultLocation ? 1 : 0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
       const coordinates = isPreciseLocation(draft.coordinates)
         ? draft.coordinates!
-        : await acquirePreciseLocation(controller.signal, setLocationProgress);
+        : defaultLocation?.coordinates ??
+          (await acquirePreciseLocation(
+            controller.signal,
+            setLocationProgress,
+          ));
       if (locationRequest.current !== request) return;
-      setLocationProgress('Recherche du nom du lieu…');
+      setLocationProgress(
+        defaultLocation
+          ? 'Position de l’application utilisée…'
+          : 'Recherche du nom du lieu…',
+      );
       const location =
         draft.location ||
-        (await Promise.race([
-          reverseGeocodeZone(coordinates.latitude, coordinates.longitude),
-          new Promise<null>((resolve) => {
-            geocodingTimeout = setTimeout(() => resolve(null), 8000);
-          }),
-        ])) ||
+        defaultLocation?.location ||
+        (!defaultLocation
+          ? await Promise.race([
+              reverseGeocodeZone(coordinates.latitude, coordinates.longitude),
+              new Promise<null>((resolve) => {
+                geocodingTimeout = setTimeout(() => resolve(null), 8000);
+              }),
+            ])
+          : '') ||
         '';
       if (locationRequest.current !== request) return;
       const locatedDraft = {
@@ -229,6 +246,7 @@ export function KidnappingReportSheet({
       changeStep(1);
     } catch (cause) {
       if (locationRequest.current === request) {
+        changeStep(0);
         setLocationError(
           cause instanceof Error
             ? cause.message
