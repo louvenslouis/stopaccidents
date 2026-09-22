@@ -1,14 +1,17 @@
 import { AppScreen } from '@/components/app-screen';
+import { SavedPlacePicker } from '@/components/saved-place-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import {
   readSavedPlaces,
   saveSavedPlaces,
   validateSavedPlaces,
+  type SavedPlace,
 } from '@/features/profile/saved-places';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import BriefcaseBusiness from 'lucide-react-native/icons/briefcase-business';
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import Eye from 'lucide-react-native/icons/eye';
 import EyeOff from 'lucide-react-native/icons/eye-off';
@@ -49,8 +52,9 @@ export default function ProfileScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [homeAddress, setHomeAddress] = useState('');
-  const [workAddress, setWorkAddress] = useState('');
+  const [homePlace, setHomePlace] = useState<SavedPlace | null>(null);
+  const [workPlace, setWorkPlace] = useState<SavedPlace | null>(null);
+  const [placeTarget, setPlaceTarget] = useState<'home' | 'work' | null>(null);
   const [placesLoading, setPlacesLoading] = useState(false);
   const [placesSaving, setPlacesSaving] = useState(false);
   const [placesFeedback, setPlacesFeedback] = useState<Feedback | null>(null);
@@ -98,8 +102,8 @@ export default function ProfileScreen() {
       try {
         const places = await readSavedPlaces();
         if (!active) return;
-        setHomeAddress(places.homeAddress);
-        setWorkAddress(places.workAddress);
+        setHomePlace(places.home);
+        setWorkPlace(places.work);
       } catch (error) {
         if (!active) return;
         setPlacesFeedback({
@@ -117,7 +121,7 @@ export default function ProfileScreen() {
 
   async function savePlaces() {
     if (!session?.user.id) return;
-    const places = { homeAddress, workAddress };
+    const places = { home: homePlace, work: workPlace };
     const validation = validateSavedPlaces(places);
     if (validation) {
       setPlacesFeedback({ message: validation, tone: 'error' });
@@ -128,15 +132,15 @@ export default function ProfileScreen() {
     setPlacesSaving(true);
     try {
       const saved = await saveSavedPlaces(session.user.id, places);
-      setHomeAddress(saved.homeAddress);
-      setWorkAddress(saved.workAddress);
+      setHomePlace(saved.home);
+      setWorkPlace(saved.work);
       setPlacesFeedback({
-        message: 'Vos adresses ont été enregistrées.',
+        message: 'Vos lieux et leurs coordonnées ont été enregistrés.',
         tone: 'success',
       });
     } catch (error) {
       setPlacesFeedback({
-        message: error instanceof Error ? error.message : 'Impossible d’enregistrer vos adresses.',
+        message: error instanceof Error ? error.message : 'Impossible d’enregistrer vos lieux.',
         tone: 'error',
       });
     } finally {
@@ -203,36 +207,262 @@ export default function ProfileScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}>
-      <AppScreen
-        eyebrow="VOTRE ESPACE"
-        title="Profil"
-        description="Connectez-vous pour retrouver vos informations sur tous vos appareils."
-        contentContainerStyle={styles.screenContent}>
-        <View style={styles.content}>
-          {checkingSession ? (
-            <View accessibilityLiveRegion="polite" style={styles.loadingCard}>
-              <ActivityIndicator color="#E14D3E" />
-              <Text style={styles.supportingText}>Vérification de votre session…</Text>
-            </View>
-          ) : accountEmail ? (
-            <>
-              <View style={styles.card}>
-                <View style={styles.accountIcon}>
-                  <AppIcon icon={UserRound} color="#267E70" size={29} strokeWidth={2.1} />
-                </View>
-                <View style={styles.accountHeading}>
-                  <View style={styles.connectedRow}>
-                    <AppIcon icon={CircleCheck} color="#267E70" size={17} />
-                    <Text style={styles.connectedLabel}>CONNECTÉ</Text>
+    <>
+      {placeTarget && (
+        <SavedPlacePicker
+          visible
+          title={placeTarget === 'work' ? 'Lieu de travail' : 'Domicile'}
+          value={placeTarget === 'work' ? workPlace : homePlace}
+          onClose={() => setPlaceTarget(null)}
+          onConfirm={(place) => {
+            if (placeTarget === 'work') setWorkPlace(place);
+            else setHomePlace(place);
+            setPlaceTarget(null);
+            setPlacesFeedback(null);
+          }}
+        />
+      )}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}>
+        <AppScreen
+          eyebrow="VOTRE ESPACE"
+          title="Profil"
+          description="Connectez-vous pour retrouver vos informations sur tous vos appareils."
+          contentContainerStyle={styles.screenContent}>
+          <View style={styles.content}>
+            {checkingSession ? (
+              <View accessibilityLiveRegion="polite" style={styles.loadingCard}>
+                <ActivityIndicator color="#E14D3E" />
+                <Text style={styles.supportingText}>Vérification de votre session…</Text>
+              </View>
+            ) : accountEmail ? (
+              <>
+                <View style={styles.card}>
+                  <View style={styles.accountIcon}>
+                    <AppIcon icon={UserRound} color="#267E70" size={29} strokeWidth={2.1} />
                   </View>
-                  <Text style={styles.cardTitle}>Votre compte</Text>
-                  <Text selectable style={styles.accountEmail}>
-                    {accountEmail}
-                  </Text>
+                  <View style={styles.accountHeading}>
+                    <View style={styles.connectedRow}>
+                      <AppIcon icon={CircleCheck} color="#267E70" size={17} />
+                      <Text style={styles.connectedLabel}>CONNECTÉ</Text>
+                    </View>
+                    <Text style={styles.cardTitle}>Votre compte</Text>
+                    <Text selectable style={styles.accountEmail}>
+                      {accountEmail}
+                    </Text>
+                  </View>
+
+                  {feedback && (
+                    <Text
+                      accessibilityLiveRegion="polite"
+                      accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
+                      style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
+                      {feedback.message}
+                    </Text>
+                  )}
+
+                  <AnimatedPressable
+                    accessibilityLabel="Se déconnecter"
+                    accessibilityRole="button"
+                    disabled={submitting}
+                    haptic="light"
+                    onPress={() => void signOut()}
+                    style={[styles.secondaryButton, submitting && styles.disabled]}>
+                    {submitting ? (
+                      <ActivityIndicator color="#485469" />
+                    ) : (
+                      <>
+                        <AppIcon icon={LogOut} color="#485469" size={19} />
+                        <Text style={styles.secondaryButtonText}>Se déconnecter</Text>
+                      </>
+                    )}
+                  </AnimatedPressable>
                 </View>
+
+                <View style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.placeIcon}>
+                      <AppIcon icon={MapPinHouse} color="#1767A6" size={24} strokeWidth={2.1} />
+                    </View>
+                    <View style={styles.flex}>
+                      <Text style={styles.cardTitle}>Vos lieux enregistrés</Text>
+                      <Text style={styles.supportingText}>
+                        Choisissez un point précis ou recherchez un lieu directement sur la carte.
+                      </Text>
+                    </View>
+                  </View>
+
+                  {placesLoading ? (
+                    <View accessibilityLiveRegion="polite" style={styles.placesLoading}>
+                      <ActivityIndicator color="#1767A6" />
+                      <Text style={styles.supportingText}>Chargement de vos lieux…</Text>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={styles.field}>
+                        <Text style={styles.label}>Adresse du domicile</Text>
+                        <AnimatedPressable
+                          accessibilityLabel="Choisir l’adresse du domicile sur la carte"
+                          accessibilityRole="button"
+                          disabled={placesSaving}
+                          haptic="light"
+                          onPress={() => setPlaceTarget('home')}
+                          style={styles.placeField}>
+                          <AppIcon icon={MapPinHouse} color="#1767A6" size={20} />
+                          <View style={styles.flex}>
+                            <Text
+                              numberOfLines={2}
+                              style={homePlace ? styles.placeValue : styles.placePlaceholder}>
+                              {homePlace?.address || 'Choisir un point sur la carte'}
+                            </Text>
+                            {homePlace && (
+                              <Text style={styles.placeCoordinates}>
+                                {homePlace.latitude === null || homePlace.longitude === null
+                                  ? 'Ancienne adresse — position à préciser'
+                                  : `${homePlace.latitude.toFixed(5)}, ${homePlace.longitude.toFixed(5)}`}
+                              </Text>
+                            )}
+                          </View>
+                          <AppIcon icon={ChevronRight} color="#89919E" size={20} />
+                        </AnimatedPressable>
+                      </View>
+
+                      <View style={styles.field}>
+                        <Text style={styles.label}>Lieu de travail</Text>
+                        <AnimatedPressable
+                          accessibilityLabel="Choisir le lieu de travail sur la carte"
+                          accessibilityRole="button"
+                          disabled={placesSaving}
+                          haptic="light"
+                          onPress={() => setPlaceTarget('work')}
+                          style={styles.placeField}>
+                          <AppIcon icon={BriefcaseBusiness} color="#1767A6" size={20} />
+                          <View style={styles.flex}>
+                            <Text
+                              numberOfLines={2}
+                              style={workPlace ? styles.placeValue : styles.placePlaceholder}>
+                              {workPlace?.address || 'Choisir un point sur la carte'}
+                            </Text>
+                            {workPlace && (
+                              <Text style={styles.placeCoordinates}>
+                                {workPlace.latitude === null || workPlace.longitude === null
+                                  ? 'Ancienne adresse — position à préciser'
+                                  : `${workPlace.latitude.toFixed(5)}, ${workPlace.longitude.toFixed(5)}`}
+                              </Text>
+                            )}
+                          </View>
+                          <AppIcon icon={ChevronRight} color="#89919E" size={20} />
+                        </AnimatedPressable>
+                      </View>
+
+                      {placesFeedback && (
+                        <Text
+                          accessibilityLiveRegion="polite"
+                          accessibilityRole={placesFeedback.tone === 'error' ? 'alert' : undefined}
+                          style={
+                            placesFeedback.tone === 'error' ? styles.errorText : styles.successText
+                          }>
+                          {placesFeedback.message}
+                        </Text>
+                      )}
+
+                      <AnimatedPressable
+                        accessibilityLabel="Enregistrer mes lieux"
+                        accessibilityRole="button"
+                        disabled={placesSaving}
+                        haptic="light"
+                        onPress={() => void savePlaces()}
+                        style={[styles.placesButton, placesSaving && styles.disabled]}>
+                        {placesSaving ? (
+                          <ActivityIndicator color="#FFFFFF" />
+                        ) : (
+                          <>
+                            <AppIcon icon={Save} color="#FFFFFF" size={19} />
+                            <Text style={styles.primaryButtonText}>Enregistrer mes lieux</Text>
+                          </>
+                        )}
+                      </AnimatedPressable>
+                    </>
+                  )}
+                </View>
+              </>
+            ) : (
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.mailIcon}>
+                    <AppIcon icon={Mail} color="#D94235" size={24} strokeWidth={2.1} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>Connexion par e-mail</Text>
+                    <Text style={styles.supportingText}>
+                      Utilisez l’adresse et le mot de passe associés à votre compte.
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Adresse e-mail</Text>
+                  <View style={styles.inputShell}>
+                    <AppIcon icon={Mail} color="#89919E" size={19} />
+                    <TextInput
+                      accessibilityLabel="Adresse e-mail"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      autoCorrect={false}
+                      editable={!submitting}
+                      enterKeyHint="next"
+                      inputMode="email"
+                      keyboardType="email-address"
+                      onChangeText={setEmail}
+                      placeholder="vous@exemple.com"
+                      placeholderTextColor="#9AA1AC"
+                      returnKeyType="next"
+                      style={styles.input}
+                      textContentType="emailAddress"
+                      value={email}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Mot de passe</Text>
+                  <View style={styles.inputShell}>
+                    <AppIcon icon={LockKeyhole} color="#89919E" size={19} />
+                    <TextInput
+                      accessibilityLabel="Mot de passe"
+                      autoCapitalize="none"
+                      autoComplete="current-password"
+                      autoCorrect={false}
+                      editable={!submitting}
+                      onChangeText={setPassword}
+                      onSubmitEditing={() => void signIn()}
+                      placeholder="Votre mot de passe"
+                      placeholderTextColor="#9AA1AC"
+                      returnKeyType="go"
+                      secureTextEntry={!passwordVisible}
+                      style={styles.input}
+                      textContentType="password"
+                      value={password}
+                    />
+                    <Pressable
+                      accessibilityLabel={
+                        passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                      }
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => setPasswordVisible((visible) => !visible)}
+                      style={styles.visibilityButton}>
+                      <AppIcon icon={passwordVisible ? EyeOff : Eye} color="#6F7887" size={20} />
+                    </Pressable>
+                  </View>
+                </View>
+
+                {session?.user.is_anonymous && (
+                  <Text style={styles.guestText}>
+                    Vous utilisez actuellement l’app en mode invité.
+                  </Text>
+                )}
 
                 {feedback && (
                   <Text
@@ -244,231 +474,35 @@ export default function ProfileScreen() {
                 )}
 
                 <AnimatedPressable
-                  accessibilityLabel="Se déconnecter"
+                  accessibilityLabel="Se connecter par e-mail"
                   accessibilityRole="button"
                   disabled={submitting}
                   haptic="light"
-                  onPress={() => void signOut()}
-                  style={[styles.secondaryButton, submitting && styles.disabled]}>
+                  onPress={() => void signIn()}
+                  style={[styles.primaryButton, submitting && styles.disabled]}>
                   {submitting ? (
-                    <ActivityIndicator color="#485469" />
+                    <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <>
-                      <AppIcon icon={LogOut} color="#485469" size={19} />
-                      <Text style={styles.secondaryButtonText}>Se déconnecter</Text>
+                      <Text style={styles.primaryButtonText}>Se connecter</Text>
+                      <AppIcon icon={LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
                     </>
                   )}
                 </AnimatedPressable>
-              </View>
 
-              <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.placeIcon}>
-                    <AppIcon icon={MapPinHouse} color="#1767A6" size={24} strokeWidth={2.1} />
-                  </View>
-                  <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>Vos lieux enregistrés</Text>
-                    <Text style={styles.supportingText}>
-                      Enregistrez votre domicile et votre lieu de travail sur votre compte.
-                    </Text>
-                  </View>
-                </View>
-
-                {placesLoading ? (
-                  <View accessibilityLiveRegion="polite" style={styles.placesLoading}>
-                    <ActivityIndicator color="#1767A6" />
-                    <Text style={styles.supportingText}>Chargement de vos adresses…</Text>
-                  </View>
-                ) : (
-                  <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Adresse du domicile</Text>
-                      <View style={styles.inputShell}>
-                        <AppIcon icon={MapPinHouse} color="#89919E" size={19} />
-                        <TextInput
-                          accessibilityLabel="Adresse du domicile"
-                          autoCapitalize="words"
-                          autoComplete="street-address"
-                          editable={!placesSaving}
-                          enterKeyHint="next"
-                          maxLength={500}
-                          onChangeText={setHomeAddress}
-                          placeholder="Ex. 12, rue Capois, Port-au-Prince"
-                          placeholderTextColor="#9AA1AC"
-                          returnKeyType="next"
-                          style={styles.input}
-                          textContentType="fullStreetAddress"
-                          value={homeAddress}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Lieu de travail</Text>
-                      <View style={styles.inputShell}>
-                        <AppIcon icon={BriefcaseBusiness} color="#89919E" size={19} />
-                        <TextInput
-                          accessibilityLabel="Lieu de travail"
-                          autoCapitalize="words"
-                          editable={!placesSaving}
-                          maxLength={500}
-                          onChangeText={setWorkAddress}
-                          onSubmitEditing={() => void savePlaces()}
-                          placeholder="Ex. Delmas 33, Port-au-Prince"
-                          placeholderTextColor="#9AA1AC"
-                          returnKeyType="done"
-                          style={styles.input}
-                          value={workAddress}
-                        />
-                      </View>
-                    </View>
-
-                    {placesFeedback && (
-                      <Text
-                        accessibilityLiveRegion="polite"
-                        accessibilityRole={placesFeedback.tone === 'error' ? 'alert' : undefined}
-                        style={
-                          placesFeedback.tone === 'error' ? styles.errorText : styles.successText
-                        }>
-                        {placesFeedback.message}
-                      </Text>
-                    )}
-
-                    <AnimatedPressable
-                      accessibilityLabel="Enregistrer mes adresses"
-                      accessibilityRole="button"
-                      disabled={placesSaving}
-                      haptic="light"
-                      onPress={() => void savePlaces()}
-                      style={[styles.placesButton, placesSaving && styles.disabled]}>
-                      {placesSaving ? (
-                        <ActivityIndicator color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <AppIcon icon={Save} color="#FFFFFF" size={19} />
-                          <Text style={styles.primaryButtonText}>Enregistrer mes adresses</Text>
-                        </>
-                      )}
-                    </AnimatedPressable>
-                  </>
-                )}
-              </View>
-            </>
-          ) : (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.mailIcon}>
-                  <AppIcon icon={Mail} color="#D94235" size={24} strokeWidth={2.1} />
-                </View>
-                <View style={styles.flex}>
-                  <Text style={styles.cardTitle}>Connexion par e-mail</Text>
-                  <Text style={styles.supportingText}>
-                    Utilisez l’adresse et le mot de passe associés à votre compte.
+                <View style={styles.securityNote}>
+                  <AppIcon icon={ShieldCheck} color="#6C7789" size={18} />
+                  <Text style={[styles.securityText, styles.flex]}>
+                    Votre mot de passe est transmis de manière sécurisée et n’est jamais stocké dans
+                    l’application.
                   </Text>
                 </View>
               </View>
-
-              <View style={styles.field}>
-                <Text style={styles.label}>Adresse e-mail</Text>
-                <View style={styles.inputShell}>
-                  <AppIcon icon={Mail} color="#89919E" size={19} />
-                  <TextInput
-                    accessibilityLabel="Adresse e-mail"
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect={false}
-                    editable={!submitting}
-                    enterKeyHint="next"
-                    inputMode="email"
-                    keyboardType="email-address"
-                    onChangeText={setEmail}
-                    placeholder="vous@exemple.com"
-                    placeholderTextColor="#9AA1AC"
-                    returnKeyType="next"
-                    style={styles.input}
-                    textContentType="emailAddress"
-                    value={email}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.field}>
-                <Text style={styles.label}>Mot de passe</Text>
-                <View style={styles.inputShell}>
-                  <AppIcon icon={LockKeyhole} color="#89919E" size={19} />
-                  <TextInput
-                    accessibilityLabel="Mot de passe"
-                    autoCapitalize="none"
-                    autoComplete="current-password"
-                    autoCorrect={false}
-                    editable={!submitting}
-                    onChangeText={setPassword}
-                    onSubmitEditing={() => void signIn()}
-                    placeholder="Votre mot de passe"
-                    placeholderTextColor="#9AA1AC"
-                    returnKeyType="go"
-                    secureTextEntry={!passwordVisible}
-                    style={styles.input}
-                    textContentType="password"
-                    value={password}
-                  />
-                  <Pressable
-                    accessibilityLabel={
-                      passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
-                    }
-                    accessibilityRole="button"
-                    hitSlop={8}
-                    onPress={() => setPasswordVisible((visible) => !visible)}
-                    style={styles.visibilityButton}>
-                    <AppIcon icon={passwordVisible ? EyeOff : Eye} color="#6F7887" size={20} />
-                  </Pressable>
-                </View>
-              </View>
-
-              {session?.user.is_anonymous && (
-                <Text style={styles.guestText}>
-                  Vous utilisez actuellement l’app en mode invité.
-                </Text>
-              )}
-
-              {feedback && (
-                <Text
-                  accessibilityLiveRegion="polite"
-                  accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
-                  style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
-                  {feedback.message}
-                </Text>
-              )}
-
-              <AnimatedPressable
-                accessibilityLabel="Se connecter par e-mail"
-                accessibilityRole="button"
-                disabled={submitting}
-                haptic="light"
-                onPress={() => void signIn()}
-                style={[styles.primaryButton, submitting && styles.disabled]}>
-                {submitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Text style={styles.primaryButtonText}>Se connecter</Text>
-                    <AppIcon icon={LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
-                  </>
-                )}
-              </AnimatedPressable>
-
-              <View style={styles.securityNote}>
-                <AppIcon icon={ShieldCheck} color="#6C7789" size={18} />
-                <Text style={[styles.securityText, styles.flex]}>
-                  Votre mot de passe est transmis de manière sécurisée et n’est jamais stocké dans
-                  l’application.
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-      </AppScreen>
-    </KeyboardAvoidingView>
+            )}
+          </View>
+        </AppScreen>
+      </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -572,6 +606,31 @@ const styles = StyleSheet.create({
     color: '#243147',
     fontSize: 15,
     lineHeight: 21,
+  },
+  placeField: {
+    minHeight: 66,
+    paddingHorizontal: 15,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    borderWidth: 1,
+    borderColor: '#D7E0E8',
+    borderRadius: 15,
+    backgroundColor: '#F8FBFD',
+  },
+  placeValue: {
+    color: '#243147',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  placePlaceholder: { color: '#7D8795', fontSize: 14, lineHeight: 20 },
+  placeCoordinates: {
+    marginTop: 3,
+    color: '#748094',
+    fontSize: 11,
+    lineHeight: 15,
   },
   visibilityButton: {
     width: 34,

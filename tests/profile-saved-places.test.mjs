@@ -55,12 +55,13 @@ test('a connected profile exposes home and work address fields with a save actio
         View: 'View',
       };
     if (name === '@/components/app-screen') return { AppScreen: 'AppScreen' };
+    if (name === '@/components/saved-place-picker') return { SavedPlacePicker: 'SavedPlacePicker' };
     if (name === '@/components/ui/animated-pressable')
       return { AnimatedPressable: 'AnimatedPressable' };
     if (name === '@/components/ui/app-icon') return { AppIcon: 'AppIcon' };
     if (name === '@/features/profile/saved-places')
       return {
-        readSavedPlaces: async () => ({ homeAddress: '', workAddress: '' }),
+        readSavedPlaces: async () => ({ home: null, work: null }),
         saveSavedPlaces: async (_, places) => places,
         validateSavedPlaces: () => null,
       };
@@ -69,7 +70,9 @@ test('a connected profile exposes home and work address fields with a save actio
         supabase: {
           auth: {
             getSession: async () => ({ data: { session }, error: null }),
-            onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+            onAuthStateChange: () => ({
+              data: { subscription: { unsubscribe() {} } },
+            }),
           },
         },
       };
@@ -81,14 +84,8 @@ test('a connected profile exposes home and work address fields with a save actio
     find(
       tree,
       (node) =>
-        node.type === 'TextInput' && node.props?.accessibilityLabel === 'Adresse du domicile',
-    ),
-  );
-  assert.ok(
-    find(
-      tree,
-      (node) =>
-        node.type === 'TextInput' && node.props?.accessibilityLabel === 'Lieu de travail',
+        node.type === 'AnimatedPressable' &&
+        node.props?.accessibilityLabel === 'Choisir l’adresse du domicile sur la carte',
     ),
   );
   assert.ok(
@@ -96,7 +93,15 @@ test('a connected profile exposes home and work address fields with a save actio
       tree,
       (node) =>
         node.type === 'AnimatedPressable' &&
-        node.props?.accessibilityLabel === 'Enregistrer mes adresses',
+        node.props?.accessibilityLabel === 'Choisir le lieu de travail sur la carte',
+    ),
+  );
+  assert.ok(
+    find(
+      tree,
+      (node) =>
+        node.type === 'AnimatedPressable' &&
+        node.props?.accessibilityLabel === 'Enregistrer mes lieux',
     ),
   );
 });

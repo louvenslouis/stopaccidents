@@ -10,30 +10,71 @@ select set_config(
   true
 );
 
-insert into public.user_saved_places(user_id, home_address, work_address) values (
+insert into public.user_saved_places(
+  user_id,
+  home_address,
+  home_latitude,
+  home_longitude,
+  work_address,
+  work_latitude,
+  work_longitude
+) values (
   'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '12, Rue Capois, Port-au-Prince',
-  'Delmas 33, Port-au-Prince'
+  18.5432,
+  -72.3350,
+  'Delmas 33, Port-au-Prince',
+  18.5510,
+  -72.3020
 ) on conflict (user_id) do update set
   home_address = excluded.home_address,
+  home_latitude = excluded.home_latitude,
+  home_longitude = excluded.home_longitude,
   work_address = excluded.work_address,
+  work_latitude = excluded.work_latitude,
+  work_longitude = excluded.work_longitude,
   updated_at = now();
 
-insert into public.user_saved_places(user_id, home_address, work_address) values (
+insert into public.user_saved_places(
+  user_id,
+  home_address,
+  home_latitude,
+  home_longitude,
+  work_address,
+  work_latitude,
+  work_longitude
+) values (
   'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '12, Rue Capois, Port-au-Prince',
-  'Pétion-Ville, Ouest'
+  18.5432,
+  -72.3350,
+  'Pétion-Ville, Ouest',
+  18.5125,
+  -72.2853
 ) on conflict (user_id) do update set
   home_address = excluded.home_address,
+  home_latitude = excluded.home_latitude,
+  home_longitude = excluded.home_longitude,
   work_address = excluded.work_address,
+  work_latitude = excluded.work_latitude,
+  work_longitude = excluded.work_longitude,
   updated_at = now();
 
 do $$ begin
   assert (
     select home_address = '12, Rue Capois, Port-au-Prince'
+      and home_latitude = 18.5432
+      and home_longitude = -72.3350
       and work_address = 'Pétion-Ville, Ouest'
+      and work_latitude = 18.5125
+      and work_longitude = -72.2853
     from public.user_saved_places
-  ), 'Owner could not save and update both places';
+  ), 'Owner could not save and update both precise places';
+
+  begin
+    update public.user_saved_places set home_latitude = 21.0;
+    raise exception 'Out-of-bounds home point allowed';
+  exception when check_violation then null; end;
 
   begin
     insert into public.user_saved_places(user_id, home_address)

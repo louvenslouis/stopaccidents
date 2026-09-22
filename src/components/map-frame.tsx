@@ -13,6 +13,7 @@ export function MapFrame({
   markers,
   onSelect,
   location,
+  placeFocus,
   onPan,
 }: MapFrameProps) {
   const frame = useRef<WebView>(null);
@@ -32,6 +33,12 @@ export function MapFrame({
     );
   }, [location]);
   useEffect(updateLocation, [updateLocation]);
+  const updatePlaceFocus = useCallback(() => {
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsFocus && window.stopAccidentsFocus(${JSON.stringify(placeFocus)}); true;`,
+    );
+  }, [placeFocus]);
+  useEffect(updatePlaceFocus, [updatePlaceFocus]);
   const openLink = (url: string) => {
     if (url.startsWith('https://')) {
       void Linking.openURL(url).catch(onError);
@@ -55,6 +62,7 @@ export function MapFrame({
         const message = readMapMessage(nativeEvent.data);
         if (message?.status === 'ready') {
           updateLocation();
+          updatePlaceFocus();
           updateMarkers();
           onLoad();
         }

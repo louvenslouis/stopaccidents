@@ -197,6 +197,23 @@ disponibilité ; pour un trafic important, configurer une instance dédiée via
 `EXPO_PUBLIC_GEOCODING_URL` (endpoint `/reverse` compatible Photon, HTTPS et CORS
 activé pour le web). Voir les [conditions Photon](https://github.com/komoot/photon#demo-server).
 
+### Lieux enregistrés du profil
+
+Le domicile et le lieu de travail ne sont plus des champs texte libres. Une
+personne connectée ouvre un sélecteur plein écran, puis recherche une adresse ou
+un lieu via Photon, ou touche directement un point sur la carte OpenStreetMap.
+L’application conserve le libellé affiché avec la latitude et la longitude
+exactes du repère choisi. Les résultats et les points sélectionnables sont
+limités au rectangle de navigation de la carte autour d’Haïti.
+
+La migration `20260922055406_precise_saved_places.sql` ajoute les coordonnées à
+la ligne privée `user_saved_places` sans modifier ses règles RLS réservées au
+propriétaire. Les anciennes adresses texte restent lisibles, mais l’application
+demande de les repositionner sur la carte avant leur prochain enregistrement.
+La recherche utilise `EXPO_PUBLIC_PLACE_SEARCH_URL` (endpoint `/api` compatible
+Photon) lorsqu’il est défini et revient sinon au service public Photon. Le
+géocodage inverse continue d’utiliser `EXPO_PUBLIC_GEOCODING_URL`.
+
 La migration `20260921035356_shared_accident_feed.sql` ajoute la lecture partagée
 `read_accident` : sans référence, elle renvoie uniquement le résumé du dernier
 accident ; avec une référence, elle renvoie les détails autorisés. L’implémentation

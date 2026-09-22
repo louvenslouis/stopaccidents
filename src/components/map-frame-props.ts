@@ -22,11 +22,19 @@ export type MapLocation = {
   focusRequest: number;
 };
 
+export type MapPlaceFocus = {
+  latitude: number;
+  longitude: number;
+  label: string;
+  request: number;
+} | null;
+
 export type MapFrameProps = {
   onLoad: () => void;
   onError: () => void;
   markers: AccidentMarker[];
   onSelect: (id: string) => void;
   location: MapLocation;
+  placeFocus: MapPlaceFocus;
   onPan: () => void;
 };

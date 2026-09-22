@@ -59,7 +59,9 @@ export const MAP_DOCUMENT = `<!doctype html>
       var currentReports = [];
       var userDot = null;
       var accuracyCircle = null;
+      var placeMarker = null;
       var lastFocusRequest = -1;
+      var lastPlaceRequest = -1;
       var autoFollow = false;
       function clearPosition() {
         if (userDot) map.removeLayer(userDot);
@@ -98,6 +100,24 @@ export const MAP_DOCUMENT = `<!doctype html>
         } else if (autoFollow) {
           map.panTo(point, { animate: false });
         }
+      };
+      window.stopAccidentsFocus = function (focus) {
+        if (!focus) {
+          if (placeMarker) map.removeLayer(placeMarker);
+          placeMarker = null;
+          return;
+        }
+        if (!Number.isFinite(focus.latitude) || !Number.isFinite(focus.longitude) ||
+            !bounds.contains([focus.latitude, focus.longitude]) || focus.request === lastPlaceRequest) return;
+        lastPlaceRequest = focus.request;
+        autoFollow = false;
+        hasFocused = true;
+        var point = [focus.latitude, focus.longitude];
+        if (placeMarker) map.removeLayer(placeMarker);
+        placeMarker = L.circleMarker(point, {
+          radius: 9, color: '#FFFFFF', weight: 4, fillColor: '#1767A6', fillOpacity: 1
+        }).addTo(map);
+        map.setView(point, Math.max(map.getMinZoom(), 15), { animate: false });
       };
       map.on('dragstart', function () {
         autoFollow = false;
@@ -165,6 +185,7 @@ export const MAP_DOCUMENT = `<!doctype html>
         if (event.source !== window.parent) return;
         if (event.data && event.data.source === 'stopaccidents-app') {
           if (event.data.location) window.stopAccidentsLocate(event.data.location);
+          if ('placeFocus' in event.data) window.stopAccidentsFocus(event.data.placeFocus);
           if (Array.isArray(event.data.markers)) window.stopAccidentsUpdate(event.data.markers);
         }
       });

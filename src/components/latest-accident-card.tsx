@@ -3,6 +3,7 @@ import CarFront from 'lucide-react-native/icons/car-front';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
+import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import {
   ActivityIndicator,
   Pressable,
@@ -18,8 +19,11 @@ import {
   accidentTypeLabel,
   formatAccidentDate,
 } from '@/features/accident-report/presentation';
-import type { AccidentSummary } from '@/features/accident-report/read';
-import { useAccidentLocation } from '@/features/accident-report/use-accident-location';
+import {
+  reportSelection,
+  type SafetyReportSummary,
+} from '@/features/safety-report/read';
+import { useReportLocation } from '@/features/safety-report/use-report-location';
 
 export function LatestAccidentCard({
   report,
@@ -28,23 +32,29 @@ export function LatestAccidentCard({
   onRefresh,
   onOpen,
 }: {
-  report: AccidentSummary | null;
+  report: SafetyReportSummary | null;
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
   onOpen: (id: string) => void;
 }) {
-  const severity = report ? accidentSeverity(report) : null;
-  const location = useAccidentLocation(report);
+  const isKidnapping = report?.report_kind === 'kidnapping';
+  const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
+  const location = useReportLocation(report);
+  const reportLabel = isKidnapping
+    ? 'Enlèvement'
+    : report?.report_kind === 'accident'
+      ? accidentTypeLabel(report)
+      : '';
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>
-          Dernier accident
+          Dernier signalement
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Actualiser le dernier accident"
+          accessibilityLabel="Actualiser le dernier signalement"
           accessibilityState={{ busy: loading, disabled: loading }}
           disabled={loading}
           onPress={onRefresh}
@@ -57,23 +67,29 @@ export function LatestAccidentCard({
           )}
         </Pressable>
       </View>
-      {report && severity ? (
+      {report ? (
         <AnimatedPressable
           accessibilityRole="button"
-          accessibilityLabel={`Dernier accident : ${accidentTypeLabel(report)}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}. Gravité : ${severity.label}.`}
-          accessibilityHint="Ouvre la fiche complète de cet accident"
-          onPress={() => onOpen(report.id)}
+          accessibilityLabel={`Dernier signalement : ${reportLabel}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}.${severity ? ` Gravité : ${severity.label}.` : ''}`}
+          accessibilityHint="Ouvre la fiche complète de ce signalement"
+          onPress={() => onOpen(reportSelection(report))}
           pressedScale={0.985}
           hoverScale={1.005}
           style={styles.card}
         >
           <View style={styles.cardHeader}>
-            <View style={styles.iconBox}>
-              <AppIcon icon={CarFront} size={26} color="#D94235" />
+            <View style={[styles.iconBox, isKidnapping && styles.kidnappingIconBox]}>
+              <AppIcon
+                icon={isKidnapping ? UserRoundSearch : CarFront}
+                size={26}
+                color={isKidnapping ? '#7C3FA0' : '#D94235'}
+              />
             </View>
             <View style={styles.heading}>
-              <Text style={styles.eyebrow}>TYPE D’ACCIDENT</Text>
-              <Text style={styles.type}>{accidentTypeLabel(report)}</Text>
+              <Text style={styles.eyebrow}>
+                {isKidnapping ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
+              </Text>
+              <Text style={styles.type}>{reportLabel}</Text>
             </View>
           </View>
           <View style={styles.locationRow}>
@@ -86,15 +102,27 @@ export function LatestAccidentCard({
               {location.estimated && <GeocodingCredit />}
             </View>
           </View>
-          <View style={styles.severityRow}>
-            <Text style={styles.label}>Gravité</Text>
-            <View style={[styles.badge, { backgroundColor: severity.tint }]}>
-              <View style={[styles.dot, { backgroundColor: severity.color }]} />
-              <Text style={[styles.badgeText, { color: severity.color }]}>
-                {severity.label}
-              </Text>
+          {severity ? (
+            <View style={styles.severityRow}>
+              <Text style={styles.label}>Gravité</Text>
+              <View style={[styles.badge, { backgroundColor: severity.tint }]}>
+                <View style={[styles.dot, { backgroundColor: severity.color }]} />
+                <Text style={[styles.badgeText, { color: severity.color }]}>
+                  {severity.label}
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={styles.severityRow}>
+              <Text style={styles.label}>Catégorie</Text>
+              <View style={[styles.badge, styles.kidnappingBadge]}>
+                <View style={[styles.dot, styles.kidnappingDot]} />
+                <Text style={[styles.badgeText, styles.kidnappingBadgeText]}>
+                  Alerte enlèvement
+                </Text>
+              </View>
+            </View>
+          )}
           <View style={styles.footer}>
             <Text style={styles.date}>
               Signalé le {formatAccidentDate(report.created_at)}
@@ -122,13 +150,13 @@ export function LatestAccidentCard({
               ? 'Chargement des signalements…'
               : error
                 ? 'Chargement indisponible'
-                : 'Aucun accident signalé'}
+                : 'Aucun signalement'}
           </Text>
           <Text style={styles.emptyText}>
             {loading
               ? 'Les dernières informations arrivent ici.'
               : (error ??
-                'Le dernier accident apparaîtra ici dès qu’un signalement sera enregistré.')}
+                'Le dernier accident ou enlèvement apparaîtra ici dès qu’un signalement sera enregistré.')}
           </Text>
           {error && !loading && (
             <Pressable
@@ -193,6 +221,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  kidnappingIconBox: { backgroundColor: '#F4ECF8' },
   heading: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 10,
@@ -239,6 +268,9 @@ const styles = StyleSheet.create({
   },
   dot: { width: 6, height: 6, borderRadius: 3 },
   badgeText: { fontSize: 12, fontWeight: '700', flexShrink: 1 },
+  kidnappingBadge: { backgroundColor: '#F4ECF8' },
+  kidnappingDot: { backgroundColor: '#7C3FA0' },
+  kidnappingBadgeText: { color: '#7C3FA0' },
   footer: {
     marginTop: 22,
     paddingTop: 17,
