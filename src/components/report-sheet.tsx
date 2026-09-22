@@ -1,7 +1,7 @@
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
-import { AccidentTypePicker, accidentTypes as types } from '@/components/accident-type-picker';
+import { AccidentTypePicker } from '@/components/accident-type-picker';
 import { ReportReward } from '@/components/report-reward';
 import { randomUUID } from 'expo-crypto';
 import { Image } from 'expo-image';
@@ -14,8 +14,7 @@ import CheckCheck from 'lucide-react-native/icons/check-check';
 import CircleHelp from 'lucide-react-native/icons/circle-question-mark';
 import HeartPulse from 'lucide-react-native/icons/heart-pulse';
 import LocateFixed from 'lucide-react-native/icons/locate-fixed';
-import MapPin from 'lucide-react-native/icons/map-pin';
-import ShieldCheck from 'lucide-react-native/icons/shield-check';
+import Plus from 'lucide-react-native/icons/plus';
 import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
@@ -49,11 +48,11 @@ import {
   MAX_PHOTOS,
   isPreciseLocation,
   locationDescription,
+  splitIdentifiers,
   validateStep,
   type ReportDraft,
   type Severity,
 } from '@/features/accident-report/model';
-import { GeocodingCredit } from '@/components/geocoding-credit';
 import { acquirePreciseLocation } from '@/features/accident-report/precise-location';
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
 import { saveAccidentReportStep } from '@/features/accident-report/submit';
@@ -122,6 +121,86 @@ const makeDraft = (): ReportDraft => ({
   notes: '',
   photos: [],
 });
+
+function identifierRows(value: string) {
+  if (!value.includes('\n') && /[,;]/.test(value)) {
+    return splitIdentifiers(value);
+  }
+  return value.split('\n');
+}
+
+function IdentifierInputs({
+  label,
+  value,
+  placeholder,
+  disabled,
+  capitalize = false,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  disabled: boolean;
+  capitalize?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const rows = identifierRows(value);
+  const updateRow = (index: number, next: string) => {
+    const updated = [...rows];
+    updated[index] = next;
+    onChange(updated.join('\n'));
+  };
+  const removeRow = (index: number) => {
+    onChange(rows.filter((_, rowIndex) => rowIndex !== index).join('\n'));
+  };
+
+  return (
+    <View style={styles.identifierGroup}>
+      <View style={styles.compactFieldHeader}>
+        <Text style={styles.label}>{label}</Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Ajouter un ${label.toLocaleLowerCase()}`}
+          disabled={disabled || rows.length >= 10}
+          onPress={() => onChange([...rows, ''].join('\n'))}
+          style={({ pressed }) => [
+            styles.addIdentifier,
+            (pressed || disabled || rows.length >= 10) && styles.dimmed,
+          ]}
+        >
+          <AppIcon icon={Plus} size={19} color="#267E70" />
+        </Pressable>
+      </View>
+      {rows.map((row, index) => (
+        <View key={`${label}-${index}`} style={styles.identifierRow}>
+          <TextInput
+            editable={!disabled}
+            accessibilityLabel={`${label} ${index + 1}`}
+            placeholder={placeholder}
+            placeholderTextColor="#89919E"
+            value={row}
+            onChangeText={(next) => updateRow(index, next)}
+            maxLength={80}
+            autoCapitalize={capitalize ? 'characters' : 'none'}
+            autoCorrect={false}
+            style={[styles.input, styles.identifierInput]}
+          />
+          {rows.length > 1 && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Retirer ${label.toLocaleLowerCase()} ${index + 1}`}
+              disabled={disabled}
+              onPress={() => removeRow(index)}
+              style={styles.removeIdentifier}
+            >
+              <AppIcon icon={X} size={18} color="#7A8493" />
+            </Pressable>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 function Action({
   label,
@@ -194,6 +273,7 @@ export function ReportSheet({
   const [sending, setSending] = useState(false);
   const [progress, setProgress] = useState('');
   const [locationProgress, setLocationProgress] = useState('');
+  const [editingLocationHint, setEditingLocationHint] = useState(false);
   const locationController = useRef<AbortController | null>(null);
   const savedLocation = useRef<string | null>(null);
   const submitting = useRef(false);
@@ -358,12 +438,6 @@ export function ReportSheet({
     onClose();
   }
   if (!draft) return null;
-  // Keep the reporting flow usable while the illustrated picker module is
-  // still loading (notably in lightweight/test runtimes).
-  const selectedType = types?.find((item) => item.value === draft.accidentType);
-  const selectedSeverity = severities.find(
-    (item) => item.value === draft.severity,
-  );
   return (
     <>
     <Modal
@@ -498,19 +572,6 @@ export function ReportSheet({
                 showsVerticalScrollIndicator={false}
               >
                 {storageError && <Text accessibilityRole="alert" style={{ color: "#BD2E40" }}>{storageError}</Text>}
-                {savedSteps > 0 && (
-                  <View style={styles.savedNotice}>
-                    <AppIcon icon={CheckCheck} size={19} color="#267E70" />
-                    <View style={styles.flex}>
-                      <Text style={styles.gpsText}>
-                        {draft.eventId ? 'Témoignage rattaché à l’événement' : 'Signalement déjà enregistré'}
-                      </Text>
-                      <Text style={styles.small}>
-                        Les étapes suivantes complètent ce même signalement.
-                      </Text>
-                    </View>
-                  </View>
-                )}
                 {step === 0 && (
                   <View style={styles.locationSearch}>
                     {locationError ? (
@@ -558,70 +619,50 @@ export function ReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <View style={styles.locationCard}>
-                      <View style={styles.inline}>
-                        <AppIcon icon={MapPin} size={22} color="#267E70" />
-                        <View style={styles.flex}>
-                          <Text style={styles.gpsText}>
-                            {draft.location || 'Position GPS enregistrée'}
+                    <View style={styles.locationSummary}>
+                      <Text numberOfLines={1} style={styles.locationZone}>
+                        {draft.location || 'Zone détectée par GPS'}
+                      </Text>
+                      {editingLocationHint ? (
+                        <TextInput
+                          autoFocus
+                          editable={!sending}
+                          accessibilityLabel="Repère précis sur le lieu de l’accident, facultatif"
+                          placeholder="Ajoutez un repère sur place"
+                          placeholderTextColor="#8A93A1"
+                          value={draft.locationHint || ''}
+                          onChangeText={(value) => update('locationHint', value)}
+                          onBlur={() => setEditingLocationHint(false)}
+                          onSubmitEditing={() => setEditingLocationHint(false)}
+                          returnKeyType="done"
+                          maxLength={250}
+                          style={styles.locationHintInput}
+                        />
+                      ) : (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={
+                            draft.locationHint
+                              ? `Modifier le repère : ${draft.locationHint}`
+                              : 'Ajouter un repère sur place'
+                          }
+                          disabled={sending}
+                          onPress={() => setEditingLocationHint(true)}
+                        >
+                          <Text numberOfLines={1} style={styles.locationHintPrompt}>
+                            {draft.locationHint || 'Ajouter un repère sur place'}
                           </Text>
-                          <Text style={styles.small}>
-                            Précision GPS : ±{' '}
-                            {Math.ceil(draft.coordinates?.accuracy ?? 0)} m
-                          </Text>
-                          {!draft.location && (
-                            <Text style={styles.small}>
-                              Nom du lieu indisponible ·{' '}
-                              {draft.coordinates?.latitude.toFixed(5)},{' '}
-                              {draft.coordinates?.longitude.toFixed(5)}
-                            </Text>
-                          )}
-                        </View>
-                        <AppIcon icon={CheckCheck} size={20} color="#267E70" />
-                      </View>
-                      {Boolean(draft.location) && <GeocodingCredit />}
-                      <View style={styles.sectionHeading}>
-                        <Text style={styles.label}>Un repère sur place</Text>
-                        <Text style={styles.optional}>FACULTATIF</Text>
-                      </View>
-                      <TextInput
-                        editable={!sending}
-                        accessibilityLabel="Repère précis sur le lieu de l’accident, facultatif"
-                        placeholder="Ex. : devant la station d’essence, rue Jean Pierre"
-                        placeholderTextColor="#89919E"
-                        value={draft.locationHint || ''}
-                        onChangeText={(value) => update('locationHint', value)}
-                        maxLength={250}
-                        multiline
-                        style={[styles.input, styles.landmarkInput]}
-                      />
+                        </Pressable>
+                      )}
                     </View>
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
                     </Text>
-                    <Text style={styles.small}>Choisissez la situation qui correspond à ce que vous voyez.</Text>
                     <AccidentTypePicker value={draft.accidentType} disabled={sending} onChange={(value) => update('accidentType', value)} />
                   </>
                 )}
                 {step === 2 && (
                   <>
-                    <View style={styles.sectionHeading}>
-                      <View style={styles.sectionIcon}>
-                        <AppIcon icon={HeartPulse} color="#D94235" size={23} />
-                      </View>
-                      <View style={styles.flex}>
-                        <Text style={styles.sectionTitle}>
-                          Quelle est la gravité ?
-                        </Text>
-                        <Text style={styles.small}>
-                          Indiquez seulement ce que vous savez.
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.body}>
-                      Une estimation suffit. Vous n’avez pas besoin de vous
-                      approcher des victimes.
-                    </Text>
                     {severities.map((item) => {
                       const selected = item.value === draft.severity;
                       return (
@@ -673,83 +714,31 @@ export function ReportSheet({
                         </Pressable>
                       );
                     })}
-                    {(draft.severity === 'serious' ||
-                      draft.severity === 'fatal') && (
-                      <View style={styles.notice}>
-                        <AppIcon icon={Siren} size={20} color="#B63838" />
-                        <Text style={styles.noticeText}>
-                          Contactez les secours en priorité. Ce formulaire ne
-                          remplace pas un appel d’urgence.
-                        </Text>
-                      </View>
-                    )}
                   </>
                 )}
                 {step === 3 && (
                   <>
-                    <View style={styles.summary}>
-                      <Text style={styles.summaryTitle}>Votre signalement</Text>
-                      <View style={styles.inline}>
-                        <AppIcon icon={MapPin} size={17} color="#64748B" />
-                        <Text style={[styles.small, styles.flex]}>
-                          {locationDescription(draft) || 'Position GPS ajoutée'}
-                        </Text>
-                      </View>
-                      <Text style={styles.summaryDetails}>
-                        {selectedType?.label} · {selectedSeverity?.label}
-                      </Text>
-                    </View>
-                    <View style={styles.sectionHeading}>
-                      <Text style={styles.sectionTitle}>
-                        Quelques précisions
-                      </Text>
-                      <Text style={styles.optional}>FACULTATIF</Text>
-                    </View>
-                    <Text style={styles.label}>Numéros d’immatriculation</Text>
-                    <TextInput
-                      editable={!sending}
-                      accessibilityLabel="Numéros d’immatriculation"
-                      placeholder="Ex. : AA-12345, BB-67890"
-                      placeholderTextColor="#89919E"
+                    <IdentifierInputs
+                      label="Numéro d’immatriculation"
+                      placeholder="Ex. : AA-12345"
                       value={draft.registrations}
-                      onChangeText={(value) => update('registrations', value)}
-                      maxLength={810}
-                      autoCapitalize="characters"
-                      autoCorrect={false}
-                      style={styles.input}
+                      disabled={sending}
+                      capitalize
+                      onChange={(value) => update('registrations', value)}
                     />
-                    <Text style={styles.label}>
-                      Numéros de pièce d’identité
-                    </Text>
-                    <TextInput
-                      editable={!sending}
-                      accessibilityLabel="Numéros de pièce d’identité"
-                      placeholder="Uniquement s’ils sont disponibles"
-                      placeholderTextColor="#89919E"
+                    <IdentifierInputs
+                      label="Numéro de pièce d’identité"
+                      placeholder="Ex. : numéro disponible"
                       value={draft.identities}
-                      onChangeText={(value) => update('identities', value)}
-                      maxLength={810}
-                      autoCorrect={false}
-                      style={styles.input}
+                      disabled={sending}
+                      onChange={(value) => update('identities', value)}
                     />
-                    <Text style={styles.small}>
-                      Séparez les numéros par une virgule. Ne vous mettez pas en
-                      danger pour les obtenir.
-                    </Text>
-                    <View style={styles.sectionHeading}>
-                      <View style={styles.inline}>
-                        <AppIcon icon={Camera} size={20} color="#D94235" />
-                        <Text style={styles.sectionTitle}>
-                          Photos sur place
-                        </Text>
-                      </View>
+                    <View style={styles.compactFieldHeader}>
+                      <Text style={styles.label}>Photos</Text>
                       <Text style={styles.optional}>
                         {draft.photos.length}/{MAX_PHOTOS}
                       </Text>
                     </View>
-                    <Text style={styles.small}>
-                      Caméra uniquement · 4 photos maximum
-                    </Text>
                     <View style={styles.photoGrid}>
                       {draft.photos.map((photo, index) => (
                         <View style={styles.photoWrap} key={photo.id}>
@@ -786,9 +775,7 @@ export function ReportSheet({
                           style={styles.addPhoto}
                         >
                           <AppIcon icon={Camera} size={25} color="#D94235" />
-                          <Text style={styles.addPhotoText}>
-                            Prendre{'\n'}une photo
-                          </Text>
+                          <Text style={styles.addPhotoText}>Ajouter</Text>
                         </Pressable>
                       )}
                     </View>
@@ -796,7 +783,7 @@ export function ReportSheet({
                     <TextInput
                       editable={!sending}
                       accessibilityLabel="Autres informations sur l’accident"
-                      placeholder="Un repère, les véhicules impliqués, ce que vous avez observé…"
+                      placeholder="Ajouter une information"
                       placeholderTextColor="#89919E"
                       value={draft.notes}
                       onChangeText={(value) => update('notes', value)}
@@ -804,14 +791,6 @@ export function ReportSheet({
                       multiline
                       style={[styles.input, styles.notes]}
                     />
-                    <View style={styles.privacy}>
-                      <AppIcon icon={ShieldCheck} size={18} color="#6C7789" />
-                      <Text style={[styles.small, styles.flex]}>
-                        Les précisions et les photos sont visibles par tous dans
-                        la fiche de l’accident. Les numéros d’identité et les
-                        immatriculations restent visibles uniquement par vous.
-                      </Text>
-                    </View>
                   </>
                 )}
               </ScrollView>
@@ -914,20 +893,26 @@ const styles = StyleSheet.create({
     lineHeight: 23,
     textAlign: 'center',
   },
-  locationCard: {
-    padding: 16,
-    borderRadius: 18,
-    backgroundColor: '#F0F8F5',
-    gap: 8,
+  locationSummary: { gap: 6, paddingVertical: 2 },
+  locationZone: {
+    color: '#243147',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '700',
   },
-  landmarkInput: { minHeight: 65, fontSize: 13 },
-  savedNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: '#EEF8F5',
+  locationHintPrompt: {
+    color: '#267E70',
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  locationHintInput: {
+    color: '#243147',
+    fontSize: 13,
+    lineHeight: 20,
+    padding: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#A8D1C8',
   },
   laterButton: {
     minHeight: 36,
@@ -1007,15 +992,6 @@ const styles = StyleSheet.create({
   stepLabel: { color: '#9299A4', fontSize: 12, fontWeight: '600' },
   stepLabelActive: { color: '#B93F35' },
   content: { padding: 24, gap: 14, paddingBottom: 30 },
-  notice: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#FFF6E8',
-    borderRadius: 14,
-    padding: 14,
-    alignItems: 'flex-start',
-  },
-  noticeText: { flex: 1, fontSize: 12, lineHeight: 18, color: '#86602B' },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1107,14 +1083,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  summary: {
-    backgroundColor: '#F5F7FA',
-    borderRadius: 17,
-    padding: 16,
-    gap: 9,
-  },
-  summaryTitle: { color: '#29364C', fontSize: 13, fontWeight: '700' },
-  summaryDetails: { color: '#637087', fontSize: 12, fontWeight: '600' },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   optional: {
     color: '#9099A7',
@@ -1126,8 +1094,32 @@ const styles = StyleSheet.create({
     color: '#485469',
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: -6,
   },
+  identifierGroup: { gap: 8 },
+  compactFieldHeader: {
+    minHeight: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  addIdentifier: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#EAF6F1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  identifierRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  identifierInput: { flex: 1 },
+  removeIdentifier: {
+    width: 42,
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dimmed: { opacity: 0.5 },
   notes: { minHeight: 92, textAlignVertical: 'top' },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   photoWrap: { width: 100, height: 105 },
@@ -1161,12 +1153,6 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     fontWeight: '600',
     color: '#C85443',
-  },
-  privacy: {
-    flexDirection: 'row',
-    gap: 9,
-    alignItems: 'flex-start',
-    marginTop: 4,
   },
   footer: {
     paddingHorizontal: 22,

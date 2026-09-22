@@ -234,6 +234,9 @@ test('Accident automatically locates and saves before showing the subtype and op
   f.render();
   assert.ok(f.text('Quel type d’accident ?'));
   assert.ok(f.text('Bois Verna, Port-au-Prince'));
+  assert.equal(f.input(), null);
+  f.button('Ajouter un repère sur place').props.onPress();
+  f.render();
   assert.ok(f.input());
   assert.equal(f.button('Utiliser ma position GPS'), null);
   f.input().props.onChangeText('Devant la station');
