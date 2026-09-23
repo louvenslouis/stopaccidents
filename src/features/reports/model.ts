@@ -52,7 +52,24 @@ export type Analytics = {
   daily: { date: string; count: number }[];
   hours: { hour: number; count: number }[];
   severity: { severity: string; count: number }[];
-  reports: SafetyReportSummary[];
+  territories: {
+    unlocated: number;
+    unlocated_departments: number;
+    departments: { code: string; name: string; count: number }[];
+    communes: {
+      code: string;
+      name: string;
+      department_code: string;
+      department_name: string;
+      count: number;
+    }[];
+  };
+  reports: (SafetyReportSummary & {
+    commune_code: string | null;
+    commune_name: string | null;
+    department_code: string | null;
+    department_name: string | null;
+  })[];
 };
 export function haitiToday(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -99,15 +116,12 @@ export function validateRange(
 export const numberLabel = (value: number) => value.toLocaleString("fr-FR");
 export function dateLabel(value: string, year = false) {
   const day = value.length > 10 ? haitiToday(new Date(value)) : value;
-  return new Date(`${day}T12:00:00Z`).toLocaleDateString(
-    "fr-FR",
-    {
-      day: "numeric",
-      month: "short",
-      ...(year ? { year: "numeric" } : {}),
-      timeZone: "UTC",
-    },
-  );
+  return new Date(`${day}T12:00:00Z`).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    ...(year ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  });
 }
 export function rangeLabel(range: DateRange) {
   return range.start
@@ -135,7 +149,9 @@ export function chartBuckets(
   const counts = new Map<number, number>();
   for (const item of daily) {
     if (item.date < start || item.date > range.end) continue;
-    const index = Math.floor((Date.parse(item.date) - Date.parse(start)) / 86400000 / size);
+    const index = Math.floor(
+      (Date.parse(item.date) - Date.parse(start)) / 86400000 / size,
+    );
     counts.set(index, (counts.get(index) ?? 0) + item.count);
   }
   return Array.from({ length: Math.ceil(days / size) }, (_, index) => {

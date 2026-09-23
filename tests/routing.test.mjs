@@ -440,6 +440,26 @@ async function preview(f) {
   await f.flush();
 }
 
+test("home journey shortcuts prefill saved endpoints and custom journeys reset them", async () => {
+  const f = await plannerFixture();
+  f.value.show(place(end, "Travail"), place(start, "Domicile"));
+  await f.flush();
+  assert.equal(f.value.open, true);
+  assert.equal(f.value.origin.query, "Domicile");
+  assert.equal(f.value.origin.current, false);
+  assert.equal(f.value.destination.query, "Travail");
+  f.value.calculate();
+  await f.flush();
+  assert.equal(f.value.status, "ready");
+  assert.equal(f.gps.tracking, false);
+  f.value.show();
+  await f.flush();
+  assert.equal(f.value.origin.current, true);
+  assert.equal(f.value.destination.query, "");
+  assert.equal(f.value.destination.place, null);
+  assert.equal(f.value.choices.length, 0);
+});
+
 test("editing or closing a planner aborts pending results and prevents stale routes from reappearing", async () => {
   const f = await plannerFixture({ delayed: true });
   await preview(f);

@@ -71,10 +71,12 @@ Join our community of developers creating universal apps.
 ### Météo
 
 Une pastille discrète en haut à droite affiche la température en °C, les conditions
-en français et le vent en km/h à la position connue par l’application, indiquée
-par « Votre position ». Déplacer la carte ou rechercher un lieu ne change pas
-cette référence. En l’absence de position connue, elle utilise le centre de la
-carte, indiqué explicitement. Ce comportement est commun au web et au natif. Les conditions actuelles
+en français, le vent en km/h, le nom court de la zone et la probabilité de pluie
+pour chacune des trois prochaines heures. Elle utilise la position connue par
+l’application ; déplacer la carte ou rechercher un lieu ne change pas cette
+référence. En l’absence de position connue, elle utilise le centre de la carte.
+Si aucun nom de zone n’est disponible, la carte l’indique explicitement.
+Ce comportement est commun au web et au natif. Les conditions actuelles
 proviennent des modèles de [Open-Meteo](https://open-meteo.com/en/docs), dont le
 [serveur est open source](https://github.com/open-meteo/open-meteo).
 Le lien d’attribution reste visible dans la pastille.
@@ -198,6 +200,19 @@ constituent pas une file hors ligne persistante et le brouillon n’est pas rest
 automatiquement au redémarrage. L’enregistrement ne déclenche pas les secours.
 
 ### Dernier accident sur l’Accueil
+
+Le petit bouton de partage de la carte compacte prépare une image PNG et un texte
+court avec le type, le lieu, la date, la gravité et un lien vers la fiche concernée.
+L’aperçu fige le signalement choisi même si l’accueil s’actualise. Le lien utilise
+`EXPO_PUBLIC_SITE_URL` (par défaut `https://louvenslouis.github.io/stopaccidents/`)
+et le paramètre `signalement=catégorie:UUID`, compatible avec l’hébergement statique.
+Sur le web, le partage de fichiers est proposé lorsque le navigateur le permet ;
+le téléchargement de l’image et la copie du texte restent disponibles.
+Sur iOS/Android, `react-native-share` transmet le PNG avec la description et le lien.
+Une nouvelle compilation native est nécessaire (`npx expo run:android` ou
+`npx expo run:ios`) ; Expo Go permet l’aperçu et la copie du texte, sans le module
+de partage d’images. Certaines applications destinataires peuvent ignorer le texte
+accompagnant une image ; le bouton de copie permet de le joindre manuellement.
 
 L’Accueil affiche le dernier signalement de tous les utilisateurs, ordonné par
 date de création (puis par référence en cas d’égalité). Les signalements partiels
@@ -394,3 +409,11 @@ sont comptées une fois par groupe fusionné, puis recalculées après une annul
 Vérification : `npm test` couvre le SQL réel dans PostgreSQL/PGlite, la recherche
 par catégorie, les droits, les réservations répétées, les récompenses et les fusions
 réversibles, ainsi que la restauration des brouillons et le choix d’un événement.
+
+### Stations et transport en commun sur la carte
+
+Les stations, leurs trajets directionnels, les types Taptap/Bus et les tarifs
+en gourdes proviennent de Supabase. La migration `20260923024458_transport_stations.sql`
+inclut cinq stations et huit trajets d’exemple, affichés sans mention de démonstration
+dans l’interface. Le catalogue est accessible en lecture
+seule depuis l’application. Voir [le modèle et les exemples](docs/transport-stations.md).

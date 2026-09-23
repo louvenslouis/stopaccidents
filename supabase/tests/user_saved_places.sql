@@ -17,7 +17,8 @@ insert into public.user_saved_places(
   home_longitude,
   work_address,
   work_latitude,
-  work_longitude
+  work_longitude,
+  updated_at
 ) values (
   'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '12, Rue Capois, Port-au-Prince',
@@ -25,7 +26,8 @@ insert into public.user_saved_places(
   -72.3350,
   'Delmas 33, Port-au-Prince',
   18.5510,
-  -72.3020
+  -72.3020,
+  now()
 ) on conflict (user_id) do update set
   home_address = excluded.home_address,
   home_latitude = excluded.home_latitude,
@@ -42,7 +44,8 @@ insert into public.user_saved_places(
   home_longitude,
   work_address,
   work_latitude,
-  work_longitude
+  work_longitude,
+  updated_at
 ) values (
   'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
   '12, Rue Capois, Port-au-Prince',
@@ -50,7 +53,8 @@ insert into public.user_saved_places(
   -72.3350,
   'Pétion-Ville, Ouest',
   18.5125,
-  -72.2853
+  -72.2853,
+  now()
 ) on conflict (user_id) do update set
   home_address = excluded.home_address,
   home_latitude = excluded.home_latitude,

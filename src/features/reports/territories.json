@@ -1,0 +1,842 @@
+[
+  {
+    "code": "HT0111",
+    "name": "Port-au-Prince",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0112",
+    "name": "Delmas",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0113",
+    "name": "Carrefour",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0114",
+    "name": "Pétion-Ville",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0115",
+    "name": "Kenscoff",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0116",
+    "name": "Gressier",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0117",
+    "name": "Cité Soleil",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0118",
+    "name": "Tabarre",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0121",
+    "name": "Léogâne",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0122",
+    "name": "Petit-Goâve",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0123",
+    "name": "Grand-Goâve",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0131",
+    "name": "Croix-Des-Bouquets",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0132",
+    "name": "Thomazeau",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0133",
+    "name": "Ganthier",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0134",
+    "name": "Cornillon / Grand Bois",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0135",
+    "name": "Fonds-Verrettes",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0141",
+    "name": "Arcahaie",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0142",
+    "name": "Cabaret",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0151",
+    "name": "Anse à Galets",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0152",
+    "name": "Pointe à Raquette",
+    "department_code": "HT01",
+    "department_name": "Ouest"
+  },
+  {
+    "code": "HT0211",
+    "name": "Jacmel",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0212",
+    "name": "Marigot",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0213",
+    "name": "Cayes-Jacmel",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0214",
+    "name": "La Vallée",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0221",
+    "name": "Bainet",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0222",
+    "name": "Côtes de Fer",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0231",
+    "name": "Belle Anse",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0232",
+    "name": "Grand Gosier",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0233",
+    "name": "Thiotte",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0234",
+    "name": "Anse-à-Pître",
+    "department_code": "HT02",
+    "department_name": "Sud-Est"
+  },
+  {
+    "code": "HT0311",
+    "name": "Cap-Haïtien",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0312",
+    "name": "Quartier Morin",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0313",
+    "name": "Limonade",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0321",
+    "name": "Acul du Nord",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0322",
+    "name": "Plaine du Nord",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0323",
+    "name": "Milot",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0331",
+    "name": "Grande Riviere Du Nord",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0332",
+    "name": "Bahon",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0341",
+    "name": "Saint-Raphaël",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0342",
+    "name": "Dondon",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0343",
+    "name": "Ranquitte",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0344",
+    "name": "Pignon",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0345",
+    "name": "La Victoire",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0351",
+    "name": "Borgne",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0352",
+    "name": "Port-Margot",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0361",
+    "name": "Limbé",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0362",
+    "name": "Bas Limbé",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0371",
+    "name": "Plaisance",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0372",
+    "name": "Pilate",
+    "department_code": "HT03",
+    "department_name": "Nord"
+  },
+  {
+    "code": "HT0411",
+    "name": "Fort-Liberté",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0412",
+    "name": "Ferrier",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0413",
+    "name": "Perches",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0421",
+    "name": "Ouanaminthe",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0422",
+    "name": "Capotille",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0423",
+    "name": "Mont-Organisé",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0431",
+    "name": "Trou du Nord",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0432",
+    "name": "Sainte Suzanne",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0433",
+    "name": "Terrier Rouge",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0434",
+    "name": "Caracol",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0441",
+    "name": "Vallières",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0442",
+    "name": "Carice",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0443",
+    "name": "Mombin Crochu",
+    "department_code": "HT04",
+    "department_name": "Nord-Est"
+  },
+  {
+    "code": "HT0511",
+    "name": "Gonaïves",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0512",
+    "name": "Ennery",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0513",
+    "name": "L'Estère",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0521",
+    "name": "Gros Morne",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0522",
+    "name": "Terre Neuve",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0523",
+    "name": "Anse Rouge",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0531",
+    "name": "Saint-Marc",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0532",
+    "name": "Verrettes",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0533",
+    "name": "La Chapelle",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0541",
+    "name": "Dessalines",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0542",
+    "name": "Petite Rivière de l'Artibonite",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0543",
+    "name": "Grande Saline",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0544",
+    "name": "Desdunes",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0551",
+    "name": "Saint-Michel de l'Attalaye",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0552",
+    "name": "Marmelade",
+    "department_code": "HT05",
+    "department_name": "Artibonite"
+  },
+  {
+    "code": "HT0611",
+    "name": "Hinche",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0612",
+    "name": "Maïssade",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0613",
+    "name": "Thomonde",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0614",
+    "name": "Cerca Carvajal",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0621",
+    "name": "Mirebalais",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0622",
+    "name": "Saut d'Eau",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0623",
+    "name": "Boucan Carré",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0631",
+    "name": "Lascahobas",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0632",
+    "name": "Belladère",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0633",
+    "name": "Savanette",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0641",
+    "name": "Cerca La Source",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0642",
+    "name": "Thomassique",
+    "department_code": "HT06",
+    "department_name": "Centre"
+  },
+  {
+    "code": "HT0711",
+    "name": "Les Cayes",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0712",
+    "name": "Torbeck",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0713",
+    "name": "Chantal",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0714",
+    "name": "Camp-Perrin",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0715",
+    "name": "Maniche",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0716",
+    "name": "Île à Vache",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0721",
+    "name": "Port-Salut",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0722",
+    "name": "Saint Jean du Sud",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0723",
+    "name": "Arniquet",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0731",
+    "name": "Aquin",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0732",
+    "name": "Saint Louis du Sud",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0733",
+    "name": "Cavaillon",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0741",
+    "name": "Côteaux",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0742",
+    "name": "Port-à-Piment",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0743",
+    "name": "Roche à Bâteau",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0751",
+    "name": "Chardonnières",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0752",
+    "name": "Les Anglais",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0753",
+    "name": "Tiburon",
+    "department_code": "HT07",
+    "department_name": "Sud"
+  },
+  {
+    "code": "HT0811",
+    "name": "Jérémie",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0812",
+    "name": "Abricots",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0813",
+    "name": "Bonbon",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0814",
+    "name": "Moron",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0815",
+    "name": "Chambellan",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0821",
+    "name": "Anse d'Hainault",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0822",
+    "name": "Dame Marie",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0823",
+    "name": "Les Irois",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0831",
+    "name": "Corail",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0832",
+    "name": "Roseaux",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0833",
+    "name": "Beaumont",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0834",
+    "name": "Pestel",
+    "department_code": "HT08",
+    "department_name": "Grande'Anse"
+  },
+  {
+    "code": "HT0911",
+    "name": "Port-de-Paix",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0912",
+    "name": "La Tortue",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0913",
+    "name": "Bassin Bleu",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0914",
+    "name": "Chamsolme",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0921",
+    "name": "Saint-Louis du Nord",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0922",
+    "name": "Anse-à-Foleur",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0931",
+    "name": "Môle Saint Nicolas",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0932",
+    "name": "Baie de Henne",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0933",
+    "name": "Bombardopolis",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT0934",
+    "name": "Jean Rabel",
+    "department_code": "HT09",
+    "department_name": "Nord-Ouest"
+  },
+  {
+    "code": "HT1011",
+    "name": "Miragoâne",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1012",
+    "name": "Petite Rivière de Nippes",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1013",
+    "name": "Fonds des Nègres",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1014",
+    "name": "Paillant",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1021",
+    "name": "Anse-à-Veau",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1022",
+    "name": "Petit Trou de Nippes",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1023",
+    "name": "L'Asile",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1024",
+    "name": "Arnaud",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1025",
+    "name": "Plaisance du Sud",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1031",
+    "name": "Baradères",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  },
+  {
+    "code": "HT1032",
+    "name": "Grand-Boucan",
+    "department_code": "HT10",
+    "department_name": "Nippes"
+  }
+]

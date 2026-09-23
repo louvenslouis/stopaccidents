@@ -5,6 +5,7 @@ export type Weather = {
   code: number;
   isDay: boolean;
   time: number;
+  precipitation: { time: number; probability: number | null }[];
 };
 
 export const WEATHER_REFRESH_MS = 15 * 60 * 1000;
@@ -44,7 +45,30 @@ export function parseWeather(payload: unknown, now = Date.now()): Weather {
   ) {
     throw new Error("Météo indisponible");
   }
-  return { temperature, windSpeed, code, isDay: day === 1, time };
+  const hourly = (payload as { hourly?: Record<string, unknown> } | null)?.hourly;
+  const times = hourly?.time;
+  const probabilities = hourly?.precipitation_probability;
+  const precipitation =
+    Array.isArray(times) && Array.isArray(probabilities)
+      ? times
+          .map((hour, index) => ({
+            time: typeof hour === "number" ? hour * 1000 : NaN,
+            probability: probabilities[index],
+          }))
+          .filter((hour) => Number.isFinite(hour.time) && hour.time > now)
+          .slice(0, 3)
+          .map((hour) => ({
+            time: hour.time,
+            probability:
+              typeof hour.probability === "number" &&
+              Number.isFinite(hour.probability) &&
+              hour.probability >= 0 &&
+              hour.probability <= 100
+                ? hour.probability
+                : null,
+          }))
+      : [];
+  return { temperature, windSpeed, code, isDay: day === 1, time, precipitation };
 }
 
 export function weatherCondition(code: number, isDay: boolean) {
@@ -89,10 +113,11 @@ export async function readWeather(
     "current",
     "temperature_2m,weather_code,is_day,wind_speed_10m",
   );
+  url.searchParams.set("hourly", "precipitation_probability");
+  url.searchParams.set("forecast_hours", "5");
   url.searchParams.set("temperature_unit", "celsius");
   url.searchParams.set("wind_speed_unit", "kmh");
   url.searchParams.set("timeformat", "unixtime");
-  url.searchParams.set("forecast_days", "1");
   const response = await fetch(url.toString(), {
     signal,
     credentials: "omit",

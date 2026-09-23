@@ -18,6 +18,8 @@ export function MapFrame({
   onPan,
   route = null,
   onCenterChange,
+  stations,
+  onSelectStation,
 }: MapFrameProps) {
   const frame = useRef<WebView>(null);
   const updateMarkers = useCallback(() => {
@@ -30,6 +32,16 @@ export function MapFrame({
     );
   }, [markers]);
   useEffect(updateMarkers, [updateMarkers]);
+  const updateStations = useCallback(() => {
+    const json = JSON.stringify(stations ?? [])
+      .replace(/</g, '\\u003c')
+      .replace(/\u2028/g, '\\u2028')
+      .replace(/\u2029/g, '\\u2029');
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsStations && window.stopAccidentsStations(${json}); true;`,
+    );
+  }, [stations]);
+  useEffect(updateStations, [updateStations]);
   const updateLocation = useCallback(() => {
     frame.current?.injectJavaScript(
       `window.stopAccidentsLocate && window.stopAccidentsLocate(${JSON.stringify(location)}); true;`,
@@ -73,12 +85,15 @@ export function MapFrame({
           updateLocation();
           updatePlaceFocus();
           updateMarkers();
+          updateStations();
           updateRoute();
           onLoad();
         }
         if (message?.status === 'error') onError();
         if (message?.status === 'pan') onPan();
         if (message?.status === 'center') onCenterChange(message);
+        if (message?.status === 'station-select' && stations?.some((station) => station.id === message.id))
+          onSelectStation?.(message.id);
         if (
           message?.status === 'select' &&
           markers.some((marker) => marker.id === message.id)

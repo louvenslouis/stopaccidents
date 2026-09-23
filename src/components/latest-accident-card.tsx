@@ -9,6 +9,7 @@ import Hash from 'lucide-react-native/icons/hash';
 import CarFront from 'lucide-react-native/icons/car-front';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Share2 from 'lucide-react-native/icons/share-2';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import Wrench from 'lucide-react-native/icons/wrench';
@@ -33,6 +34,8 @@ import {
   type SafetyReportSummary,
 } from '@/features/safety-report/read';
 import { useReportLocation } from '@/features/safety-report/use-report-location';
+import { ReportShareSheet } from '@/components/report-share-sheet';
+import { createReportShare, type ReportShare } from '@/features/safety-report/share';
 
 export function LatestAccidentCard({
   report,
@@ -48,6 +51,8 @@ export function LatestAccidentCard({
   onOpen: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [sharePreview, setSharePreview] = useState<ReportShare | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const isSuspiciousVehicle = report?.report_kind === 'suspicious_vehicle';
   const isGunfire = report?.report_kind === 'gunfire';
   const isArmedPresence = report?.report_kind === 'armed_presence';
@@ -101,7 +106,7 @@ export function LatestAccidentCard({
                   color={isKidnapping ? '#7C3FA0' : '#D94235'}
                 />
               </View>
-              <View style={styles.heading}>
+              <View style={[styles.heading, !expanded && styles.compactHeading]}>
                 <Text style={styles.eyebrow}>
                   {report.report_kind !== 'accident' ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
                 </Text>
@@ -140,6 +145,24 @@ export function LatestAccidentCard({
               </View>
             )}
           </AnimatedPressable>
+          {!expanded && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Partager ce signalement"
+              accessibilityHint="Génère une image de la carte avec une description et le lien de l’événement"
+              onPress={() => {
+                try {
+                  setShareError(null);
+                  setSharePreview(createReportShare(report, location));
+                } catch {
+                  setShareError('Impossible de préparer le partage. Réessayez.');
+                }
+              }}
+              style={({ pressed }) => [styles.shareButton, pressed && styles.shareButtonPressed]}
+            >
+              <AppIcon icon={Share2} size={17} color="#737C89" />
+            </Pressable>
+          )}
           {!expanded && location.estimated && <GeocodingCredit />}
           {expanded && (
             <AnimatedPressable
@@ -257,6 +280,8 @@ export function LatestAccidentCard({
           affichées.
         </Text>
       )}
+      {shareError && <Text accessibilityRole="alert" style={styles.error}>{shareError}</Text>}
+      {sharePreview && <ReportShareSheet report={sharePreview} onClose={() => setSharePreview(null)} />}
     </View>
   );
 }
@@ -302,6 +327,9 @@ const styles = StyleSheet.create({
   compactIconBox: { width: 46, height: 46, borderRadius: 14 },
   kidnappingIconBox: { backgroundColor: '#F4ECF8' },
   heading: { flex: 1, minWidth: 0 },
+  compactHeading: { paddingRight: 38 },
+  shareButton: { position: 'absolute', top: 17, right: 48, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+  shareButtonPressed: { backgroundColor: '#F4F5F7' },
   eyebrow: {
     fontSize: 10,
     fontWeight: '700',

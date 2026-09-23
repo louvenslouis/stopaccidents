@@ -341,6 +341,13 @@ export function useRoutePlanner(
     [active, fitRequest],
   );
 
+  const show = useCallback((place?: MapPlace, from?: MapPlace) => {
+    reset();
+    setOrigin(from ? { query: from.label, place: from, current: false } : currentPosition());
+    setDestination(place ? { query: place.label, place, current: false } : emptyEndpoint());
+    setOpen(true);
+  }, [reset]);
+
   return {
     open,
     origin,
@@ -353,12 +360,7 @@ export function useRoutePlanner(
     active,
     selected,
     mapRoute,
-    show(place: MapPlace) {
-      reset();
-      setOrigin(currentPosition());
-      setDestination({ query: place.label, place, current: false });
-      setOpen(true);
-    },
+    show,
     close() {
       reset();
       setOpen(false);

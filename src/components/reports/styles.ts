@@ -141,6 +141,8 @@ export const styles = StyleSheet.create({
   overviewWide: { flex: 0.95 },
   timelineWide: { flex: 1.25 },
   scopeBadge: {
+    maxWidth: "50%",
+    flexShrink: 1,
     backgroundColor: "#F7F7F9",
     borderRadius: 6,
     paddingVertical: 5,

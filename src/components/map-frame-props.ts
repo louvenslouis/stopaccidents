@@ -36,10 +36,19 @@ export type MapFrameProps = {
   onError: () => void;
   markers: AccidentMarker[];
   onSelect: (id: string) => void;
+  stations?: StationMarker[];
+  onSelectStation?: (id: string) => void;
   location: MapLocation;
   placeFocus: MapPlaceFocus;
   onPan: () => void;
   route?: MapRoute;
+};
+
+export type StationMarker = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  title: string;
 };
 
 export type MapRoute = {

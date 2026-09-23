@@ -12,6 +12,8 @@ type AppScreenProps = {
   description?: string;
   hideIntro?: boolean;
   headerRight?: ReactNode;
+  headerLeft?: ReactNode;
+  backgroundColor?: string;
   children?: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -23,12 +25,14 @@ export function AppScreen({
   description,
   hideIntro = false,
   headerRight,
+  headerLeft,
+  backgroundColor,
   children,
   contentContainerStyle,
   onScroll,
 }: AppScreenProps) {
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
+    <SafeAreaView edges={['top']} style={[styles.safeArea, backgroundColor ? { backgroundColor } : undefined]}>
       <Head>
         <title>{title} — Stop Accidents</title>
       </Head>
@@ -42,6 +46,7 @@ export function AppScreen({
         <Animated.View
           entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
           style={[styles.header, hideIntro && styles.compactHeader]}>
+          {headerLeft}
           {!hideIntro && <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
             <Text style={styles.title}>{title}</Text>

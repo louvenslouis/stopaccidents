@@ -25,6 +25,7 @@
     },
     "plugins": [
       "expo-router",
+      ["react-native-share", {}],
       [
         "expo-splash-screen",
         {

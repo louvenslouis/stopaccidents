@@ -30,11 +30,14 @@ import {
   validDate,
   type Category,
   type DateRange,
+  type Analytics,
 } from "@/features/reports/model";
 import {
-  reportSelection,
-  type SafetyReportSummary,
-} from "@/features/safety-report/read";
+  territoryFilter,
+  territoryLabel,
+  type TerritoryFilter,
+} from "@/features/reports/territories";
+import { reportSelection } from "@/features/safety-report/read";
 
 function one(value: string | string[] | undefined) {
   return typeof value === "string" ? value : undefined;
@@ -46,6 +49,8 @@ export default function EventsScreen() {
     end?: string;
     category?: string;
     subcategory?: string;
+    department?: string;
+    commune?: string;
   }>();
   const endParam = one(params.end);
   const startParam = one(params.start);
@@ -64,6 +69,10 @@ export default function EventsScreen() {
     ? (requestedCategory as Category)
     : "all";
   const requestedSubcategory = one(params.subcategory);
+  const territory = territoryFilter(
+    one(params.department),
+    one(params.commune),
+  );
   const subcategory = subcategories(category).some(
     (item) => item.id === requestedSubcategory,
   )
@@ -71,10 +80,12 @@ export default function EventsScreen() {
     : "all";
   return (
     <EventsList
+      key={`${start}:${end}:${category}:${subcategory}:${territory.department}:${territory.commune}`}
       start={start}
       end={end}
       category={category}
       subcategory={subcategory}
+      territory={territory}
     />
   );
 }
@@ -84,13 +95,16 @@ function EventsList({
   end,
   category,
   subcategory,
+  territory,
 }: {
   start: string | null;
   end: string;
   category: Category;
   subcategory: string;
+  territory: TerritoryFilter;
 }) {
   const router = useRouter();
+  const { department, commune } = territory;
   const range: DateRange = { start, end };
   const categoryLabel =
     categories.find((item) => item.id === category)?.label ?? "Tout";
@@ -102,7 +116,7 @@ function EventsList({
   const { width } = useWindowDimensions();
   const wide = width >= 650;
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
-  const [moreReports, setMoreReports] = useState<SafetyReportSummary[]>([]);
+  const [moreReports, setMoreReports] = useState<Analytics["reports"]>([]);
   const [moreLoading, setMoreLoading] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
   const moreController = useRef<AbortController | null>(null);
@@ -116,6 +130,8 @@ function EventsList({
         category,
         subcategory,
         signal,
+        0,
+        { department, commune },
       );
       if (!signal.aborted) {
         moreController.current?.abort();
@@ -126,7 +142,7 @@ function EventsList({
       }
       return result;
     },
-    [start, end, category, subcategory],
+    [start, end, category, subcategory, department, commune],
   );
   const { data, loading, error, refresh } = useAccident(loader);
   useEffect(
@@ -160,6 +176,7 @@ function EventsList({
         subcategory,
         controller.signal,
         data.reports.length + moreReports.length,
+        territory,
       );
       if (!controller.signal.aborted)
         setMoreReports((previous) => [...previous, ...result.reports]);
@@ -211,6 +228,9 @@ function EventsList({
           <View style={styles.flex}>
             <Text style={styles.eventsContextTitle}>{selectionLabel}</Text>
             <Text style={styles.eventsContextPeriod}>{rangeLabel(range)}</Text>
+            <Text style={styles.eventsContextPeriod}>
+              {territoryLabel(territory)}
+            </Text>
           </View>
           {data && (
             <Text
@@ -290,6 +310,13 @@ function EventsList({
                           {report.location_description || "Lieu à préciser"}
                         </Text>
                       </View>
+                      <Text style={styles.reportMeta}>
+                        {report.commune_name && report.department_name
+                          ? `${report.commune_name} · ${report.department_name}`
+                          : report.department_name
+                            ? `Commune à préciser · ${report.department_name}`
+                            : "Territoire à préciser"}
+                      </Text>
                       <Text style={styles.reportMeta}>
                         {!wide
                           ? `${dateLabel(report.created_at, true)} · `

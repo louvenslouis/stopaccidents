@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import type { Analytics, Category, DateRange } from "./model";
+import { allTerritories, type TerritoryFilter } from "./territories";
 
 export async function readAnalytics(
   range: DateRange,
@@ -7,6 +8,7 @@ export async function readAnalytics(
   subcategory: string,
   signal: AbortSignal,
   offset = 0,
+  territory: TerritoryFilter = allTerritories,
 ): Promise<Analytics> {
   const { data, error } = await supabase
     .rpc("read_report_analytics", {
@@ -15,6 +17,8 @@ export async function readAnalytics(
       p_category: category,
       p_subcategory: subcategory,
       p_offset: offset,
+      p_department: territory.department,
+      p_commune: territory.commune,
     })
     .abortSignal(signal);
   if (error || !data)

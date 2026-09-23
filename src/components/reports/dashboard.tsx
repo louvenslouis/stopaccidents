@@ -32,6 +32,11 @@ import {
 import { CommunityIllustration, HourChart, TimelineChart } from "./charts";
 import { styles } from "./styles";
 import { EventWheel } from "./event-wheel";
+import { TerritoryCards } from "./territory-cards";
+import {
+  territoryLabel,
+  type TerritoryFilter,
+} from "@/features/reports/territories";
 
 export const categoryIcons = {
   all: ChartNoAxesCombined,
@@ -115,6 +120,8 @@ export function ReportDashboard({
   range,
   category,
   subcategory,
+  territory,
+  onTerritory,
   wide,
   onKind,
   onViewEvents,
@@ -123,18 +130,24 @@ export function ReportDashboard({
   range: DateRange;
   category: Category;
   subcategory: string;
+  territory: TerritoryFilter;
+  onTerritory: (value: TerritoryFilter) => void;
   wide: boolean;
   onKind: (kind: SafetyReportSummary["report_kind"]) => void;
   onViewEvents: () => void;
   onReset: () => void;
 }) {
   const { start, end } = range;
+  const { department, commune } = territory;
   const [selectedBar, setSelectedBar] = useState<string | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const loader = useCallback(
     (signal: AbortSignal) =>
-      readAnalytics({ start, end }, category, subcategory, signal),
-    [start, end, category, subcategory],
+      readAnalytics({ start, end }, category, subcategory, signal, 0, {
+        department,
+        commune,
+      }),
+    [start, end, category, subcategory, department, commune],
   );
   const { data, loading, error, refresh } = useAccident(loader);
   if (!data && loading)
@@ -225,7 +238,9 @@ export function ReportDashboard({
             color="#F04F66"
             right={
               <View style={styles.scopeBadge}>
-                <Text style={styles.scopeText}>HAÏTI</Text>
+                <Text numberOfLines={2} style={styles.scopeText}>
+                  {territoryLabel(territory)}
+                </Text>
               </View>
             }
           />
@@ -346,6 +361,12 @@ export function ReportDashboard({
         </Card>
         {wide && <CommunityCard wide />}
       </View>
+      <TerritoryCards
+        data={data}
+        wide={wide}
+        territory={territory}
+        onSelect={onTerritory}
+      />
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Un peu plus loin</Text>
         <Text style={styles.sectionSubtitle}>Les détails qui éclairent</Text>

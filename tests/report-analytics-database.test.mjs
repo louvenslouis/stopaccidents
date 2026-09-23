@@ -37,6 +37,13 @@ test("Report analytics: public projection, periods, deduplication, pagination an
       ),
     );
     assert.match(results.at(-1).rows[0].result, /^PASS:/);
+    const territories = await db.exec(
+      await readFile(
+        new URL("../supabase/tests/report_territories.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    assert.match(territories.at(-1).rows[0].result, /^PASS:/);
   } finally {
     await db.close();
   }

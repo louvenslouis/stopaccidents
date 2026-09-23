@@ -98,6 +98,12 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
       markers.length = 0;
     },
   };
+  const stationPins = [];
+  const stationLayer = {
+    addTo: () => stationLayer,
+    clearLayers: () => { stationPins.length = 0; },
+  };
+  let layerCount = 0;
   const map = {
     getCenter: () => ({ lat: 18.54, lng: -72.34 }),
     setMinZoom() {},
@@ -130,14 +136,21 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
       },
     },
     document: {
-      createElement: () => ({
+      createElement: (tagName) => ({
+        tagName,
         style: {},
+        attributes: {},
         children: [],
-        setAttribute() {},
+        setAttribute(name, value) {
+          this.attributes[name] = value;
+        },
         appendChild(child) {
           this.children.push(child);
         },
       }),
+      createElementNS(_, tagName) {
+        return this.createElement(tagName);
+      },
     },
     L: {
       latLngBounds: () => ({
@@ -147,7 +160,7 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
       }),
       map: () => map,
       control: { zoom: () => ({ addTo() {} }) },
-      layerGroup: () => layer,
+      layerGroup: () => layerCount++ === 0 ? layer : stationLayer,
       tileLayer: () => tiles,
       divIcon: (options) => options,
       circle: (point, options) => makeCircle(point, options),
@@ -157,8 +170,8 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
           position,
           options,
           getElement: () => options.icon.html,
-          addTo() {
-            markers.push(this);
+          addTo(target) {
+            (target === stationLayer ? stationPins : markers).push(this);
             return this;
           },
           on(_, handler) {
@@ -225,10 +238,14 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     { ...report, id: 'third', latitude: 19 },
   ]);
   assert.equal(markers.length, 2, 'Colocated reports must share one marker');
-  assert.equal(markers[0].options.icon.html.children[0].src, '/assets/accident.png');
-  assert.equal(markers[0].options.icon.html.children[1].textContent, '2');
+  const pin = markers[0].options.icon.html;
+  assert.equal(pin.children[0].tagName, 'svg', 'The alert uses a droplet outline');
+  assert.equal(pin.children[0].children[0].attributes.fill, '#FFFFFF');
+  assert.equal(pin.children[1].src, '/assets/accident.png');
+  assert.equal(pin.children[2].textContent, '2');
+  assert.deepEqual(Array.from(markers[0].options.icon.iconAnchor), [32, 74]);
   assert.equal(
-    markers[0].options.icon.html.children[1].style.backgroundColor,
+    pin.children[2].style.backgroundColor,
     '#BD2E40',
     'The group badge shows the highest reported severity',
   );
@@ -297,4 +314,25 @@ test('embedded map receives srcdoc updates, preserves colocated choices and neve
     2,
     'Out-of-area positions are not plotted in Haiti',
   );
+
+  const sendStations = (source, stations) => listeners.message({
+    source, data: { source: 'stopaccidents-app', stations },
+  });
+  const station = { id: 'station', latitude: 18.5, longitude: -72.3, title: '<b>Station</b>' };
+  sendStations({}, [station]);
+  assert.equal(stationPins.length, 0);
+  sendStations(parent, [station, { ...station, id: 'nearby', latitude: 18.50001 }, { ...station, id: 'far', latitude: 19 }, { ...station, id: 'outside', latitude: 40 }]);
+  assert.equal(stationPins.length, 2);
+  assert.equal(markers.length, 1, 'Stations never replace report markers');
+  assert.equal(stationPins[0].popup.children[0].textContent, station.title);
+  assert.equal(stationPins[0].popup.children[0].innerHTML, undefined);
+  stationPins[0].popup.children[1].onclick();
+  assert.equal(messages.at(-1).status, 'station-select');
+  assert.equal(messages.at(-1).id, 'nearby');
+  stationPins[1].click();
+  assert.equal(messages.at(-1).id, 'far');
+  assert.equal(views.length, 4, 'Station refresh preserves GPS and viewport');
+  sendStations(parent, []);
+  assert.equal(stationPins.length, 0, 'Removed stations disappear');
+  assert.equal(markers.length, 1);
 });

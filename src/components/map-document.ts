@@ -15,18 +15,26 @@ export const MAP_DOCUMENT = `<!doctype html>
   <style>
     html, body, #map { height: 100%; width: 100%; margin: 0; background: #E8EEF0; }
     .leaflet-control-attribution { font: 11px/1.5 system-ui, sans-serif; }
-    .report-pin { position: relative; width: 54px; height: 62px; box-sizing: border-box;
-      border: 3px solid white; border-radius: 20px 20px 20px 6px; background: #fff;
-      box-shadow: 0 3px 12px #17203355; transform: rotate(-45deg); overflow: visible; }
-    .report-pin-image { width: 48px; height: 48px; display: block; object-fit: contain;
-      transform: rotate(45deg); }
-    .report-pin-count { position: absolute; top: -9px; right: -9px; min-width: 24px; height: 24px;
+    .report-pin { position: relative; isolation: isolate; width: 64px; height: 76px; }
+    .report-pin .report-pin-shape { position: absolute; inset: 0; z-index: 0;
+      width: 64px; height: 76px; overflow: visible;
+      filter: drop-shadow(0 4px 6px #17203355); }
+    .report-pin-image { position: absolute; top: 12px; left: 13px; width: 38px; height: 38px;
+      z-index: 1; display: block; object-fit: contain; }
+    .report-pin-count { position: absolute; top: -3px; right: -3px; z-index: 2;
+      min-width: 24px; height: 24px;
       padding: 0 5px; box-sizing: border-box; border: 2px solid white; border-radius: 12px;
-      color: white; text-align: center; font: 800 12px/20px system-ui; transform: rotate(45deg);
+      color: white; text-align: center; font: 800 12px/20px system-ui;
       box-shadow: 0 2px 5px #17203344; }
     .accident-choices { max-height: 220px; overflow-y: auto; display: grid; gap: 8px; }
     .accident-choice { min-height: 44px; padding: 10px; border: 1px solid #ddd;
       border-radius: 8px; background: white; text-align: left; cursor: pointer; }
+    .station-pin { width: 40px; height: 40px; box-sizing: border-box; display: grid;
+      place-items: center; border: 3px solid white; border-radius: 14px; background: #087F75;
+      box-shadow: 0 3px 8px #123C3B55; color: white; position: relative; }
+    .station-count { position: absolute; right: -7px; top: -9px; min-width: 19px;
+      padding: 2px; border: 2px solid white; border-radius: 12px; background: #075E58;
+      font: 700 11px/16px system-ui; text-align: center; }
   </style>
 </head>
 <body>
@@ -67,6 +75,8 @@ export const MAP_DOCUMENT = `<!doctype html>
       var markers = L.layerGroup().addTo(map);
       var hasFocused = false;
       var currentReports = [];
+      var stationsLayer = L.layerGroup().addTo(map);
+      var currentStations = [];
       var userDot = null;
       var accuracyCircle = null;
       var placeMarker = null;
@@ -181,6 +191,24 @@ export const MAP_DOCUMENT = `<!doctype html>
           }, group[0]);
           var pin = document.createElement('div');
           pin.className = 'report-pin';
+          var shape = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          shape.setAttribute('class', 'report-pin-shape');
+          shape.setAttribute('viewBox', '0 0 64 76');
+          shape.setAttribute('aria-hidden', 'true');
+          var outline = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          outline.setAttribute('d', 'M32 3C16.8 3 4.5 15.3 4.5 30.5c0 17.3 20.3 36.1 27.5 43.5 7.2-7.4 27.5-26.2 27.5-43.5C59.5 15.3 47.2 3 32 3Z');
+          outline.setAttribute('fill', '#FFFFFF');
+          outline.setAttribute('stroke', '#D5E0E7');
+          outline.setAttribute('stroke-width', '1.5');
+          shape.appendChild(outline);
+          var halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          halo.setAttribute('cx', '32');
+          halo.setAttribute('cy', '30');
+          halo.setAttribute('r', '22');
+          halo.setAttribute('fill', report.color);
+          halo.setAttribute('fill-opacity', '0.10');
+          shape.appendChild(halo);
+          pin.appendChild(shape);
           var pinImage = document.createElement('img');
           pinImage.className = 'report-pin-image';
           pinImage.src = report.illustrationUri;
@@ -195,7 +223,7 @@ export const MAP_DOCUMENT = `<!doctype html>
           }
           var label = group.length > 1 ? group.length + ' signalements dans cette zone' : report.title;
           var marker = L.marker([report.latitude, report.longitude], {
-            icon: L.divIcon({ html: pin, className: '', iconSize: [54, 62], iconAnchor: [10, 58] }),
+            icon: L.divIcon({ html: pin, className: '', iconSize: [64, 76], iconAnchor: [32, 74] }),
             title: label,
             alt: label,
             keyboard: true
@@ -230,6 +258,72 @@ export const MAP_DOCUMENT = `<!doctype html>
         renderMarkers();
       };
       map.on('zoomend', renderMarkers);
+      function renderStations() {
+        stationsLayer.clearLayers();
+        var groups = [];
+        currentStations.forEach(function (station) {
+          var point = map.latLngToLayerPoint([station.latitude, station.longitude]);
+          var group = groups.find(function (items) {
+            return point.distanceTo(map.latLngToLayerPoint([items[0].latitude, items[0].longitude])) < 44;
+          });
+          if (group) group.push(station);
+          else groups.push([station]);
+        });
+        groups.forEach(function (group) {
+          var station = group[0];
+          var pin = document.createElement('div');
+          pin.className = 'station-pin';
+          var icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          icon.setAttribute('width', '24');
+          icon.setAttribute('height', '24');
+          icon.setAttribute('viewBox', '0 0 24 24');
+          icon.setAttribute('aria-hidden', 'true');
+          var drawing = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          drawing.setAttribute('d', 'M5 17V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2Zm0-6h14M8 6h8M8 15h.01M16 15h.01M7 19v2M17 19v2');
+          drawing.setAttribute('fill', 'none');
+          drawing.setAttribute('stroke', 'currentColor');
+          drawing.setAttribute('stroke-width', '2');
+          drawing.setAttribute('stroke-linecap', 'round');
+          icon.appendChild(drawing);
+          pin.appendChild(icon);
+          if (group.length > 1) {
+            var badge = document.createElement('span');
+            badge.className = 'station-count';
+            badge.textContent = String(group.length);
+            pin.appendChild(badge);
+          }
+          var label = group.length > 1 ? group.length + ' stations dans cette zone' : station.title;
+          var marker = L.marker([station.latitude, station.longitude], {
+            icon: L.divIcon({ html: pin, className: '', iconSize: [44, 44], iconAnchor: [22, 22] }),
+            title: label, alt: label, keyboard: true,
+            // Keep report pins legible where an incident and a station coincide.
+            zIndexOffset: -100
+          }).addTo(stationsLayer);
+          marker.getElement().setAttribute('aria-label', label);
+          if (group.length === 1) {
+            marker.on('click', function () { notify('station-select', station.id); });
+          } else {
+            var choices = document.createElement('div');
+            choices.className = 'accident-choices';
+            group.forEach(function (item) {
+              var button = document.createElement('button');
+              button.className = 'accident-choice';
+              button.textContent = item.title;
+              button.onclick = function () { notify('station-select', item.id); };
+              choices.appendChild(button);
+            });
+            marker.bindPopup(choices);
+          }
+        });
+      }
+      window.stopAccidentsStations = function (stations) {
+        currentStations = stations.filter(function (station) {
+          return typeof station.id === 'string' && Number.isFinite(station.latitude) &&
+            Number.isFinite(station.longitude) && bounds.contains([station.latitude, station.longitude]);
+        });
+        renderStations();
+      };
+      map.on('zoomend', renderStations);
       window.addEventListener('message', function (event) {
         // about:srcdoc reports a null location.origin despite inheriting the parent origin.
         // Accept updates only from the embedding application window.
@@ -239,6 +333,7 @@ export const MAP_DOCUMENT = `<!doctype html>
           if ('placeFocus' in event.data) window.stopAccidentsFocus(event.data.placeFocus);
           if ('route' in event.data) window.stopAccidentsRoute(event.data.route);
           if (Array.isArray(event.data.markers)) window.stopAccidentsUpdate(event.data.markers);
+          if (Array.isArray(event.data.stations)) window.stopAccidentsStations(event.data.stations);
         }
       });
       var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -258,7 +353,7 @@ export const MAP_DOCUMENT = `<!doctype html>
 export type MapMessage =
   | { status: 'center'; latitude: number; longitude: number }
   | { status: 'ready' | 'error' | 'pan' }
-  | { status: 'select'; id: string };
+  | { status: 'select' | 'station-select'; id: string };
 
 export function readMapMessage(message: unknown): MapMessage | null {
   if (typeof message !== 'string') return null;
@@ -277,8 +372,8 @@ export function readMapMessage(message: unknown): MapMessage | null {
       value.status === 'pan'
     )
       return { status: value.status };
-    if (value.status === 'select' && typeof value.id === 'string') {
-      return { status: 'select', id: value.id };
+    if ((value.status === 'select' || value.status === 'station-select') && typeof value.id === 'string') {
+      return { status: value.status, id: value.id };
     }
     return null;
   } catch {

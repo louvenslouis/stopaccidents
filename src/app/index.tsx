@@ -1,5 +1,8 @@
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
+import { HomeMasthead, HomeSections } from '@/components/home/home-sections';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { sharedReportSelection } from '@/features/safety-report/share';
 import { SafetyReportDetailSheet } from '@/components/safety-report-detail-sheet';
 import { readLatestReport } from '@/features/safety-report/read';
 import { useAccident } from '@/features/accident-report/use-accident';
@@ -29,12 +32,15 @@ const WIDE_LAYOUT_BREAKPOINT = 960;
 const WIDE_LAYOUT_GAP = 16;
 
 export default function HomeScreen() {
+  const router = useRouter();
+  const { signalement } = useLocalSearchParams<{ signalement?: string | string[] }>();
   const insets = useSafeAreaInsets();
   const { width: initialWidth } = useWindowDimensions();
   const [webWidth, setWebWidth] = useState(0);
   const [reportOpen, setReportOpen] = useState(false);
+  const [zonesOpen, setZonesOpen] = useState(false);
   const [reportType, setReportType] = useState<ReportType | null>(null);
-  const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const selectedReport = sharedReportSelection(signalement);
   const latestReport = useAccident(readLatestReport, !reportOpen && !selectedReport, 30000);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
@@ -98,17 +104,20 @@ export default function HomeScreen() {
       <AppScreen
         title="Accueil"
         hideIntro
+        backgroundColor="#F6F7F1"
+        headerLeft={<HomeMasthead />}
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerRight={
           <AnimatedPressable
-            accessibilityLabel="Notifications"
+            accessibilityLabel="Consulter mes alertes locales"
             accessibilityRole="button"
+            onPress={() => setZonesOpen(true)}
             haptic="light"
             hitSlop={8}
             pressedScale={0.9}
             style={styles.notificationButton}>
-            <AppIcon icon={Bell} size={23} color="#9F9F9F" />
+            <AppIcon icon={Bell} size={21} color="#49614D" />
           </AnimatedPressable>
         }
       >
@@ -117,7 +126,14 @@ export default function HomeScreen() {
           loading={latestReport.loading}
           error={latestReport.error}
           onRefresh={latestReport.refresh}
-          onOpen={setSelectedReport}
+          onOpen={(id) => router.setParams({ signalement: id })}
+        />
+        <HomeSections
+          enabled={!reportOpen && !selectedReport}
+          onOpen={(id) => router.setParams({ signalement: id })}
+          zonesOpen={zonesOpen}
+          onZonesOpen={() => setZonesOpen(true)}
+          onZonesClose={() => setZonesOpen(false)}
         />
       </AppScreen>
 
@@ -178,7 +194,9 @@ export default function HomeScreen() {
         <SafetyReportDetailSheet
           key={selectedReport}
           selection={selectedReport}
-          onClose={() => setSelectedReport(null)}
+          onClose={() => {
+            router.setParams({ signalement: undefined });
+          }}
         />
       )}
     </>
@@ -191,14 +209,13 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: 23,
     borderWidth: 1,
-    borderColor: '#9F9F9F',
+    borderColor: '#E0E5D7',
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   homeContent: {
-    paddingTop: 16,
-    minHeight: '115%',
+    paddingTop: 25,
     width: '100%',
     maxWidth: 688,
     alignSelf: 'center',

@@ -1,9 +1,16 @@
 import { useMapLocation } from '@/features/map/use-map-location';
+import { useAccident } from '@/features/accident-report/use-accident';
+import { readTransportStations } from '@/features/transport/api';
+import { stationMarkers, type TransportStation } from '@/features/transport/model';
+import { TransportStationsSheet } from './transport-stations-sheet';
+import BusFront from 'lucide-react-native/icons/bus-front';
 import { useRoutePlanner } from '@/features/map/use-route-planner';
 import type { MapPlace } from '@/features/map/place-search';
 import { usePlaceSuggestions } from '@/features/map/use-place-suggestions';
 import { readSavedPlaces } from '@/features/profile/saved-places';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { savedPoint } from '@/features/home/model';
+import { readHomePlaces } from '@/features/home/api';
 import BriefcaseBusiness from 'lucide-react-native/icons/briefcase-business';
 import House from 'lucide-react-native/icons/house';
 import Animated, {
@@ -128,6 +135,10 @@ export function OpenStreetMap({
   reportsState: MapReportsState;
 }) {
   const [attempt, setAttempt] = useState(0);
+  const stations = useAccident(readTransportStations, true, 60000);
+  const transportMarkers = useMemo(() => stationMarkers(stations.data ?? []), [stations.data]);
+  const [stationsOpen, setStationsOpen] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<TransportStation | null>(null);
   const [weatherCenter, setWeatherCenter] = useState<WeatherPoint | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     'loading',
@@ -157,6 +168,39 @@ export function OpenStreetMap({
   const insets = useSafeAreaInsets();
   const gps = useMapLocation();
   const planner = useRoutePlanner(gps, markers);
+  const { trajet, demande } = useLocalSearchParams<{ trajet?: string; demande?: string }>();
+  const handledJourney = useRef<string | null>(null);
+  const showPlanner = planner.show;
+  useFocusEffect(useCallback(() => {
+    if (!trajet || !['custom', 'home', 'work', 'commute'].includes(trajet)) return;
+    const key = `${trajet}:${demande ?? ''}`;
+    if (handledJourney.current === key) return;
+    let active = true;
+    if (trajet === 'custom') {
+      handledJourney.current = key;
+      showPlanner();
+    } else {
+      void readHomePlaces().then((places) => {
+        if (!active) return;
+        handledJourney.current = key;
+        const destination = places[trajet === 'home' ? 'home' : 'work'];
+        const origin = trajet === 'commute' ? places.home : null;
+        const to = savedPoint(destination);
+        const from = savedPoint(origin);
+        if (!to || (trajet === 'commute' && !from)) {
+          router.push('/profil');
+          return;
+        }
+        showPlanner({ ...to, label: destination!.address }, from ? { ...from, label: origin!.address } : undefined);
+      }).catch(() => {
+        if (!active) return;
+        handledJourney.current = key;
+        showPlanner();
+        Alert.alert('Adresses indisponibles', 'Saisissez votre destination ou réessayez depuis l’accueil.');
+      });
+    }
+    return () => { active = false; };
+  }, [trajet, demande, showPlanner]));
   const suggestions = usePlaceSuggestions(query, searchOpen && !planner.open);
   const suggestionsVisible = searchOpen && query.trim().length >= 2;
   const routeMarkers = useMemo(
@@ -189,6 +233,7 @@ export function OpenStreetMap({
       () => () => {
         searchRequest.current += 1;
         setSearchOpen(false);
+        setStationsOpen(false);
         inputRef.current?.blur();
       },
       [],
@@ -250,6 +295,16 @@ export function OpenStreetMap({
             onError={onError}
             onCenterChange={setWeatherCenter}
             markers={routeMarkers}
+            stations={transportMarkers}
+            onSelectStation={(id) => {
+              const station = stations.data?.find((item) => item.id === id);
+              if (!station) return;
+              gps.pauseFollowing();
+              Keyboard.dismiss();
+              setSearchOpen(false);
+              setSelectedStation(station);
+              setStationsOpen(true);
+            }}
             onSelect={onSelect}
             location={gps.location}
             placeFocus={planner.open ? null : placeFocus}
@@ -297,6 +352,17 @@ export function OpenStreetMap({
         </View>
       )}
 
+      {stationsOpen && <TransportStationsSheet
+        stations={stations}
+        initialStation={selectedStation}
+        onClose={() => setStationsOpen(false)}
+        onShowStation={(station) => {
+          planner.close();
+          selectPlace({ latitude: station.latitude, longitude: station.longitude, label: station.name });
+          setStationsOpen(false);
+        }}
+      />}
+
       <View
         style={[
           styles.locationControls,
@@ -308,6 +374,27 @@ export function OpenStreetMap({
           },
         ]}
       >
+        {!planner.open && (
+          <AnimatedPressable
+            accessibilityRole="button"
+            accessibilityLabel={stations.error ? 'Stations : chargement impossible, réessayer' : 'Voir les stations de transport en commun'}
+            haptic="light"
+            pressedScale={0.9}
+            onPress={() => {
+              Keyboard.dismiss();
+              setSearchOpen(false);
+              setSelectedStation(null);
+              setStationsOpen(true);
+            }}
+            style={[styles.iconButton, styles.locateButton, stations.error && styles.errorButton]}
+          >
+            {stations.loading && !stations.data ? (
+              <ActivityIndicator size="small" color="#087F75" />
+            ) : (
+              <BusFront size={23} color={stations.error ? '#C63E31' : '#087F75'} />
+            )}
+          </AnimatedPressable>
+        )}
         <AnimatedPressable
           accessibilityRole="button"
           accessibilityLabel={

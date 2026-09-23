@@ -59,6 +59,32 @@ test("weather rejects missing, null, malformed or stale measurements instead of 
   assert.equal(weatherCondition(999, true).label, "Météo");
 });
 
+test("weather selects precipitation chances for the next three hourly slots", () => {
+  const { parseWeather } = service();
+  const now = Date.now();
+  const currentHour = Math.floor(now / 3_600_000) * 3600;
+  const forecast = {
+    ...payload({ time: Math.floor(now / 1000) }),
+    hourly: {
+      time: [0, 1, 2, 3, 4].map((offset) => currentHour + offset * 3600),
+      precipitation_probability: [99, 0, 25, 80, 100],
+    },
+  };
+  assert.deepEqual(parseWeather(forecast, now).precipitation, [
+    { time: (currentHour + 3600) * 1000, probability: 0 },
+    { time: (currentHour + 7200) * 1000, probability: 25 },
+    { time: (currentHour + 10800) * 1000, probability: 80 },
+  ]);
+  assert.deepEqual(parseWeather({
+    ...forecast,
+    hourly: { ...forecast.hourly, precipitation_probability: [99, null, 120, 80, 100] },
+  }, now).precipitation, [
+    { time: (currentHour + 3600) * 1000, probability: null },
+    { time: (currentHour + 7200) * 1000, probability: null },
+    { time: (currentHour + 10800) * 1000, probability: 80 },
+  ]);
+});
+
 test("requests send rounded coordinates and metric units, cache nearby views, and preserve cancellation", async () => {
   const calls = [];
   const { readWeather } = service(async (url, options) => {
@@ -73,6 +99,8 @@ test("requests send rounded coordinates and metric units, cache nearby views, an
   assert.equal(calls[0].url.searchParams.get("longitude"), "-72.34");
   assert.equal(calls[0].url.searchParams.get("temperature_unit"), "celsius");
   assert.equal(calls[0].url.searchParams.get("wind_speed_unit"), "kmh");
+  assert.equal(calls[0].url.searchParams.get("hourly"), "precipitation_probability");
+  assert.equal(calls[0].url.searchParams.get("forecast_hours"), "5");
   assert.equal(calls[0].options.signal, controller.signal);
   assert.equal(calls[0].options.credentials, "omit");
   await readWeather({ ...point, latitude: 18.542 }, controller.signal);

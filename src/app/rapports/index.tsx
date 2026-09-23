@@ -25,6 +25,11 @@ import {
   categoryIcons,
 } from "@/components/reports/dashboard";
 import { styles } from "@/components/reports/styles";
+import { TerritoryFilters } from "@/components/reports/territory-filters";
+import {
+  allTerritories,
+  type TerritoryFilter,
+} from "@/features/reports/territories";
 import {
   categories,
   categoryForKind,
@@ -52,6 +57,7 @@ export default function ReportsScreen() {
   const [offset, setOffset] = useState(0);
   const [category, setCategory] = useState<Category>("all");
   const [subcategory, setSubcategory] = useState("all");
+  const [territory, setTerritory] = useState<TerritoryFilter>(allTerritories);
   const [custom, setCustom] = useState<DateRange>(periodRange("month"));
   const [dateOpen, setDateOpen] = useState(false);
   const [reload, setReload] = useState(0);
@@ -70,6 +76,8 @@ export default function ReportsScreen() {
         end: range.end,
         category: kind ? categoryForKind(kind) : category,
         subcategory: kind ? (kind === "accident" ? "all" : kind) : subcategory,
+        department: territory.department ?? "",
+        commune: territory.commune ?? "",
       },
     });
   }
@@ -244,11 +252,14 @@ export default function ReportsScreen() {
             ))}
           </ScrollView>
         )}
+        <TerritoryFilters value={territory} onChange={setTerritory} />
         <ReportDashboard
-          key={`${range.start}:${range.end}:${category}:${subcategory}:${reload}`}
+          key={`${range.start}:${range.end}:${category}:${subcategory}:${territory.department}:${territory.commune}:${reload}`}
           range={range}
           category={category}
           subcategory={subcategory}
+          territory={territory}
+          onTerritory={setTerritory}
           wide={wide}
           onKind={openEvents}
           onViewEvents={() => openEvents()}
@@ -256,6 +267,7 @@ export default function ReportsScreen() {
             chooseCategory("all");
             setPeriod("all");
             setOffset(0);
+            setTerritory(allTerritories);
           }}
         />
       </AppScreen>
