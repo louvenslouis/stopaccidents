@@ -9,6 +9,7 @@ const markerSources = {
   barricade: require('../../assets/images/barricade-types/other.png'),
   accident: require('../../assets/images/report-illustrations/accident.png'),
   kidnapping: require('../../assets/images/report-illustrations/kidnapping.png'),
+  breakdown: require('../../assets/images/breakdown-report/breakdown.png'),
 } as const;
 
 export type IllustratedMapMarker = AccidentMarker & { illustrationUri: string };

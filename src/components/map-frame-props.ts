@@ -5,7 +5,7 @@ export type AccidentMarker = {
   title: string;
   color: string;
   priority: number;
-  illustration: 'gunfire' | 'accident' | 'kidnapping' | 'barricade' | 'armed_presence' | 'suspicious_vehicle';
+  illustration: 'gunfire' | 'accident' | 'kidnapping' | 'barricade' | 'armed_presence' | 'suspicious_vehicle' | 'breakdown';
 };
 
 export const MAP_PAGE_URL =

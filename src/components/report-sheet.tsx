@@ -40,6 +40,7 @@ import { GunfireReportSheet } from '@/components/gunfire-report-sheet';
 import { ArmedPresenceReportSheet } from '@/components/armed-presence-report-sheet';
 import { BarricadeReportSheet } from '@/components/barricade-report-sheet';
 import { KidnappingReportSheet } from '@/components/kidnapping-report-sheet';
+import { BreakdownReportSheet } from '@/components/breakdown-report-sheet';
 import {
   ReportTypePicker,
   type ReportType,
@@ -868,6 +869,7 @@ export function ReportSheet({
     <GunfireReportSheet visible={visible && reportType === 'gunfire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <ArmedPresenceReportSheet visible={visible && reportType === 'armed_presence'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <BarricadeReportSheet visible={visible && reportType === 'barricade'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <BreakdownReportSheet visible={visible && reportType === 'breakdown'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <KidnappingReportSheet
       visible={visible && reportType === 'kidnapping'}
       onBackToTypes={onBackToTypes}

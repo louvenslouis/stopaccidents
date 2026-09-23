@@ -4,6 +4,7 @@ import { ArmedPresenceDetailSheet } from '@/components/armed-presence-detail-she
 import { BarricadeDetailSheet } from '@/components/barricade-detail-sheet';
 import { AccidentDetailSheet } from '@/components/accident-detail-sheet';
 import { KidnappingDetailSheet } from '@/components/kidnapping-detail-sheet';
+import { BreakdownDetailSheet } from '@/components/breakdown-detail-sheet';
 import { parseReportSelection } from '@/features/safety-report/read';
 
 export function SafetyReportDetailSheet({
@@ -21,6 +22,7 @@ export function SafetyReportDetailSheet({
   if (report.reportKind === 'gunfire') return <GunfireDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'armed_presence') return <ArmedPresenceDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'barricade') return <BarricadeDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
+  if (report.reportKind === 'breakdown') return <BreakdownDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'kidnapping') {
     return <KidnappingDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   }

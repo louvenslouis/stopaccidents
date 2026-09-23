@@ -32,6 +32,13 @@ const reportTypes = [
     description: "Collision, sortie de route ou personne renversée.",
   },
   {
+    id: "breakdown",
+    title: "Véhicule en panne",
+    tint: "#FFF4E8",
+    border: "#F0D9BD",
+    description: "Emplacement, type de véhicule et impact sur la circulation.",
+  },
+  {
     id: "kidnapping",
     title: "Enlèvement",
     tint: "#F0EDFF",

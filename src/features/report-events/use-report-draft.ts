@@ -50,8 +50,19 @@ export function useReportDraft<D extends EventDraft>(
     if (!active || ready) return;
     let cancelled = false;
     void (async () => {
+      let userId: string;
       try {
-        const userId = await ensureReporter();
+        userId = await ensureReporter();
+      } catch (error) {
+        if (!cancelled)
+          setStorageError(
+            error instanceof Error
+              ? error.message
+              : "Connexion impossible. Réessayez pour reprendre votre signalement.",
+          );
+        return;
+      }
+      try {
         const storageKey = `stopaccidents.draft.${userId}.${kind}`;
         await writes.get(storageKey)?.catch(() => {});
         const value = await draftStorage.getItem(storageKey);

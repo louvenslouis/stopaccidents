@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase';
 import type { AccidentType, Severity } from '@/features/accident-report/model';
+import type {
+  BreakdownPosition,
+  BreakdownVehicleType,
+  TrafficImpact,
+} from '@/features/breakdown-report/model';
 
 type ReportLocation = {
   event_id?: string;
@@ -34,7 +39,17 @@ export type ArmedPresenceReportSummary = ReportLocation & { report_kind: 'armed_
 export type ArmedPresenceReportDetail = ArmedPresenceReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; presence: string; activity: string; details: string };
 export type SuspiciousVehicleReportSummary = ReportLocation & { report_kind: 'suspicious_vehicle'; accident_type: null; severity: null };
 export type SuspiciousVehicleReportDetail = SuspiciousVehicleReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; vehicle_description: string; observed_behavior: string; details: string; photos?: { storage_path: string; captured_at: string; url: string | null }[] };
-export type SafetyReportSummary = GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary;
+export type BreakdownReportSummary = ReportLocation & { report_kind: 'breakdown'; accident_type: null; severity: null };
+export type BreakdownReportDetail = BreakdownReportSummary & {
+  location_accuracy_m: number | null;
+  status: 'received' | 'reviewing' | 'closed';
+  updated_at: string;
+  breakdown_position: BreakdownPosition;
+  vehicle_type: BreakdownVehicleType;
+  traffic_impact: TrafficImpact;
+  details: string;
+};
+export type SafetyReportSummary = GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary | BreakdownReportSummary;
 
 export async function readSuspiciousVehicleReport(id: string, signal: AbortSignal): Promise<SuspiciousVehicleReportDetail | null> {
   const { data, error } = await supabase.rpc('read_suspicious_vehicle_report', { p_id: id }).abortSignal(signal);
@@ -66,6 +81,12 @@ export async function readBarricadeReport(id: string, signal: AbortSignal): Prom
   const { data, error } = await supabase.rpc('read_barricade_report', { p_id: id }).abortSignal(signal);
   if (error) throw new Error('Impossible de charger cette route barricadée. Réessayez.');
   return data as BarricadeReportDetail | null;
+}
+
+export async function readBreakdownReport(id: string, signal: AbortSignal): Promise<BreakdownReportDetail | null> {
+  const { data, error } = await supabase.rpc('read_breakdown_report', { p_id: id }).abortSignal(signal);
+  if (error) throw new Error('Impossible de charger ce signalement de véhicule en panne. Réessayez.');
+  return data as BreakdownReportDetail | null;
 }
 
 export type MapSafetyReports = {
@@ -121,7 +142,7 @@ export function parseReportSelection(value: string) {
   if (separator < 1) return null;
   const reportKind = value.slice(0, separator);
   const id = value.slice(separator + 1);
-  if ((reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle') || !id) {
+  if ((reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle' && reportKind !== 'breakdown') || !id) {
     return null;
   }
   return { reportKind, id } as const;

@@ -223,6 +223,22 @@ test("an unreadable saved draft blocks restoration instead of silently creating 
   assert.match(state.storageError, /restaurer/);
   a.dispose();
 });
+test("an identity failure is not mislabeled as an unreadable draft", async () => {
+  const f = storageFixture();
+  f.ensureReporter = async () => {
+    throw new Error(
+      "Le signalement sans compte n’est pas encore activé. Réessayez après son activation.",
+    );
+  };
+  const a = draftHook(f, () => ({ id: "new", coordinates: null }));
+  a.render();
+  await flush();
+  const state = a.render();
+  assert.equal(state.ready, false);
+  assert.match(state.storageError, /sans compte.*pas encore activé/);
+  assert.doesNotMatch(state.storageError, /restaurer le brouillon/);
+  a.dispose();
+});
 function find(node, predicate) {
   if (!node || typeof node !== "object") return null;
   if (predicate(node)) return node;
@@ -318,4 +334,20 @@ test("event API passes the stable ID and chosen event, and surfaces association 
   assert.equal(calls[0].payload.p_event_id, "chosen-event");
   fail = true;
   await assert.rejects(prepareReportEvent("accident", draft), /plus proposé/);
+});
+test("reporter identity explains when anonymous sign-ins are disabled", async () => {
+  const { ensureReporter } = compile(sources["api.ts"], {
+    "@/lib/supabase": {
+      supabase: {
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null }),
+          signInAnonymously: async () => ({
+            data: { user: null },
+            error: { code: "anonymous_provider_disabled" },
+          }),
+        },
+      },
+    },
+  });
+  await assert.rejects(ensureReporter(), /sans compte.*pas encore activé/);
 });

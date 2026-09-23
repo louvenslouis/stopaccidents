@@ -95,6 +95,8 @@ test('PostgreSQL: atomic submission, validation, ownership and storage isolation
     assert.match(gunfire.at(-1).rows[0].result, /^PASS:/);
     const events = await db.exec(await readFile(new URL('../supabase/tests/report_events.sql', import.meta.url), 'utf8'));
     assert.match(events.at(-1).rows[0].result, /^PASS:/);
+    const breakdown = await db.exec(await readFile(new URL('../supabase/tests/breakdown_reports.sql', import.meta.url), 'utf8'));
+    assert.match(breakdown.at(-1).rows[0].result, /^PASS:/);
     const remaining = await db.query(
       'select count(*)::int as count from public.accident_reports',
     );

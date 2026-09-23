@@ -28,9 +28,16 @@ export async function ensureReporter(): Promise<string> {
   if (signingIn) return signingIn;
   signingIn = (async () => {
     const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
+    if (error)
+      throw new Error(
+        "Connexion impossible. Réessayez pour reprendre votre signalement.",
+      );
     if (data.session) return data.session.user.id;
     const result = await supabase.auth.signInAnonymously();
+    if (result.error?.code === "anonymous_provider_disabled")
+      throw new Error(
+        "Le signalement sans compte n’est pas encore activé. Réessayez après son activation.",
+      );
     if (result.error || !result.data.user)
       throw new Error(
         "Connexion impossible. Réessayez pour reprendre votre signalement.",
