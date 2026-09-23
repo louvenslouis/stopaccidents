@@ -1,6 +1,6 @@
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
-import { HomeMasthead, HomeSections } from '@/components/home/home-sections';
+import { HomeSections } from '@/components/home/home-sections';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { sharedReportSelection } from '@/features/safety-report/share';
 import { SafetyReportDetailSheet } from '@/components/safety-report-detail-sheet';
@@ -104,8 +104,6 @@ export default function HomeScreen() {
       <AppScreen
         title="Accueil"
         hideIntro
-        backgroundColor="#F6F7F1"
-        headerLeft={<HomeMasthead />}
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerRight={
@@ -215,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   homeContent: {
-    paddingTop: 25,
+    paddingTop: 16,
     width: '100%',
     maxWidth: 688,
     alignSelf: 'center',

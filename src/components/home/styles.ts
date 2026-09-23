@@ -2,30 +2,6 @@ import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
-  masthead: { flex: 1, paddingTop: 4, paddingBottom: 18 },
-  brandLine: { flexDirection: "row", gap: 7, alignItems: "center" },
-  brandMark: {
-    width: 8,
-    height: 8,
-    borderRadius: 3,
-    backgroundColor: "#F47155",
-    transform: [{ rotate: "45deg" }],
-  },
-  brand: {
-    fontSize: 10,
-    letterSpacing: 2,
-    fontWeight: "800",
-    color: "#5C6A60",
-  },
-  greeting: {
-    fontSize: 19,
-    lineHeight: 25,
-    fontWeight: "700",
-    color: "#273F32",
-    letterSpacing: -0.65,
-    marginTop: 9,
-    maxWidth: 285,
-  },
   sections: {
     width: "100%",
     maxWidth: 640,

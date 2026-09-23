@@ -182,18 +182,6 @@ function SectionHeading({
   );
 }
 
-export function HomeMasthead() {
-  return (
-    <View style={styles.masthead}>
-      <View style={styles.brandLine}>
-        <View style={styles.brandMark} />
-        <Text style={styles.brand}>STOP ACCIDENTS</Text>
-      </View>
-      <Text style={styles.greeting}>Gardons une longueur d’avance.</Text>
-    </View>
-  );
-}
-
 type ReportListProps = {
   items: ReturnType<typeof nearbyReports>;
   limit?: number;
