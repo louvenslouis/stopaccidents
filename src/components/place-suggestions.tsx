@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import {
@@ -22,6 +23,9 @@ export function PlaceSuggestions({
   onSelect: (place: MapPlace) => void;
   onRetry: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <View style={styles.panel}>
       <View style={styles.heading}>
@@ -47,7 +51,7 @@ export function PlaceSuggestions({
                 style={[styles.row, index > 0 && styles.separator]}
               >
                 <View style={styles.pin}>
-                  <MapPin size={19} color="#1767A6" />
+                  <MapPin size={19} color={themeColor("#1767A6", 'info')} />
                 </View>
                 <View style={styles.label}>
                   <Text numberOfLines={1} style={styles.name}>
@@ -57,13 +61,13 @@ export function PlaceSuggestions({
                     {address.join(', ') || 'Haïti'}
                   </Text>
                 </View>
-                <ChevronRight size={17} color="#8995A4" />
+                <ChevronRight size={17} color={themeColor("#8995A4", 'muted')} />
               </AnimatedPressable>
             );
           })}
         {status === 'loading' && (
           <View style={styles.message} accessibilityLiveRegion="polite">
-            <ActivityIndicator size="small" color="#1767A6" />
+            <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
             <Text style={styles.messageText}>Recherche de lieux…</Text>
           </View>
         )}
@@ -94,14 +98,14 @@ export function PlaceSuggestions({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   panel: {
     flexShrink: 1,
     width: '100%',
     maxHeight: 354,
     marginBottom: 10,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     shadowColor: '#101828',
     shadowOpacity: 0.14,
     shadowRadius: 18,
@@ -117,10 +121,10 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 11,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E8EDF2',
+    borderBottomColor: themeColor('#E8EDF2', 'border'),
   },
-  title: { fontSize: 13, fontWeight: '700', color: '#233750' },
-  country: { fontSize: 12, color: '#758396' },
+  title: { fontSize: 13, fontWeight: '700', color: themeColor('#233750', 'text') },
+  country: { fontSize: 12, color: themeColor('#758396', 'muted') },
   list: { flexShrink: 1 },
   row: {
     flexDirection: 'row',
@@ -132,25 +136,25 @@ const styles = StyleSheet.create({
   },
   separator: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#EEF1F5',
+    borderTopColor: themeColor('#EEF1F5', 'border'),
   },
   pin: {
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: '#EEF6FD',
+    backgroundColor: themeColor('#EEF6FD', 'infoSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: { flex: 1, minWidth: 0, gap: 3 },
-  name: { fontSize: 15, fontWeight: '600', color: '#233750' },
-  address: { fontSize: 12, color: '#738195' },
+  name: { fontSize: 15, fontWeight: '600', color: themeColor('#233750', 'text') },
+  address: { fontSize: 12, color: themeColor('#738195', 'muted') },
   message: { padding: 20, gap: 12, flexDirection: 'row', alignItems: 'center' },
   messageText: {
     flexShrink: 1,
     fontSize: 14,
     lineHeight: 20,
-    color: '#738195',
+    color: themeColor('#738195', 'muted'),
   },
   error: { padding: 18, alignItems: 'flex-start', gap: 10 },
   retry: {
@@ -158,7 +162,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#EEF6FD',
+    backgroundColor: themeColor('#EEF6FD', 'infoSoft'),
   },
-  retryText: { fontSize: 14, fontWeight: '600', color: '#1767A6' },
-});
+  retryText: { fontSize: 14, fontWeight: '600', color: themeColor('#1767A6', 'info') },
+}));

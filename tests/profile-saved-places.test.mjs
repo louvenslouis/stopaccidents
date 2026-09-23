@@ -29,6 +29,11 @@ test('a connected profile exposes home and work address fields with a save actio
   const stateOverrides = { 0: session, 1: false };
   const exports = {};
   new Function('exports', 'require', outputText)(exports, (name) => {
+    if (name === '@/features/appearance/theme-provider') return {
+      createThemedStyles: (factory) => () => factory((light) => light),
+      useThemeColor: () => (light) => light,
+      useAppTheme: () => ({ scheme: 'light' }),
+    };
     if (name === 'react')
       return {
         useEffect: () => {},

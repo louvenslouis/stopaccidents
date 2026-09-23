@@ -1,3 +1,4 @@
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Image } from 'expo-image';
 import Check from 'lucide-react-native/icons/check';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -64,6 +65,8 @@ export function AccidentTypePicker({
   disabled?: boolean;
   onChange: (value: AccidentType) => void;
 }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.grid}>
       {accidentTypes.map((type) => {
@@ -105,7 +108,7 @@ export function AccidentTypePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 20 },
   choice: { width: '47%', flexGrow: 0, alignItems: 'center', gap: 8 },
   dimmed: { opacity: 0.6 },
@@ -114,14 +117,14 @@ const styles = StyleSheet.create({
     height: 104,
     borderRadius: 52,
     borderWidth: 1.5,
-    borderColor: '#E7ECEC',
-    backgroundColor: '#F1F6F5',
+    borderColor: themeColor('#E7ECEC', 'border'),
+    backgroundColor: themeColor('#F1F6F5', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   illustration: { width: 94, height: 94 },
-  selected: { backgroundColor: '#FFF0E9', borderColor: '#D94235' },
+  selected: { backgroundColor: themeColor('#FFF0E9', 'accentSoft'), borderColor: '#D94235' },
   check: {
     position: 'absolute',
     right: 1,
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '600',
     textAlign: 'center',
-    color: '#354456',
+    color: themeColor('#354456', 'secondary'),
   },
-  selectedLabel: { color: '#C6382C' },
-});
+  selectedLabel: { color: themeColor('#C6382C', 'accent') },
+}));

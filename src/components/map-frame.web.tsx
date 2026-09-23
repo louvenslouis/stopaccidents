@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/features/appearance/theme-provider';
 import { useEffect, useRef } from 'react';
 
 import type { MapFrameProps } from './map-frame-props';
@@ -17,7 +18,14 @@ export function MapFrame({
   stations,
   onSelectStation,
 }: MapFrameProps) {
+  const { scheme, color } = useAppTheme();
   const frame = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    frame.current?.contentWindow?.postMessage(
+      { source: 'stopaccidents-app', theme: scheme }, window.location.origin,
+    );
+  }, [scheme]);
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
@@ -27,6 +35,7 @@ export function MapFrame({
         frame.current?.contentWindow?.postMessage(
           {
             source: 'stopaccidents-app',
+            theme: scheme,
             markers: illustratedMapMarkers(markers),
             stations: stations ?? [],
             location,
@@ -50,7 +59,7 @@ export function MapFrame({
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [onLoad, onError, markers, onSelect, location, placeFocus, onPan, onCenterChange, route, stations, onSelectStation]);
+  }, [scheme, onLoad, onError, markers, onSelect, location, placeFocus, onPan, onCenterChange, route, stations, onSelectStation]);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
@@ -93,9 +102,10 @@ export function MapFrame({
       title="Carte interactive OpenStreetMap d’Haïti"
       srcDoc={MAP_DOCUMENT}
       sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+      onLoad={() => frame.current?.contentWindow?.postMessage({ source: 'stopaccidents-app', theme: scheme }, window.location.origin)}
       onError={onError}
       referrerPolicy="strict-origin-when-cross-origin"
-      style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+      style={{ width: '100%', height: '100%', border: 0, display: 'block', backgroundColor: color('#E8EEF0', 'background') }}
     />
   );
 }

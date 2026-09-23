@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
@@ -15,7 +16,7 @@ import { SafetyReportDetailSheet } from "@/components/safety-report-detail-sheet
 import { AnimatedPressable } from "@/components/ui/animated-pressable";
 import { AppIcon } from "@/components/ui/app-icon";
 import { categoryIcons } from "@/components/reports/dashboard";
-import { styles } from "@/components/reports/styles";
+import { useStyles } from "@/components/reports/styles";
 import { useAccident } from "@/features/accident-report/use-accident";
 import { readAnalytics } from "@/features/reports/api";
 import {
@@ -103,6 +104,9 @@ function EventsList({
   subcategory: string;
   territory: TerritoryFilter;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const router = useRouter();
   const { department, commune } = territory;
   const range: DateRange = { start, end };
@@ -206,7 +210,7 @@ function EventsList({
               haptic="selection"
               style={styles.iconButton}
             >
-              <AppIcon icon={ChevronLeft} size={21} color="#555561" />
+              <AppIcon icon={ChevronLeft} size={21} color={themeColor("#555561", 'secondary')} />
             </AnimatedPressable>
             <View style={[styles.heading, { marginLeft: 8 }]}>
               <Text style={styles.eyebrow}>L’OBSERVATOIRE</Text>
@@ -223,7 +227,7 @@ function EventsList({
         </View>
         <View style={styles.eventsContext}>
           <View style={styles.eventsContextIcon}>
-            <AppIcon icon={categoryIcons[category]} color="#E76171" size={21} />
+            <AppIcon icon={categoryIcons[category]} color={themeColor("#E76171", 'accent')} size={21} />
           </View>
           <View style={styles.flex}>
             <Text style={styles.eventsContextTitle}>{selectionLabel}</Text>
@@ -248,7 +252,7 @@ function EventsList({
         )}
         {!data && loading ? (
           <View style={styles.loadingArea} accessibilityRole="progressbar">
-            <ActivityIndicator color="#F04F66" />
+            <ActivityIndicator color={themeColor("#F04F66", 'accent')} />
             <Text style={styles.loadingText}>Chargement des événements…</Text>
           </View>
         ) : !data ? (
@@ -281,7 +285,7 @@ function EventsList({
                     style={({ pressed }) => [
                       styles.reportRow,
                       index > 0 && styles.reportBorder,
-                      pressed && { backgroundColor: "#FAFAFC" },
+                      pressed && { backgroundColor: themeColor("#FAFAFC", 'surface') },
                     ]}
                   >
                     <View
@@ -305,7 +309,7 @@ function EventsList({
                         )}
                       </View>
                       <View style={styles.reportLocation}>
-                        <AppIcon icon={MapPin} size={12} color="#9A9AA3" />
+                        <AppIcon icon={MapPin} size={12} color={themeColor("#9A9AA3", 'muted')} />
                         <Text numberOfLines={1} style={styles.reportPlace}>
                           {report.location_description || "Lieu à préciser"}
                         </Text>
@@ -325,13 +329,13 @@ function EventsList({
                         {(report.testimony_count ?? 1) > 1 ? "s" : ""}
                       </Text>
                     </View>
-                    <AppIcon icon={ChevronRight} size={17} color="#B5B5BF" />
+                    <AppIcon icon={ChevronRight} size={17} color={themeColor("#B5B5BF", 'muted')} />
                   </Pressable>
                 );
               })
             ) : (
               <View style={styles.emptyFeed}>
-                <AppIcon icon={MapPin} size={28} color="#B5ACCA" />
+                <AppIcon icon={MapPin} size={28} color={themeColor("#B5ACCA", 'muted')} />
                 <Text style={styles.emptyText}>
                   Aucun événement pour cette sélection. Modifiez les filtres
                   dans les rapports.
@@ -352,7 +356,7 @@ function EventsList({
                 style={styles.loadMore}
               >
                 {moreLoading ? (
-                  <ActivityIndicator size="small" color="#F04F66" />
+                  <ActivityIndicator size="small" color={themeColor("#F04F66", 'accent')} />
                 ) : (
                   <Text style={styles.link}>
                     Voir plus d’événements · {numberLabel(reports.length)} sur{" "}

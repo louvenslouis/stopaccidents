@@ -1,4 +1,6 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { RewardsCard } from '@/components/rewards-card';
+import { AppearanceCard } from '@/components/appearance-card';
 import { AppScreen } from '@/components/app-screen';
 import { SavedPlacePicker } from '@/components/saved-place-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -46,6 +48,10 @@ function isValidEmail(value: string) {
 }
 
 export default function ProfileScreen() {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
   const [email, setEmail] = useState('');
@@ -229,24 +235,22 @@ export default function ProfileScreen() {
         <AppScreen
           eyebrow="VOTRE ESPACE"
           title="Profil"
-          description="Connectez-vous pour retrouver vos informations sur tous vos appareils."
           contentContainerStyle={styles.screenContent}>
           <View style={styles.content}>
-            <RewardsCard />
             {checkingSession ? (
               <View accessibilityLiveRegion="polite" style={styles.loadingCard}>
-                <ActivityIndicator color="#E14D3E" />
+                <ActivityIndicator color={themeColor("#E14D3E", 'accent')} />
                 <Text style={styles.supportingText}>Vérification de votre session…</Text>
               </View>
             ) : accountEmail ? (
-              <>
+              <View style={styles.personalGroup}>
                 <View style={styles.card}>
                   <View style={styles.accountIcon}>
-                    <AppIcon icon={UserRound} color="#267E70" size={29} strokeWidth={2.1} />
+                    <AppIcon icon={UserRound} color={themeColor("#267E70", 'success')} size={29} strokeWidth={2.1} />
                   </View>
                   <View style={styles.accountHeading}>
                     <View style={styles.connectedRow}>
-                      <AppIcon icon={CircleCheck} color="#267E70" size={17} />
+                      <AppIcon icon={CircleCheck} color={themeColor("#267E70", 'success')} size={17} />
                       <Text style={styles.connectedLabel}>CONNECTÉ</Text>
                     </View>
                     <Text style={styles.cardTitle}>Votre compte</Text>
@@ -272,10 +276,10 @@ export default function ProfileScreen() {
                     onPress={() => void signOut()}
                     style={[styles.secondaryButton, submitting && styles.disabled]}>
                     {submitting ? (
-                      <ActivityIndicator color="#485469" />
+                      <ActivityIndicator color={themeColor("#485469", 'secondary')} />
                     ) : (
                       <>
-                        <AppIcon icon={LogOut} color="#485469" size={19} />
+                        <AppIcon icon={LogOut} color={themeColor("#485469", 'secondary')} size={19} />
                         <Text style={styles.secondaryButtonText}>Se déconnecter</Text>
                       </>
                     )}
@@ -285,7 +289,7 @@ export default function ProfileScreen() {
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
                     <View style={styles.placeIcon}>
-                      <AppIcon icon={MapPinHouse} color="#1767A6" size={24} strokeWidth={2.1} />
+                      <AppIcon icon={MapPinHouse} color={themeColor("#1767A6", 'info')} size={24} strokeWidth={2.1} />
                     </View>
                     <View style={styles.flex}>
                       <Text style={styles.cardTitle}>Vos lieux enregistrés</Text>
@@ -297,7 +301,7 @@ export default function ProfileScreen() {
 
                   {placesLoading ? (
                     <View accessibilityLiveRegion="polite" style={styles.placesLoading}>
-                      <ActivityIndicator color="#1767A6" />
+                      <ActivityIndicator color={themeColor("#1767A6", 'info')} />
                       <Text style={styles.supportingText}>Chargement de vos lieux…</Text>
                     </View>
                   ) : (
@@ -311,7 +315,7 @@ export default function ProfileScreen() {
                           haptic="light"
                           onPress={() => setPlaceTarget('home')}
                           style={styles.placeField}>
-                          <AppIcon icon={MapPinHouse} color="#1767A6" size={20} />
+                          <AppIcon icon={MapPinHouse} color={themeColor("#1767A6", 'info')} size={20} />
                           <View style={styles.flex}>
                             <Text
                               numberOfLines={2}
@@ -326,7 +330,7 @@ export default function ProfileScreen() {
                               </Text>
                             )}
                           </View>
-                          <AppIcon icon={ChevronRight} color="#89919E" size={20} />
+                          <AppIcon icon={ChevronRight} color={themeColor("#89919E", 'muted')} size={20} />
                         </AnimatedPressable>
                       </View>
 
@@ -339,7 +343,7 @@ export default function ProfileScreen() {
                           haptic="light"
                           onPress={() => setPlaceTarget('work')}
                           style={styles.placeField}>
-                          <AppIcon icon={BriefcaseBusiness} color="#1767A6" size={20} />
+                          <AppIcon icon={BriefcaseBusiness} color={themeColor("#1767A6", 'info')} size={20} />
                           <View style={styles.flex}>
                             <Text
                               numberOfLines={2}
@@ -354,7 +358,7 @@ export default function ProfileScreen() {
                               </Text>
                             )}
                           </View>
-                          <AppIcon icon={ChevronRight} color="#89919E" size={20} />
+                          <AppIcon icon={ChevronRight} color={themeColor("#89919E", 'muted')} size={20} />
                         </AnimatedPressable>
                       </View>
 
@@ -388,12 +392,12 @@ export default function ProfileScreen() {
                     </>
                   )}
                 </View>
-              </>
+              </View>
             ) : (
               <View style={styles.card}>
                 <View style={styles.cardHeader}>
                   <View style={styles.mailIcon}>
-                    <AppIcon icon={Mail} color="#D94235" size={24} strokeWidth={2.1} />
+                    <AppIcon icon={Mail} color={themeColor("#D94235", 'accent')} size={24} strokeWidth={2.1} />
                   </View>
                   <View style={styles.flex}>
                     <Text style={styles.cardTitle}>Connexion par e-mail</Text>
@@ -406,8 +410,8 @@ export default function ProfileScreen() {
                 <View style={styles.field}>
                   <Text style={styles.label}>Adresse e-mail</Text>
                   <View style={styles.inputShell}>
-                    <AppIcon icon={Mail} color="#89919E" size={19} />
-                    <TextInput
+                    <AppIcon icon={Mail} color={themeColor("#89919E", 'muted')} size={19} />
+                    <TextInput keyboardAppearance={scheme}
                       accessibilityLabel="Adresse e-mail"
                       autoCapitalize="none"
                       autoComplete="email"
@@ -418,7 +422,7 @@ export default function ProfileScreen() {
                       keyboardType="email-address"
                       onChangeText={setEmail}
                       placeholder="vous@exemple.com"
-                      placeholderTextColor="#9AA1AC"
+                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
                       returnKeyType="next"
                       style={styles.input}
                       textContentType="emailAddress"
@@ -430,8 +434,8 @@ export default function ProfileScreen() {
                 <View style={styles.field}>
                   <Text style={styles.label}>Mot de passe</Text>
                   <View style={styles.inputShell}>
-                    <AppIcon icon={LockKeyhole} color="#89919E" size={19} />
-                    <TextInput
+                    <AppIcon icon={LockKeyhole} color={themeColor("#89919E", 'muted')} size={19} />
+                    <TextInput keyboardAppearance={scheme}
                       accessibilityLabel="Mot de passe"
                       autoCapitalize="none"
                       autoComplete="current-password"
@@ -440,7 +444,7 @@ export default function ProfileScreen() {
                       onChangeText={setPassword}
                       onSubmitEditing={() => void signIn()}
                       placeholder="Votre mot de passe"
-                      placeholderTextColor="#9AA1AC"
+                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
                       returnKeyType="go"
                       secureTextEntry={!passwordVisible}
                       style={styles.input}
@@ -455,7 +459,7 @@ export default function ProfileScreen() {
                       hitSlop={8}
                       onPress={() => setPasswordVisible((visible) => !visible)}
                       style={styles.visibilityButton}>
-                      <AppIcon icon={passwordVisible ? EyeOff : Eye} color="#6F7887" size={20} />
+                      <AppIcon icon={passwordVisible ? EyeOff : Eye} color={themeColor("#6F7887", 'muted')} size={20} />
                     </Pressable>
                   </View>
                 </View>
@@ -493,7 +497,7 @@ export default function ProfileScreen() {
                 </AnimatedPressable>
 
                 <View style={styles.securityNote}>
-                  <AppIcon icon={ShieldCheck} color="#6C7789" size={18} />
+                  <AppIcon icon={ShieldCheck} color={themeColor("#6C7789", 'muted')} size={18} />
                   <Text style={[styles.securityText, styles.flex]}>
                     Votre mot de passe est transmis de manière sécurisée et n’est jamais stocké dans
                     l’application.
@@ -501,6 +505,8 @@ export default function ProfileScreen() {
                 </View>
               </View>
             )}
+            <RewardsCard />
+            <AppearanceCard />
           </View>
         </AppScreen>
       </KeyboardAvoidingView>
@@ -508,7 +514,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   flex: { flex: 1 },
   screenContent: { paddingBottom: 132 },
   content: {
@@ -516,8 +522,9 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     alignSelf: 'center',
     marginTop: 30,
-    gap: 18,
+    gap: 26,
   },
+  personalGroup: { gap: 14 },
   loadingCard: {
     minHeight: 128,
     padding: 24,
@@ -526,16 +533,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E7E8EB',
-    backgroundColor: '#FFFFFF',
+    borderColor: themeColor('#E7E8EB', 'border'),
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   card: {
     padding: 22,
     gap: 20,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E7E8EB',
-    backgroundColor: '#FFFFFF',
+    borderColor: themeColor('#E7E8EB', 'border'),
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     shadowColor: '#172033',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.06,
@@ -553,7 +560,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF0EB',
+    backgroundColor: themeColor('#FFF0EB', 'accentSoft'),
   },
   placeIcon: {
     width: 48,
@@ -561,7 +568,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#E7F1FA',
+    backgroundColor: themeColor('#E7F1FA', 'infoSoft'),
   },
   placesLoading: {
     minHeight: 100,
@@ -570,7 +577,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardTitle: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 19,
     lineHeight: 25,
     fontWeight: '700',
@@ -578,13 +585,13 @@ const styles = StyleSheet.create({
   },
   supportingText: {
     marginTop: 3,
-    color: '#768091',
+    color: themeColor('#768091', 'muted'),
     fontSize: 13,
     lineHeight: 19,
   },
   field: { gap: 8 },
   label: {
-    color: '#485469',
+    color: themeColor('#485469', 'secondary'),
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
@@ -596,16 +603,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#DFE3EA',
+    borderColor: themeColor('#DFE3EA', 'border'),
     borderRadius: 15,
-    backgroundColor: '#FAFBFC',
+    backgroundColor: themeColor('#FAFBFC', 'surface'),
   },
   input: {
     flex: 1,
     minWidth: 0,
     minHeight: 52,
     paddingVertical: 12,
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 15,
     lineHeight: 21,
   },
@@ -617,20 +624,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 11,
     borderWidth: 1,
-    borderColor: '#D7E0E8',
+    borderColor: themeColor('#D7E0E8', 'border'),
     borderRadius: 15,
-    backgroundColor: '#F8FBFD',
+    backgroundColor: themeColor('#F8FBFD', 'surface'),
   },
   placeValue: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
   },
-  placePlaceholder: { color: '#7D8795', fontSize: 14, lineHeight: 20 },
+  placePlaceholder: { color: themeColor('#7D8795', 'muted'), fontSize: 14, lineHeight: 20 },
   placeCoordinates: {
     marginTop: 3,
-    color: '#748094',
+    color: themeColor('#748094', 'muted'),
     fontSize: 11,
     lineHeight: 15,
   },
@@ -642,19 +649,19 @@ const styles = StyleSheet.create({
   },
   guestText: {
     marginTop: -6,
-    color: '#7B674B',
+    color: themeColor('#7B674B', 'secondary'),
     fontSize: 12,
     lineHeight: 18,
   },
   errorText: {
     marginTop: -5,
-    color: '#BA3540',
+    color: themeColor('#BA3540', 'accent'),
     fontSize: 12,
     lineHeight: 18,
   },
   successText: {
     marginTop: -5,
-    color: '#267E70',
+    color: themeColor('#267E70', 'success'),
     fontSize: 12,
     lineHeight: 18,
   },
@@ -690,7 +697,7 @@ const styles = StyleSheet.create({
     gap: 9,
   },
   securityText: {
-    color: '#7B8492',
+    color: themeColor('#7B8492', 'muted'),
     fontSize: 11,
     lineHeight: 17,
   },
@@ -701,7 +708,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    backgroundColor: '#EAF6F2',
+    backgroundColor: themeColor('#EAF6F2', 'successSoft'),
   },
   accountHeading: { alignItems: 'center' },
   connectedRow: {
@@ -711,7 +718,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   connectedLabel: {
-    color: '#267E70',
+    color: themeColor('#267E70', 'success'),
     fontSize: 11,
     lineHeight: 15,
     fontWeight: '700',
@@ -719,7 +726,7 @@ const styles = StyleSheet.create({
   },
   accountEmail: {
     marginTop: 5,
-    color: '#697487',
+    color: themeColor('#697487', 'muted'),
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
@@ -732,13 +739,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 9,
     borderRadius: 15,
-    backgroundColor: '#F1F3F6',
+    backgroundColor: themeColor('#F1F3F6', 'elevated'),
   },
   secondaryButtonText: {
-    color: '#485469',
+    color: themeColor('#485469', 'secondary'),
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '700',
   },
   disabled: { opacity: 0.62 },
-});
+}));

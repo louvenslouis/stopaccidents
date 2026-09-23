@@ -7,3 +7,12 @@
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
 }
+
+html[data-theme='dark'], html[data-theme='dark'] body {
+  background: #10151D;
+  color: #F1F5F9;
+}
+
+html[data-theme='dark'] :focus-visible {
+  outline-color: #FF9585;
+}

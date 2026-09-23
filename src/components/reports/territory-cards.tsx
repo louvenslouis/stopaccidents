@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import MapPin from "lucide-react-native/icons/map-pin";
@@ -6,7 +7,7 @@ import ChevronRight from "lucide-react-native/icons/chevron-right";
 import { AppIcon } from "@/components/ui/app-icon";
 import { numberLabel, type Analytics } from "@/features/reports/model";
 import { type TerritoryFilter } from "@/features/reports/territories";
-import { styles } from "./styles";
+import { useStyles } from "./styles";
 
 export function TerritoryCards({
   data,
@@ -19,6 +20,10 @@ export function TerritoryCards({
   territory: TerritoryFilter;
   onSelect: (value: TerritoryFilter) => void;
 }) {
+  const s = useLocalStyles();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <View style={{ gap: 12 }}>
       <View style={styles.sectionHeader}>
@@ -54,7 +59,7 @@ export function TerritoryCards({
           }
           style={s.unlocated}
         >
-          <AppIcon icon={MapPin} size={16} color="#928698" />
+          <AppIcon icon={MapPin} size={16} color={themeColor("#928698", 'muted')} />
           <View style={styles.flex}>
             <Text style={s.unlocatedTitle}>
               {numberLabel(data.territories.unlocated)} événement
@@ -64,7 +69,7 @@ export function TerritoryCards({
               Inclus dans le total, sans commune identifiable.
             </Text>
           </View>
-          <AppIcon icon={ChevronRight} size={17} color="#ABA1B1" />
+          <AppIcon icon={ChevronRight} size={17} color={themeColor("#ABA1B1", 'muted')} />
         </Pressable>
       )}
       <Text style={s.note}>
@@ -86,6 +91,10 @@ function Distribution({
   wide: boolean;
   onSelect: (value: TerritoryFilter) => void;
 }) {
+  const s = useLocalStyles();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [expanded, setExpanded] = useState(false);
   const isCommune = level === "commune";
   const rows = isCommune
@@ -149,7 +158,7 @@ function Distribution({
                   />
                 </View>
               </View>
-              <AppIcon icon={ChevronRight} size={14} color="#B6AEBD" />
+              <AppIcon icon={ChevronRight} size={14} color={themeColor("#B6AEBD", 'muted')} />
             </Pressable>
           );
         })}
@@ -197,14 +206,14 @@ function Distribution({
   );
 }
 
-const s = StyleSheet.create({
+const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
   count: {
     fontSize: 12,
     fontWeight: "700",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: "#F7F6FA",
+    backgroundColor: themeColor("#F7F6FA", 'surface'),
   },
   rows: { gap: 6, marginTop: 18 },
   row: {
@@ -215,7 +224,7 @@ const s = StyleSheet.create({
     minHeight: 53,
   },
   rank: {
-    color: "#BBB3C6",
+    color: themeColor("#BBB3C6", 'muted'),
     fontSize: 10,
     fontWeight: "600",
     width: 17,
@@ -231,20 +240,20 @@ const s = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: "600",
-    color: "#51485E",
+    color: themeColor("#51485E", 'secondary'),
     lineHeight: 17,
   },
   value: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#655D72",
+    color: themeColor("#655D72", 'secondary'),
     fontVariant: ["tabular-nums"],
   },
-  percent: { fontSize: 10, color: "#A69CAE", fontWeight: "400" },
-  parent: { fontSize: 9, color: "#A299AE", marginTop: 2 },
+  percent: { fontSize: 10, color: themeColor("#A69CAE", 'muted'), fontWeight: "400" },
+  parent: { fontSize: 9, color: themeColor("#A299AE", 'muted'), marginTop: 2 },
   track: {
     height: 5,
-    backgroundColor: "#F2F0F6",
+    backgroundColor: themeColor("#F2F0F6", 'elevated'),
     borderRadius: 3,
     overflow: "hidden",
     marginTop: 9,
@@ -254,12 +263,12 @@ const s = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 5,
     borderTopWidth: 1,
-    borderColor: "#F2F0F6",
+    borderColor: themeColor("#F2F0F6", 'border'),
     marginTop: 14,
   },
   moreText: { fontSize: 11, fontWeight: "600" },
   unlocated: {
-    backgroundColor: "#F1EFF5",
+    backgroundColor: themeColor("#F1EFF5", 'elevated'),
     borderRadius: 13,
     padding: 13,
     flexDirection: "row",
@@ -268,9 +277,9 @@ const s = StyleSheet.create({
   },
   unlocatedTitle: {
     fontSize: 11,
-    color: "#7D7287",
+    color: themeColor("#7D7287", 'muted'),
     fontWeight: "600",
     lineHeight: 17,
   },
-  note: { fontSize: 9, lineHeight: 15, color: "#A29AA9", paddingHorizontal: 3 },
-});
+  note: { fontSize: 9, lineHeight: 15, color: themeColor("#A29AA9", 'muted'), paddingHorizontal: 3 },
+}));

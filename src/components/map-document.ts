@@ -35,11 +35,31 @@ export const MAP_DOCUMENT = `<!doctype html>
     .station-count { position: absolute; right: -7px; top: -9px; min-width: 19px;
       padding: 2px; border: 2px solid white; border-radius: 12px; background: #075E58;
       font: 700 11px/16px system-ui; text-align: center; }
+
+    /* Only tiles are filtered: alert pins, route colors and controls keep their meaning. */
+    html[data-theme="dark"], html[data-theme="dark"] body,
+    html[data-theme="dark"] #map { background: #10151D; color: #F1F5F9; }
+    html[data-theme="dark"] .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(180deg) brightness(.78) saturate(.65);
+    }
+    html[data-theme="dark"] .leaflet-control-zoom a,
+    html[data-theme="dark"] .leaflet-control-attribution,
+    html[data-theme="dark"] .leaflet-popup-content-wrapper,
+    html[data-theme="dark"] .leaflet-popup-tip,
+    html[data-theme="dark"] .accident-choice {
+      background: #1A222D; color: #F1F5F9; border-color: #344152;
+    }
+    html[data-theme="dark"] .leaflet-control-attribution a,
+    html[data-theme="dark"] .leaflet-popup-close-button { color: #8DC8FF; }
   </style>
 </head>
 <body>
   <div id="map" aria-label="Carte interactive d’Haïti"></div>
   <script>
+    window.stopAccidentsTheme = function (scheme) {
+      document.documentElement.dataset.theme = scheme === 'dark' ? 'dark' : 'light';
+      document.documentElement.style.colorScheme = scheme === 'dark' ? 'dark' : 'light';
+    };
     function notify(status, id, center) {
       var message = JSON.stringify({ source: 'stopaccidents-map', status: status, id: id,
         latitude: center && center.lat, longitude: center && center.lng });
@@ -329,6 +349,7 @@ export const MAP_DOCUMENT = `<!doctype html>
         // Accept updates only from the embedding application window.
         if (event.source !== window.parent) return;
         if (event.data && event.data.source === 'stopaccidents-app') {
+          if ('theme' in event.data) window.stopAccidentsTheme(event.data.theme);
           if (event.data.location) window.stopAccidentsLocate(event.data.location);
           if ('placeFocus' in event.data) window.stopAccidentsFocus(event.data.placeFocus);
           if ('route' in event.data) window.stopAccidentsRoute(event.data.route);

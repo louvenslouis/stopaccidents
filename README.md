@@ -203,6 +203,7 @@ automatiquement au redémarrage. L’enregistrement ne déclenche pas les secour
 
 Le petit bouton de partage de la carte compacte prépare une image PNG et un texte
 court avec le type, le lieu, la date, la gravité et un lien vers la fiche concernée.
+L’image contient un QR code vers cette fiche ; le lien reste dans le texte partagé.
 L’aperçu fige le signalement choisi même si l’accueil s’actualise. Le lien utilise
 `EXPO_PUBLIC_SITE_URL` (par défaut `https://louvenslouis.github.io/stopaccidents/`)
 et le paramètre `signalement=catégorie:UUID`, compatible avec l’hébergement statique.

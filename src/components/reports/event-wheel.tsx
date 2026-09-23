@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useEffect, useId, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import Svg, {
@@ -132,6 +133,7 @@ function Petal({
   gradientId: string;
   onSelect: () => void;
 }) {
+  const themeColor = useThemeColor();
   const lift = useSharedValue(0);
   useEffect(() => {
     lift.value = withTiming(selected ? 9 : hovered ? 4 : 0, {
@@ -161,7 +163,7 @@ function Petal({
       <AnimatedPath
         animatedProps={faceProps}
         {...pressEvents}
-        fill={count ? `url(#${gradientId})` : "#FCFDFE"}
+        fill={count ? `url(#${gradientId})` : themeColor("#FCFDFE", "elevated")}
         stroke={count ? "#FFFFFF" : sector.color}
         strokeOpacity={count ? 0.55 : 0.35}
         strokeWidth={selected ? 2.5 : 1.5}
@@ -187,6 +189,8 @@ function SectorButton({
   onSelect: () => void;
   onHover: (hovering: boolean) => void;
 }) {
+  const styles = useStyles();
+
   const sector = sectors[index];
   const angle = ((-90 + index * STEP) * Math.PI) / 180;
   const lift = useSharedValue(0);
@@ -240,6 +244,9 @@ export function EventWheel({
   data: Analytics;
   onExplore: (kind: Kind) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [selectedKind, setSelectedKind] = useState<Kind | null>(null);
   const [hoveredKind, setHoveredKind] = useState<Kind | null>(null);
   const [size, setSize] = useState(SIZE);
@@ -278,7 +285,7 @@ export function EventWheel({
               </LinearGradient>
             ))}
           </Defs>
-          <Circle cx={CENTER} cy={CENTER + 3} r={43} fill="#F7F7FA" />
+          <Circle cx={CENTER} cy={CENTER + 3} r={43} fill={themeColor("#F7F7FA", "surface")} />
           {sectors.map((sector, index) => (
             <Petal
               key={sector.kind}
@@ -326,7 +333,7 @@ export function EventWheel({
               style={[
                 styles.centerNumber,
                 {
-                  color: selected?.color ?? "#35323E",
+                  color: selected?.color ?? themeColor("#35323E", 'text'),
                   fontSize: size < 270 ? 22 : 28,
                 },
               ]}
@@ -354,7 +361,7 @@ export function EventWheel({
             <AppIcon
               icon={selected?.icon ?? MousePointer2}
               size={16}
-              color={selected?.color ?? "#91899E"}
+              color={selected?.color ?? themeColor("#91899E", 'muted')}
             />
             <Text
               style={[
@@ -390,7 +397,7 @@ export function EventWheel({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   container: { marginTop: 5 },
   wheel: {
     width: "100%",
@@ -418,7 +425,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.9,
     fontVariant: ["tabular-nums"],
   },
-  centerLabel: { fontSize: 9, color: "#958C9E", marginTop: 1 },
+  centerLabel: { fontSize: 9, color: themeColor("#958C9E", 'muted'), marginTop: 1 },
   selection: {
     minHeight: 74,
     flexDirection: "row",
@@ -426,19 +433,19 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 13,
     borderRadius: 16,
-    backgroundColor: "#F8F7FA",
+    backgroundColor: themeColor("#F8F7FA", 'surface'),
     borderWidth: 1,
-    borderColor: "#F2EFF5",
+    borderColor: themeColor("#F2EFF5", 'border'),
   },
   selectionCopy: { flex: 1, gap: 6 },
   selectionTitleRow: { flexDirection: "row", gap: 7, alignItems: "center" },
   selectionTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#7E748C",
+    color: themeColor("#7E748C", 'muted'),
     flexShrink: 1,
   },
-  selectionDescription: { fontSize: 10, lineHeight: 16, color: "#93899F" },
+  selectionDescription: { fontSize: 10, lineHeight: 16, color: themeColor("#93899F", 'muted') },
   explore: {
     width: 40,
     height: 40,
@@ -449,8 +456,8 @@ const styles = StyleSheet.create({
   note: {
     fontSize: 9,
     lineHeight: 15,
-    color: "#A49AAC",
+    color: themeColor("#A49AAC", 'muted'),
     textAlign: "center",
     marginTop: 11,
   },
-});
+}));

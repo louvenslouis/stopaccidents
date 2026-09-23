@@ -23,14 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
-
-const colors = {
-  background: '#F7F7F7',
-  bar: '#FFFFFF',
-  active: '#FF5A45',
-  activeBackground: '#FFF0EC',
-  inactive: '#8A8A8E',
-};
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
@@ -39,7 +32,11 @@ type TabButtonProps = TabTriggerSlotProps & {
 };
 
 function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
-  const color = isFocused ? colors.active : colors.inactive;
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+  const color = isFocused ? themeColor('#FF5A45', 'accent') : themeColor('#8A8A8E', 'muted');
+  const activeBackground = themeColor('#FFF0EC', 'accentSoft');
+  const inactiveBackground = themeColor('#FFFFFF', 'surface');
   const focusProgress = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
@@ -55,7 +52,7 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
     backgroundColor: interpolateColor(
       focusProgress.value,
       [0, 1],
-      ['rgba(255, 240, 236, 0)', colors.activeBackground],
+      [inactiveBackground, activeBackground],
     ),
   }));
 
@@ -82,6 +79,7 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
 }
 
 function FloatingTabList(props: TabListProps) {
+  const styles = useStyles();
   const insets = useSafeAreaInsets();
 
   return (
@@ -95,6 +93,7 @@ function FloatingTabList(props: TabListProps) {
 }
 
 export default function PillTabs() {
+  const styles = useStyles();
   return (
     <Tabs style={styles.container}>
       <TabSlot style={styles.content} />
@@ -122,14 +121,14 @@ export default function PillTabs() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((color) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: color('#F7F7F7', 'background'),
   },
   content: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: color('#F7F7F7', 'background'),
   },
   tabBarPosition: {
     position: 'absolute',
@@ -143,7 +142,9 @@ const styles = StyleSheet.create({
     minHeight: 68,
     padding: 7,
     borderRadius: 34,
-    backgroundColor: colors.bar,
+    backgroundColor: color('#FFFFFF', 'surface'),
+    borderWidth: 1,
+    borderColor: color('#FFFFFF', 'border'),
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#101828',
@@ -166,4 +167,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.1,
   },
-});
+}));

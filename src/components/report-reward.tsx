@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { useRewards, type RewardSummary } from '@/features/rewards/use-rewards';
 import * as Haptics from 'expo-haptics';
@@ -53,6 +54,9 @@ export function RewardCelebration({
   onDone: () => void;
   visible?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [collected, setCollected] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [displayTotal, setDisplayTotal] = useState<number | null>(null);
@@ -245,7 +249,7 @@ export function RewardCelebration({
           </Text>
         </AnimatedPressable>
       ) : !summary ? (
-        <ActivityIndicator color="#A46A13" />
+        <ActivityIndicator color={themeColor("#A46A13", 'warning')} />
       ) : null}
       <Text selectable style={styles.reference}>
         Réf. {reportId.toUpperCase()}
@@ -287,13 +291,13 @@ export function RewardCelebration({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   screen: {
     flexGrow: 1,
     padding: 26,
     gap: 16,
     justifyContent: 'center',
-    backgroundColor: '#FFFDFA',
+    backgroundColor: themeColor('#FFFDFA', 'background'),
   },
   topline: {
     flexDirection: 'row',
@@ -305,9 +309,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.8,
     fontWeight: '800',
-    color: '#387D6B',
+    color: themeColor('#387D6B', 'success'),
   },
-  check: { color: '#387D6B', fontWeight: '800' },
+  check: { color: themeColor('#387D6B', 'success'), fontWeight: '800' },
   hero: {
     height: 222,
     alignItems: 'center',
@@ -321,8 +325,8 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 90,
     borderWidth: 1,
-    borderColor: '#F4E3BD',
-    backgroundColor: '#FFF7E5',
+    borderColor: themeColor('#F4E3BD', 'border'),
+    backgroundColor: themeColor('#FFF7E5', 'warningSoft'),
   },
   coin: {
     width: 100,
@@ -330,7 +334,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: '#F4BF49',
     borderWidth: 7,
-    borderColor: '#FFE295',
+    borderColor: themeColor('#FFE295', 'border'),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#AD721C',
@@ -339,33 +343,33 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 9 },
     elevation: 5,
   },
-  star: { fontSize: 52, color: '#956019' },
+  star: { fontSize: 52, color: themeColor('#956019', 'warning') },
   sparkLeft: {
     position: 'absolute',
     left: '17%',
     top: 55,
-    color: '#D8A332',
+    color: themeColor('#D8A332', 'warning'),
     fontSize: 31,
   },
   sparkRight: {
     position: 'absolute',
     right: '17%',
     top: 17,
-    color: '#D8A332',
+    color: themeColor('#D8A332', 'warning'),
     fontSize: 40,
   },
   reward: {
     marginTop: 12,
     fontSize: 52,
     fontWeight: '900',
-    color: '#875A19',
+    color: themeColor('#875A19', 'warning'),
     letterSpacing: -2,
   },
   rewardLabel: {
     fontSize: 10,
     letterSpacing: 2,
     fontWeight: '800',
-    color: '#A47A36',
+    color: themeColor('#A47A36', 'warning'),
   },
   title: {
     fontSize: 26,
@@ -373,13 +377,13 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.8,
     textAlign: 'center',
-    color: '#273C38',
+    color: themeColor('#273C38', 'text'),
   },
-  body: { fontSize: 14, lineHeight: 22, color: '#738079', textAlign: 'center' },
+  body: { fontSize: 14, lineHeight: 22, color: themeColor('#738079', 'muted'), textAlign: 'center' },
   balance: {
     borderRadius: 20,
     padding: 18,
-    backgroundColor: '#EDF5EF',
+    backgroundColor: themeColor('#EDF5EF', 'elevated'),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -389,15 +393,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 1.3,
     fontWeight: '800',
-    color: '#4F7261',
+    color: themeColor('#4F7261', 'secondary'),
   },
-  balanceHint: { fontSize: 11, color: '#718575', marginTop: 5 },
-  total: { fontSize: 25, color: '#285D49', fontWeight: '800' },
-  reference: { fontSize: 10, color: '#8D948D', textAlign: 'center' },
+  balanceHint: { fontSize: 11, color: themeColor('#718575', 'muted'), marginTop: 5 },
+  total: { fontSize: 25, color: themeColor('#285D49', 'text'), fontWeight: '800' },
+  reference: { fontSize: 10, color: themeColor('#8D948D', 'muted'), textAlign: 'center' },
   notice: {
     fontSize: 11,
     lineHeight: 17,
-    color: '#8F8066',
+    color: themeColor('#8F8066', 'muted'),
     textAlign: 'center',
   },
   button: {
@@ -415,7 +419,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   later: { minHeight: 44, justifyContent: 'center', alignItems: 'center' },
-  laterText: { color: '#78857A', fontSize: 12, textAlign: 'center' },
+  laterText: { color: themeColor('#78857A', 'muted'), fontSize: 12, textAlign: 'center' },
   retry: { padding: 8 },
   flyingCoin: {
     position: 'absolute',
@@ -424,11 +428,11 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 2,
-    borderColor: '#FFE69A',
+    borderColor: themeColor('#FFE69A', 'border'),
     backgroundColor: '#EDB43C',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
-  miniStar: { color: '#9B6718', fontSize: 16 },
-});
+  miniStar: { color: themeColor('#9B6718', 'warning'), fontSize: 16 },
+}));

@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import {
   PROXIMITY_OPTIONS,
@@ -36,6 +37,8 @@ const statusLabels = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
@@ -55,6 +58,9 @@ export function GunfireDetailSheet({
   onClose: () => void;
   hideContributions?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback(
@@ -121,7 +127,7 @@ export function GunfireDetailSheet({
               onPress={onClose}
               style={styles.close}
             >
-              <AppIcon icon={X} size={22} color="#667185" />
+              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
             </Pressable>
           </View>
           <ScrollView
@@ -130,7 +136,7 @@ export function GunfireDetailSheet({
           >
             {!report ? (
               <View style={styles.state}>
-                {loading && <ActivityIndicator color="#AF3848" />}
+                {loading && <ActivityIndicator color={themeColor("#AF3848", 'accent')} />}
                 <Text style={styles.body}>
                   {loading
                     ? "Chargement du signalement…"
@@ -151,7 +157,7 @@ export function GunfireDetailSheet({
                 {!hideContributions && <EventContributions kind='gunfire' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
-                    <AppIcon icon={ShieldAlert} size={27} color="#AF3848" />
+                    <AppIcon icon={ShieldAlert} size={27} color={themeColor("#AF3848", 'accent')} />
                   </View>
                   <View style={styles.heading}>
                     <Text style={styles.label}>Type de signalement</Text>
@@ -170,7 +176,7 @@ export function GunfireDetailSheet({
                     l’origine des tirs.
                   </Text>
                   <View style={styles.locationRow}>
-                    <AppIcon icon={MapPin} size={19} color="#737D8D" />
+                    <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
                       {location.estimated
                         ? `Zone estimée : ${location.label}`
@@ -194,7 +200,7 @@ export function GunfireDetailSheet({
                     style={styles.linkButton}
                   >
                     <Text style={styles.linkText}>Voir sur la carte</Text>
-                    <AppIcon icon={ArrowUpRight} size={17} color="#AF3848" />
+                    <AppIcon icon={ArrowUpRight} size={17} color={themeColor("#AF3848", 'accent')} />
                   </Pressable>
                   {mapError && (
                     <Text accessibilityRole="alert" style={styles.error}>
@@ -254,7 +260,7 @@ export function GunfireDetailSheet({
                   style={styles.refresh}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#667185" />
+                    <ActivityIndicator color={themeColor("#667185", 'muted')} />
                   ) : (
                     <Text style={styles.refreshText}>
                       Actualiser les informations
@@ -270,19 +276,19 @@ export function GunfireDetailSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
     alignItems: "center",
-    backgroundColor: "rgba(19, 28, 44, 0.42)",
+    backgroundColor: themeColor("rgba(19, 28, 44, 0.42)", 'overlay'),
   },
   wideOverlay: { justifyContent: "center", padding: 24 },
   sheet: {
     width: "100%",
     maxWidth: 640,
     flexShrink: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: themeColor("#FFFFFF", 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: "hidden",
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#DDE0E5",
+    backgroundColor: themeColor("#DDE0E5", 'elevated'),
     alignSelf: "center",
     marginTop: 12,
     marginBottom: 8,
@@ -304,27 +310,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F1F3",
+    borderBottomColor: themeColor("#F0F1F3", 'border'),
   },
   heading: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.2,
-    color: "#AF3848",
+    color: themeColor("#AF3848", 'accent'),
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     letterSpacing: -0.6,
-    color: "#202A3A",
+    color: themeColor("#202A3A", 'text'),
     marginTop: 5,
   },
   close: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F3F5F7",
+    backgroundColor: themeColor("#F3F5F7", 'elevated'),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -333,7 +339,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFF3F4",
+    backgroundColor: themeColor("#FFF3F4", 'surface'),
     borderRadius: 20,
     padding: 18,
   },
@@ -341,20 +347,20 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 17,
-    backgroundColor: "#FBE6E9",
+    backgroundColor: themeColor("#FBE6E9", 'accentSoft'),
     justifyContent: "center",
     alignItems: "center",
   },
-  label: { fontSize: 12, color: "#778293", fontWeight: "500" },
+  label: { fontSize: 12, color: themeColor("#778293", 'muted'), fontWeight: "500" },
   reportTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#283448",
+    color: themeColor("#283448", 'text'),
     marginTop: 4,
   },
   notice: {
-    color: "#8B662B",
-    backgroundColor: "#FFF8EA",
+    color: themeColor("#8B662B", 'warning'),
+    backgroundColor: themeColor("#FFF8EA", 'warningSoft'),
     padding: 14,
     borderRadius: 14,
     fontSize: 13,
@@ -364,11 +370,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#29364A",
+    color: themeColor("#29364A", 'text'),
     marginBottom: 2,
   },
-  body: { fontSize: 14, lineHeight: 22, color: "#455168" },
-  muted: { fontSize: 13, lineHeight: 20, color: "#808999" },
+  body: { fontSize: 14, lineHeight: 22, color: themeColor("#455168", 'secondary') },
+  muted: { fontSize: 13, lineHeight: 20, color: themeColor("#808999", 'muted') },
   locationRow: { flexDirection: "row", alignItems: "flex-start", gap: 9 },
   linkButton: {
     flexDirection: "row",
@@ -377,10 +383,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignSelf: "flex-start",
   },
-  linkText: { color: "#AF3848", fontSize: 13, fontWeight: "600" },
+  linkText: { color: themeColor("#AF3848", 'accent'), fontSize: 13, fontWeight: "600" },
   status: {
-    color: "#41605C",
-    backgroundColor: "#EFF5F3",
+    color: themeColor("#41605C", 'secondary'),
+    backgroundColor: themeColor("#EFF5F3", 'elevated'),
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -389,22 +395,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   privacyNotice: {
-    color: "#66516F",
-    backgroundColor: "#FFF3F4",
+    color: themeColor("#66516F", 'secondary'),
+    backgroundColor: themeColor("#FFF3F4", 'surface'),
     padding: 14,
     borderRadius: 14,
     fontSize: 13,
     lineHeight: 20,
   },
-  reference: { color: "#939BA7", fontSize: 10, lineHeight: 16 },
+  reference: { color: themeColor("#939BA7", 'muted'), fontSize: 10, lineHeight: 16 },
   state: { alignItems: "center", paddingVertical: 40, gap: 16 },
-  error: { color: "#B14832", fontSize: 13, lineHeight: 20 },
+  error: { color: themeColor("#B14832", 'accent'), fontSize: 13, lineHeight: 20 },
   refresh: {
     minHeight: 46,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 14,
-    backgroundColor: "#F3F5F7",
+    backgroundColor: themeColor("#F3F5F7", 'elevated'),
   },
-  refreshText: { fontSize: 13, fontWeight: "600", color: "#667185" },
-});
+  refreshText: { fontSize: 13, fontWeight: "600", color: themeColor("#667185", 'muted') },
+}));

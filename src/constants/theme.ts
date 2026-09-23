@@ -6,6 +6,7 @@
 import '@/global.css';
 
 import { Platform } from 'react-native';
+import { darkPalette } from '@/features/appearance/palette';
 
 export const Colors = {
   light: {
@@ -16,11 +17,11 @@ export const Colors = {
     textSecondary: '#60646C',
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
+    text: darkPalette.text,
+    background: darkPalette.background,
+    backgroundElement: darkPalette.surface,
+    backgroundSelected: darkPalette.elevated,
+    textSecondary: darkPalette.muted,
   },
 } as const;
 

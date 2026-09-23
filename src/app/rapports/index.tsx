@@ -1,3 +1,4 @@
+import { useAppTheme, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import {
@@ -24,7 +25,7 @@ import {
   IconButton,
   categoryIcons,
 } from "@/components/reports/dashboard";
-import { styles } from "@/components/reports/styles";
+import { useStyles } from "@/components/reports/styles";
 import { TerritoryFilters } from "@/components/reports/territory-filters";
 import {
   allTerritories,
@@ -52,6 +53,9 @@ const periods = [
 ] as const;
 
 export default function ReportsScreen() {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const router = useRouter();
   const [period, setPeriod] = useState<Period>("month");
   const [offset, setOffset] = useState(0);
@@ -145,7 +149,7 @@ export default function ReportsScreen() {
               <AppIcon
                 icon={CalendarDays}
                 size={17}
-                color={period === "custom" ? "#25252D" : "#8A8A96"}
+                color={period === "custom" ? themeColor("#25252D", 'text') : themeColor("#8A8A96", 'muted')}
               />
             </AnimatedPressable>
           </View>
@@ -204,7 +208,7 @@ export default function ReportsScreen() {
                     ? item.id === "all"
                       ? "#FFFFFF"
                       : item.color
-                    : "#858590"
+                    : themeColor("#858590", 'muted')
                 }
               />
               <Text
@@ -295,6 +299,9 @@ function DateSheet({
   onClose: () => void;
   onApply: (range: DateRange) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+
   const [start, setStart] = useState(
     range.start ?? periodRange("month").start!,
   );
@@ -321,7 +328,7 @@ function DateSheet({
             Explorez les données entre deux dates.
           </Text>
           <Text style={styles.inputLabel}>Du</Text>
-          <TextInput
+          <TextInput keyboardAppearance={scheme}
             autoFocus
             accessibilityLabel="Date de début, format AAAA-MM-JJ"
             placeholder="AAAA-MM-JJ"
@@ -332,7 +339,7 @@ function DateSheet({
             style={styles.input}
           />
           <Text style={styles.inputLabel}>Au</Text>
-          <TextInput
+          <TextInput keyboardAppearance={scheme}
             accessibilityLabel="Date de fin, format AAAA-MM-JJ"
             placeholder="AAAA-MM-JJ"
             value={end}

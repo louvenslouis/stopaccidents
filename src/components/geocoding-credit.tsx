@@ -1,6 +1,9 @@
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Linking, StyleSheet, Text } from 'react-native';
 
 export function GeocodingCredit() {
+  const styles = useStyles();
+
   return (
     <Text
       accessibilityRole="link"
@@ -16,6 +19,6 @@ export function GeocodingCredit() {
   );
 }
 
-const styles = StyleSheet.create({
-  credit: { color: '#777E89', fontSize: 11, marginTop: 6, textDecorationLine: 'underline' },
-});
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  credit: { color: themeColor('#777E89', 'muted'), fontSize: 11, marginTop: 6, textDecorationLine: 'underline' },
+}));

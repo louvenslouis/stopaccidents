@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import Construction from 'lucide-react-native/icons/construction';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
@@ -50,6 +51,9 @@ export function LatestAccidentCard({
   onRefresh: () => void;
   onOpen: (id: string) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [expanded, setExpanded] = useState(false);
   const [sharePreview, setSharePreview] = useState<ReportShare | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -81,9 +85,9 @@ export function LatestAccidentCard({
           style={styles.refresh}
         >
           {loading ? (
-            <ActivityIndicator size="small" color="#787E89" />
+            <ActivityIndicator size="small" color={themeColor("#787E89", 'muted')} />
           ) : (
-            <AppIcon icon={RefreshCw} size={18} color="#787E89" />
+            <AppIcon icon={RefreshCw} size={18} color={themeColor("#787E89", 'muted')} />
           )}
         </Pressable>
       </View>
@@ -103,7 +107,7 @@ export function LatestAccidentCard({
                 <AppIcon
                   icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
                   size={expanded ? 26 : 22}
-                  color={isKidnapping ? '#7C3FA0' : '#D94235'}
+                  color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#D94235', 'accent')}
                 />
               </View>
               <View style={[styles.heading, !expanded && styles.compactHeading]}>
@@ -118,20 +122,20 @@ export function LatestAccidentCard({
                 </Text>
               </View>
               <View style={styles.chevronBox}>
-                <AppIcon icon={expanded ? ChevronUp : ChevronDown} size={19} color="#737C89" />
+                <AppIcon icon={expanded ? ChevronUp : ChevronDown} size={19} color={themeColor("#737C89", 'muted')} />
               </View>
             </View>
             {!expanded && (
               <View style={styles.compactSummary}>
                 <View style={styles.compactLine}>
-                  <AppIcon icon={MapPin} size={15} strokeWidth={1.7} color="#858C98" />
+                  <AppIcon icon={MapPin} size={15} strokeWidth={1.7} color={themeColor("#858C98", 'muted')} />
                   <Text style={styles.compactLocation} numberOfLines={1}>
                     {location.label}
                   </Text>
                 </View>
                 <View style={styles.compactBottom}>
                   <View style={styles.compactLine}>
-                    <AppIcon icon={Clock3} size={15} strokeWidth={1.7} color="#858C98" />
+                    <AppIcon icon={Clock3} size={15} strokeWidth={1.7} color={themeColor("#858C98", 'muted')} />
                     <Text style={styles.compactDate}>{formatAccidentDate(report.created_at)}</Text>
                   </View>
                   {severity && (
@@ -160,7 +164,7 @@ export function LatestAccidentCard({
               }}
               style={({ pressed }) => [styles.shareButton, pressed && styles.shareButtonPressed]}
             >
-              <AppIcon icon={Share2} size={17} color="#737C89" />
+              <AppIcon icon={Share2} size={17} color={themeColor("#737C89", 'muted')} />
             </Pressable>
           )}
           {!expanded && location.estimated && <GeocodingCredit />}
@@ -173,11 +177,11 @@ export function LatestAccidentCard({
               pressedScale={0.985}
               hoverScale={1.005}
             >
-              {report.testimony_count && <Text style={{ color: '#267E70', fontSize: 13, paddingHorizontal: 18, paddingBottom: 12 }}>{report.testimony_count} témoignage{report.testimony_count > 1 ? 's' : ''} · dernier témoignage {formatAccidentDate(report.last_observed_at ?? report.created_at)}</Text>}
+              {report.testimony_count && <Text style={{ color: themeColor('#267E70', 'success'), fontSize: 13, paddingHorizontal: 18, paddingBottom: 12 }}>{report.testimony_count} témoignage{report.testimony_count > 1 ? 's' : ''} · dernier témoignage {formatAccidentDate(report.last_observed_at ?? report.created_at)}</Text>}
               <View style={styles.badges}>
-                <View style={[styles.badge, { backgroundColor: isKidnapping ? '#F4ECF8' : '#EEF2FF' }]}>
-                  <AppIcon icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? '#7C3FA0' : '#4358C7'} />
-                  <Text style={[styles.badgeText, { color: isKidnapping ? '#7C3FA0' : '#4358C7' }]}>
+                <View style={[styles.badge, { backgroundColor: isKidnapping ? themeColor('#F4ECF8', 'violetSoft') : themeColor('#EEF2FF', 'infoSoft') }]}>
+                  <AppIcon icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
+                  <Text style={[styles.badgeText, { color: isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info') }]}>
                     {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Voiture suspecte' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : 'Accident'}
                   </Text>
                 </View>
@@ -194,7 +198,7 @@ export function LatestAccidentCard({
                 <View style={styles.gridRow}>
                   <View style={[styles.metric, styles.metricLeft]}>
                     <View style={styles.metricLabel}>
-                      <AppIcon icon={MapPin} size={17} strokeWidth={1.6} color="#858C98" />
+                      <AppIcon icon={MapPin} size={17} strokeWidth={1.6} color={themeColor("#858C98", 'muted')} />
                       <Text style={styles.label}>{location.estimated ? 'Zone estimée' : 'Lieu'}</Text>
                     </View>
                     <Text style={styles.value}>{location.label}</Text>
@@ -202,7 +206,7 @@ export function LatestAccidentCard({
                   </View>
                   <View style={styles.metric}>
                     <View style={styles.metricLabel}>
-                      <AppIcon icon={Hash} size={17} strokeWidth={1.6} color="#858C98" />
+                      <AppIcon icon={Hash} size={17} strokeWidth={1.6} color={themeColor("#858C98", 'muted')} />
                       <Text style={styles.label}>Matricule</Text>
                     </View>
                     <Text style={styles.value}>Non renseigné</Text>
@@ -211,7 +215,7 @@ export function LatestAccidentCard({
                 <View style={[styles.gridRow, styles.gridRowLast]}>
                   <View style={[styles.metric, styles.metricLeft]}>
                     <View style={styles.metricLabel}>
-                      <AppIcon icon={Clock3} size={17} strokeWidth={1.6} color="#858C98" />
+                      <AppIcon icon={Clock3} size={17} strokeWidth={1.6} color={themeColor("#858C98", 'muted')} />
                       <Text style={styles.label}>Heure</Text>
                     </View>
                     <Text style={styles.value}>
@@ -220,7 +224,7 @@ export function LatestAccidentCard({
                   </View>
                   <View style={styles.metric}>
                     <View style={styles.metricLabel}>
-                      <AppIcon icon={CalendarDays} size={17} strokeWidth={1.6} color="#858C98" />
+                      <AppIcon icon={CalendarDays} size={17} strokeWidth={1.6} color={themeColor("#858C98", 'muted')} />
                       <Text style={styles.label}>Date</Text>
                     </View>
                     <Text style={styles.value}>
@@ -232,7 +236,7 @@ export function LatestAccidentCard({
               <View style={styles.footer}>
                 <View style={styles.cta}>
                   <Text style={styles.ctaText}>Voir les détails</Text>
-                  <AppIcon icon={ArrowUpRight} size={18} color="#D94235" />
+                  <AppIcon icon={ArrowUpRight} size={18} color={themeColor("#D94235", 'accent')} />
                 </View>
               </View>
             </AnimatedPressable>
@@ -247,7 +251,7 @@ export function LatestAccidentCard({
             <AppIcon
               icon={error ? TriangleAlert : CarFront}
               size={29}
-              color="#8B929D"
+              color={themeColor("#8B929D", 'muted')}
             />
           </View>
           <Text style={styles.emptyTitle}>
@@ -286,7 +290,7 @@ export function LatestAccidentCard({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   section: { marginTop: 12, width: '100%', maxWidth: 640, alignSelf: 'center' },
   sectionHeader: {
     flexDirection: 'row',
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    color: '#24262C',
+    color: themeColor('#24262C', 'text'),
     fontSize: 19,
     fontWeight: '700',
     letterSpacing: -0.4,
@@ -310,7 +314,7 @@ const styles = StyleSheet.create({
   card: {
     padding: 22,
     borderRadius: 30,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     boxShadow: '0 6px 28px rgba(24, 35, 52, 0.055)',
   },
   compactCard: { padding: 16, borderRadius: 22 },
@@ -320,24 +324,24 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 18,
-    backgroundColor: '#FFF0EC',
+    backgroundColor: themeColor('#FFF0EC', 'accentSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   compactIconBox: { width: 46, height: 46, borderRadius: 14 },
-  kidnappingIconBox: { backgroundColor: '#F4ECF8' },
+  kidnappingIconBox: { backgroundColor: themeColor('#F4ECF8', 'violetSoft') },
   heading: { flex: 1, minWidth: 0 },
   compactHeading: { paddingRight: 38 },
   shareButton: { position: 'absolute', top: 17, right: 48, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-  shareButtonPressed: { backgroundColor: '#F4F5F7' },
+  shareButtonPressed: { backgroundColor: themeColor('#F4F5F7', 'elevated') },
   eyebrow: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.1,
-    color: '#888D97',
+    color: themeColor('#888D97', 'muted'),
   },
   type: {
-    color: '#20242C',
+    color: themeColor('#20242C', 'text'),
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.5,
@@ -348,32 +352,32 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#F4F5F7',
+    backgroundColor: themeColor('#F4F5F7', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   compactSummary: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E9ECF0',
+    borderTopColor: themeColor('#E9ECF0', 'border'),
     gap: 8,
     marginTop: 14,
     paddingTop: 12,
   },
   compactLine: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 },
-  compactLocation: { color: '#3E4551', fontSize: 13, fontWeight: '500', flexShrink: 1 },
+  compactLocation: { color: themeColor('#3E4551', 'secondary'), fontSize: 13, fontWeight: '500', flexShrink: 1 },
   compactBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  compactDate: { color: '#737C89', fontSize: 12, flexShrink: 1 },
+  compactDate: { color: themeColor('#737C89', 'muted'), fontSize: 12, flexShrink: 1 },
   compactSeverity: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   compactSeverityText: { fontSize: 11, fontWeight: '600' },
   badges: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 },
-  grid: { marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E9ECF0' },
+  grid: { marginTop: 22, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: themeColor('#E9ECF0', 'border') },
   gridRow: { flexDirection: 'row' },
-  gridRowLast: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#E9ECF0' },
+  gridRowLast: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: themeColor('#E9ECF0', 'border') },
   metric: { flex: 1, minWidth: 0, paddingVertical: 18, paddingLeft: 16 },
-  metricLeft: { paddingLeft: 0, paddingRight: 16, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: '#E9ECF0' },
+  metricLeft: { paddingLeft: 0, paddingRight: 16, borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: themeColor('#E9ECF0', 'border') },
   metricLabel: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  label: { color: '#737C89', fontSize: 12, fontWeight: '500', flexShrink: 1 },
-  value: { color: '#293241', fontSize: 14, lineHeight: 21, fontWeight: '500', marginTop: 8 },
+  label: { color: themeColor('#737C89', 'muted'), fontSize: 12, fontWeight: '500', flexShrink: 1 },
+  value: { color: themeColor('#293241', 'text'), fontSize: 14, lineHeight: 21, fontWeight: '500', marginTop: 8 },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -389,7 +393,7 @@ const styles = StyleSheet.create({
     paddingTop: 17,
     minHeight: 48,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#F0F1F3',
+    borderTopColor: themeColor('#F0F1F3', 'border'),
     gap: 12,
   },
   cta: {
@@ -397,30 +401,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  ctaText: { color: '#C43F32', fontSize: 14, fontWeight: '600' },
+  ctaText: { color: themeColor('#C43F32', 'accent'), fontSize: 14, fontWeight: '600' },
   empty: { alignItems: 'center', paddingVertical: 32, gap: 12 },
   emptyIcon: {
     width: 60,
     height: 60,
     borderRadius: 20,
-    backgroundColor: '#F4F5F7',
+    backgroundColor: themeColor('#F4F5F7', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   emptyTitle: {
-    color: '#3E4551',
+    color: themeColor('#3E4551', 'secondary'),
     fontSize: 17,
     fontWeight: '600',
     textAlign: 'center',
   },
   emptyText: {
     maxWidth: 300,
-    color: '#7C8491',
+    color: themeColor('#7C8491', 'muted'),
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
   },
   retry: { padding: 12, minHeight: 44 },
-  error: { marginTop: 12, color: '#9D4C29', fontSize: 12, lineHeight: 18 },
-});
+  error: { marginTop: 12, color: themeColor('#9D4C29', 'accent'), fontSize: 12, lineHeight: 18 },
+}));

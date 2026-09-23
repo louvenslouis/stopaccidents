@@ -11,11 +11,31 @@ export const PLACE_PICKER_DOCUMENT = `<!doctype html>
   <style>
     html, body, #map { height: 100%; width: 100%; margin: 0; background: #E8EEF0; }
     .leaflet-control-attribution { font: 11px/1.5 system-ui, sans-serif; }
+
+    /* Only tiles are filtered: alert pins, route colors and controls keep their meaning. */
+    html[data-theme="dark"], html[data-theme="dark"] body,
+    html[data-theme="dark"] #map { background: #10151D; color: #F1F5F9; }
+    html[data-theme="dark"] .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(180deg) brightness(.78) saturate(.65);
+    }
+    html[data-theme="dark"] .leaflet-control-zoom a,
+    html[data-theme="dark"] .leaflet-control-attribution,
+    html[data-theme="dark"] .leaflet-popup-content-wrapper,
+    html[data-theme="dark"] .leaflet-popup-tip,
+    html[data-theme="dark"] .accident-choice {
+      background: #1A222D; color: #F1F5F9; border-color: #344152;
+    }
+    html[data-theme="dark"] .leaflet-control-attribution a,
+    html[data-theme="dark"] .leaflet-popup-close-button { color: #8DC8FF; }
   </style>
 </head>
 <body>
   <div id="map" aria-label="Carte pour choisir un lieu en Haïti"></div>
   <script>
+    window.stopAccidentsTheme = function (scheme) {
+      document.documentElement.dataset.theme = scheme === 'dark' ? 'dark' : 'light';
+      document.documentElement.style.colorScheme = scheme === 'dark' ? 'dark' : 'light';
+    };
     function notify(payload) {
       var message = JSON.stringify(Object.assign({ source: 'stopaccidents-place-picker' }, payload));
       if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(message);
@@ -64,8 +84,10 @@ export const PLACE_PICKER_DOCUMENT = `<!doctype html>
       });
       window.addEventListener('message', function (event) {
         if (event.source !== window.parent) return;
-        if (event.data && event.data.source === 'stopaccidents-app')
-          window.stopAccidentsSetPlace(event.data.selection);
+        if (event.data && event.data.source === 'stopaccidents-app') {
+          if ('theme' in event.data) window.stopAccidentsTheme(event.data.theme);
+          if ('selection' in event.data) window.stopAccidentsSetPlace(event.data.selection);
+        }
       });
       var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,

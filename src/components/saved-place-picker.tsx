@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import { PlacePickerMap } from '@/components/place-picker-map';
 import type { PlacePickerSelection } from '@/components/place-picker-map-props';
@@ -47,6 +48,10 @@ export function SavedPlacePicker({
   onClose: () => void;
   onConfirm: (place: SavedPlace) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PlaceSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -145,14 +150,14 @@ export function SavedPlacePicker({
               hitSlop={8}
               onPress={onClose}
               style={styles.closeButton}>
-              <AppIcon icon={X} color="#536071" size={22} />
+              <AppIcon icon={X} color={themeColor("#536071", 'secondary')} size={22} />
             </Pressable>
           </View>
 
           <View style={styles.searchArea}>
             <View style={styles.searchBox}>
-              <AppIcon icon={Search} color="#6E7887" size={20} />
-              <TextInput
+              <AppIcon icon={Search} color={themeColor("#6E7887", 'muted')} size={20} />
+              <TextInput keyboardAppearance={scheme}
                 accessibilityLabel="Rechercher un lieu"
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -165,14 +170,14 @@ export function SavedPlacePicker({
                   }
                 }}
                 placeholder="Rechercher une adresse ou un lieu"
-                placeholderTextColor="#9199A5"
+                placeholderTextColor={themeColor("#9199A5", 'muted')}
                 returnKeyType="search"
                 selectionColor="#1767A6"
                 style={styles.searchInput}
                 value={query}
               />
               {searching ? (
-                <ActivityIndicator color="#1767A6" size="small" />
+                <ActivityIndicator color={themeColor("#1767A6", 'info')} size="small" />
               ) : query ? (
                 <Pressable
                   accessibilityLabel="Effacer la recherche"
@@ -183,7 +188,7 @@ export function SavedPlacePicker({
                     setResults([]);
                     setSearchError(null);
                   }}>
-                  <AppIcon icon={X} color="#6E7887" size={19} />
+                  <AppIcon icon={X} color={themeColor("#6E7887", 'muted')} size={19} />
                 </Pressable>
               ) : null}
             </View>
@@ -205,7 +210,7 @@ export function SavedPlacePicker({
                           setSearchError(null);
                         }}
                         style={({ pressed }) => [styles.result, pressed && styles.pressed]}>
-                        <AppIcon icon={MapPin} color="#1767A6" size={18} />
+                        <AppIcon icon={MapPin} color={themeColor("#1767A6", 'info')} size={18} />
                         <Text numberOfLines={2} style={styles.resultText}>
                           {result.address}
                         </Text>
@@ -236,7 +241,7 @@ export function SavedPlacePicker({
               <View accessibilityLiveRegion="polite" style={styles.mapOverlay}>
                 {mapStatus === 'loading' ? (
                   <>
-                    <ActivityIndicator color="#1767A6" size="large" />
+                    <ActivityIndicator color={themeColor("#1767A6", 'info')} size="large" />
                     <Text style={styles.mapStatusText}>Chargement de la carte…</Text>
                   </>
                 ) : (
@@ -261,7 +266,7 @@ export function SavedPlacePicker({
 
           <View style={styles.footer}>
             <View style={styles.selectedPlace}>
-              <AppIcon icon={MapPin} color={selection ? '#1767A6' : '#9199A5'} size={21} />
+              <AppIcon icon={MapPin} color={selection ? themeColor('#1767A6', 'info') : themeColor('#9199A5', 'muted')} size={21} />
               <View style={styles.heading}>
                 <Text style={styles.selectedLabel}>REPÈRE SÉLECTIONNÉ</Text>
                 {resolving ? (
@@ -300,27 +305,27 @@ export function SavedPlacePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   flex: { flex: 1 },
-  screen: { flex: 1, backgroundColor: '#F7F8FA' },
+  screen: { flex: 1, backgroundColor: themeColor('#F7F8FA', 'background') },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   heading: { flex: 1 },
   eyebrow: {
-    color: '#1767A6',
+    color: themeColor('#1767A6', 'info'),
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
   title: {
     marginTop: 4,
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '700',
@@ -331,13 +336,13 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F0F2F5',
+    backgroundColor: themeColor('#F0F2F5', 'elevated'),
   },
   searchArea: {
     zIndex: 5,
     padding: 14,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   searchBox: {
     minHeight: 52,
@@ -346,11 +351,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderWidth: 1,
-    borderColor: '#D9DFE7',
+    borderColor: themeColor('#D9DFE7', 'border'),
     borderRadius: 15,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: themeColor('#F8F9FB', 'surface'),
   },
-  searchInput: { flex: 1, minHeight: 50, color: '#243147', fontSize: 15 },
+  searchInput: { flex: 1, minHeight: 50, color: themeColor('#243147', 'text'), fontSize: 15 },
   resultsPanel: {
     position: 'absolute',
     top: 72,
@@ -359,9 +364,9 @@ const styles = StyleSheet.create({
     maxHeight: 242,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#DDE2E9',
+    borderColor: themeColor('#DDE2E9', 'border'),
     borderRadius: 15,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     shadowColor: '#172033',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
@@ -377,15 +382,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E3E6EB',
+    borderBottomColor: themeColor('#E3E6EB', 'border'),
   },
-  resultText: { flex: 1, color: '#344054', fontSize: 14, lineHeight: 20 },
-  searchError: { padding: 14, color: '#A43D36', fontSize: 13, lineHeight: 19 },
+  resultText: { flex: 1, color: themeColor('#344054', 'secondary'), fontSize: 14, lineHeight: 20 },
+  searchError: { padding: 14, color: themeColor('#A43D36', 'accent'), fontSize: 13, lineHeight: 19 },
   mapArea: {
     flex: 1,
     minHeight: 230,
     overflow: 'hidden',
-    backgroundColor: '#E8EEF0',
+    backgroundColor: themeColor('#E8EEF0', 'elevated'),
   },
   mapOverlay: {
     ...StyleSheet.absoluteFill,
@@ -393,9 +398,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    backgroundColor: '#EEF2F3',
+    backgroundColor: themeColor('#EEF2F3', 'elevated'),
   },
-  mapStatusText: { color: '#667185', fontSize: 13 },
+  mapStatusText: { color: themeColor('#667185', 'muted'), fontSize: 13 },
   retryButton: {
     minHeight: 48,
     paddingHorizontal: 18,
@@ -417,22 +422,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(36,49,71,0.88)',
   },
   mapHintText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
-  footer: { padding: 16, gap: 14, backgroundColor: '#FFFFFF' },
+  footer: { padding: 16, gap: 14, backgroundColor: themeColor('#FFFFFF', 'surface') },
   selectedPlace: { flexDirection: 'row', alignItems: 'flex-start', gap: 11 },
   selectedLabel: {
-    color: '#7C8797',
+    color: themeColor('#7C8797', 'muted'),
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1,
   },
   selectedAddress: {
     marginTop: 4,
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 14,
     lineHeight: 19,
     fontWeight: '600',
   },
-  coordinates: { marginTop: 3, color: '#758094', fontSize: 11, lineHeight: 15 },
+  coordinates: { marginTop: 3, color: themeColor('#758094', 'muted'), fontSize: 11, lineHeight: 15 },
   confirmButton: {
     minHeight: 52,
     paddingHorizontal: 18,
@@ -446,4 +451,4 @@ const styles = StyleSheet.create({
   confirmText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.7 },
-});
+}));

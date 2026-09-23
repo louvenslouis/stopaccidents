@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import {
   FlatList,
@@ -26,7 +27,7 @@ import {
   territoryLabel,
   type TerritoryFilter,
 } from "@/features/reports/territories";
-import { styles } from "./styles";
+import { useStyles } from "./styles";
 
 export function TerritoryFilters({
   value,
@@ -35,6 +36,11 @@ export function TerritoryFilters({
   value: TerritoryFilter;
   onChange: (value: TerritoryFilter) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const s = useLocalStyles();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [open, setOpen] = useState<"department" | "commune" | null>(null);
   const [query, setQuery] = useState("");
   const department = departments.find((item) => item.code === value.department);
@@ -72,7 +78,7 @@ export function TerritoryFilters({
     <View style={s.container}>
       <View style={s.heading}>
         <View style={styles.inline}>
-          <AppIcon icon={MapPin} size={14} color="#7772B3" />
+          <AppIcon icon={MapPin} size={14} color={themeColor("#7772B3", 'info')} />
           <Text style={s.eyebrow}>EXPLORER UN TERRITOIRE</Text>
         </View>
         {(value.department || value.commune) && (
@@ -120,7 +126,7 @@ export function TerritoryFilters({
                   {selected}
                 </Text>
               </View>
-              <AppIcon icon={ChevronDown} size={16} color="#96909F" />
+              <AppIcon icon={ChevronDown} size={16} color={themeColor("#96909F", 'muted')} />
             </AnimatedPressable>
           );
         })}
@@ -158,7 +164,7 @@ export function TerritoryFilters({
                   onPress={() => setOpen(null)}
                   style={styles.iconButton}
                 >
-                  <AppIcon icon={X} size={20} color="#66606E" />
+                  <AppIcon icon={X} size={20} color={themeColor("#66606E", 'secondary')} />
                 </Pressable>
               </View>
               <Text style={styles.cardDescription}>
@@ -167,15 +173,15 @@ export function TerritoryFilters({
                   : "Affinez les rapports à l’échelle locale."}
               </Text>
               <View style={s.search}>
-                <AppIcon icon={Search} size={18} color="#9A94A2" />
-                <TextInput
+                <AppIcon icon={Search} size={18} color={themeColor("#9A94A2", 'muted')} />
+                <TextInput keyboardAppearance={scheme}
                   accessibilityLabel={
                     open === "department"
                       ? "Rechercher un département"
                       : "Rechercher une commune"
                   }
                   placeholder="Rechercher…"
-                  placeholderTextColor="#9A94A2"
+                  placeholderTextColor={themeColor("#9A94A2", 'muted')}
                   value={query}
                   onChangeText={setQuery}
                   autoCorrect={false}
@@ -218,7 +224,7 @@ export function TerritoryFilters({
                         )}
                       </View>
                       {selected && (
-                        <AppIcon icon={Check} size={19} color="#7772C3" />
+                        <AppIcon icon={Check} size={19} color={themeColor("#7772C3", 'info')} />
                       )}
                     </Pressable>
                   );
@@ -232,7 +238,7 @@ export function TerritoryFilters({
   );
 }
 
-const s = StyleSheet.create({
+const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
   container: { marginBottom: 23, gap: 10 },
   heading: {
     flexDirection: "row",
@@ -244,11 +250,11 @@ const s = StyleSheet.create({
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 1.1,
-    color: "#827C91",
+    color: themeColor("#827C91", 'muted'),
   },
   reset: {
     fontSize: 11,
-    color: "#7772B3",
+    color: themeColor("#7772B3", 'info'),
     fontWeight: "600",
     paddingVertical: 6,
   },
@@ -259,22 +265,22 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFFFFF",
-    borderColor: "#E8E6EE",
+    backgroundColor: themeColor("#FFFFFF", 'surface'),
+    borderColor: themeColor("#E8E6EE", 'border'),
     borderWidth: 1,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  label: { fontSize: 10, color: "#96909F", marginBottom: 5 },
-  value: { fontSize: 12, color: "#484251", fontWeight: "600" },
-  context: { fontSize: 10, lineHeight: 16, color: "#8D8797" },
+  label: { fontSize: 10, color: themeColor("#96909F", 'muted'), marginBottom: 5 },
+  value: { fontSize: 12, color: themeColor("#484251", 'secondary'), fontWeight: "600" },
+  context: { fontSize: 10, lineHeight: 16, color: themeColor("#8D8797", 'muted') },
   sheet: { maxHeight: "85%", paddingBottom: 16 },
   search: {
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
-    backgroundColor: "#F6F5F9",
+    backgroundColor: themeColor("#F6F5F9", 'elevated'),
     borderRadius: 12,
     paddingHorizontal: 12,
     marginVertical: 16,
@@ -284,7 +290,7 @@ const s = StyleSheet.create({
     minWidth: 0,
     paddingVertical: 14,
     fontSize: 14,
-    color: "#484251",
+    color: themeColor("#484251", 'secondary'),
   },
   list: { flexGrow: 0 },
   option: {
@@ -296,7 +302,7 @@ const s = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 3,
   },
-  selected: { backgroundColor: "#F0EFFA" },
-  optionName: { fontSize: 13, color: "#494352", fontWeight: "500" },
-  optionDetail: { fontSize: 11, color: "#958D9E", marginTop: 4 },
-});
+  selected: { backgroundColor: themeColor("#F0EFFA", 'infoSoft') },
+  optionName: { fontSize: 13, color: themeColor("#494352", 'secondary'), fontWeight: "500" },
+  optionDetail: { fontSize: 11, color: themeColor("#958D9E", 'muted'), marginTop: 4 },
+}));

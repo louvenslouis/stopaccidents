@@ -1,3 +1,4 @@
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Image } from 'expo-image';
 import Check from 'lucide-react-native/icons/check';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -17,6 +18,8 @@ export function BarricadeTypePicker({ selected, disabled = false, onChange }: {
   disabled?: boolean;
   onChange: (types: BarricadeType[]) => void;
 }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.grid}>
       {barricadeTypes.map((type) => {
@@ -45,14 +48,14 @@ export function BarricadeTypePicker({ selected, disabled = false, onChange }: {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: { flexBasis: '46%', flexGrow: 1, minWidth: 120, minHeight: 138, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, borderWidth: 1.5, borderColor: '#E4E8EE', borderRadius: 18, backgroundColor: '#FAFBFC' },
-  selected: { borderColor: '#CF7930', backgroundColor: '#FFF6EA' },
+  card: { flexBasis: '46%', flexGrow: 1, minWidth: 120, minHeight: 138, alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12, borderWidth: 1.5, borderColor: themeColor('#E4E8EE', 'border'), borderRadius: 18, backgroundColor: themeColor('#FAFBFC', 'surface') },
+  selected: { borderColor: '#CF7930', backgroundColor: themeColor('#FFF6EA', 'warningSoft') },
   dimmed: { opacity: 0.6 },
   image: { width: 82, height: 82 },
-  label: { color: '#455168', fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  selectedLabel: { color: '#93511A' },
-  checkbox: { position: 'absolute', right: 10, top: 10, width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: '#CCD2DB', alignItems: 'center', justifyContent: 'center' },
+  label: { color: themeColor('#455168', 'secondary'), fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  selectedLabel: { color: themeColor('#93511A', 'warning') },
+  checkbox: { position: 'absolute', right: 10, top: 10, width: 20, height: 20, borderRadius: 6, borderWidth: 1.5, borderColor: themeColor('#CCD2DB', 'border'), alignItems: 'center', justifyContent: 'center' },
   checkboxSelected: { backgroundColor: '#B96B16', borderColor: '#B96B16' },
-});
+}));

@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { ReportReward } from '@/components/report-reward';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -76,6 +77,9 @@ function Action({
   disabled?: boolean;
   busy?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -90,13 +94,13 @@ function Action({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={secondary ? '#243147' : '#fff'} />
+        <ActivityIndicator color={secondary ? themeColor('#243147', 'text') : '#fff'} />
       ) : (
         icon && (
           <AppIcon
             icon={icon}
             size={19}
-            color={secondary ? '#243147' : '#fff'}
+            color={secondary ? themeColor('#243147', 'text') : '#fff'}
           />
         )
       )}
@@ -113,6 +117,8 @@ function Action({
 }
 
 function QuestionIllustration({ step }: { step: 1 | 2 | 3 }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.questionArt}>
       <Image
@@ -139,6 +145,8 @@ function OptionCard({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -176,6 +184,10 @@ export function BreakdownReportSheet({
   onBackToTypes: () => void;
   onClose: () => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
@@ -453,7 +465,7 @@ export function BreakdownReportSheet({
               </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
-                  <AppIcon icon={Wrench} size={23} color="#B76518" />
+                  <AppIcon icon={Wrench} size={23} color={themeColor("#B76518", 'warning')} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>INFORMATION ROUTIÈRE</Text>
@@ -468,7 +480,7 @@ export function BreakdownReportSheet({
                   onPress={close}
                   style={styles.iconButton}
                 >
-                  <AppIcon icon={X} size={21} color="#667185" />
+                  <AppIcon icon={X} size={21} color={themeColor("#667185", 'muted')} />
                 </Pressable>
               </View>
               {step > 0 && (
@@ -534,7 +546,7 @@ export function BreakdownReportSheet({
                     ) : (
                       <>
                         <View style={styles.locationArt}>
-                          <AppIcon icon={LocateFixed} size={46} color="#B76518" />
+                          <AppIcon icon={LocateFixed} size={46} color={themeColor("#B76518", 'warning')} />
                         </View>
                         <Text accessibilityRole="header" style={styles.sectionTitle}>
                           Localisation automatique
@@ -546,7 +558,7 @@ export function BreakdownReportSheet({
                         </Text>
                         {(locating || sending) && (
                           <>
-                            <ActivityIndicator color="#B76518" size="large" />
+                            <ActivityIndicator color={themeColor("#B76518", 'warning')} size="large" />
                             <Text accessibilityLiveRegion="polite" style={styles.gpsText}>
                               {sending ? progress : locationProgress}
                             </Text>
@@ -566,12 +578,12 @@ export function BreakdownReportSheet({
                       {draft.location || 'Zone détectée par GPS'}
                     </Text>
                     {editingLocationHint ? (
-                      <TextInput
+                      <TextInput keyboardAppearance={scheme}
                         autoFocus
                         editable={!sending}
                         accessibilityLabel="Repère précis près du véhicule en panne, facultatif"
                         placeholder="Ajoutez un repère sur place"
-                        placeholderTextColor="#8A93A1"
+                        placeholderTextColor={themeColor("#8A93A1", 'muted')}
                         value={draft.locationHint}
                         onChangeText={(value) => update('locationHint', value)}
                         onBlur={() => setEditingLocationHint(false)}
@@ -682,11 +694,11 @@ export function BreakdownReportSheet({
                       ))}
                     </View>
                     <Text style={styles.label}>Précisions utiles</Text>
-                    <TextInput
+                    <TextInput keyboardAppearance={scheme}
                       editable={!sending}
                       accessibilityLabel="Précisions facultatives sur la panne"
                       placeholder="Ex. : voie de droite bloquée, dépannage en cours…"
-                      placeholderTextColor="#89919E"
+                      placeholderTextColor={themeColor("#89919E", 'muted')}
                       value={draft.details}
                       onChangeText={(value) => update('details', value)}
                       maxLength={2000}
@@ -765,23 +777,23 @@ export function BreakdownReportSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: '#11182780',
+    backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
     width: '100%',
     maxWidth: 620,
-    backgroundColor: '#fff',
+    backgroundColor: themeColor('#fff', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
   },
   handleArea: { height: 28, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D8DDE5' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -796,17 +808,17 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF3E8',
+    backgroundColor: themeColor('#FFF3E8', 'warningSoft'),
   },
   flex: { flex: 1 },
   eyebrow: {
-    color: '#9A6B3E',
+    color: themeColor('#9A6B3E', 'warning'),
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.1,
   },
   title: {
-    color: '#1C2637',
+    color: themeColor('#1C2637', 'text'),
     fontSize: 21,
     lineHeight: 27,
     fontWeight: '700',
@@ -816,7 +828,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: themeColor('#F5F6F8', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -827,41 +839,41 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   stepItem: { flex: 1, gap: 6, minWidth: 0 },
-  stepBar: { height: 3, borderRadius: 2, backgroundColor: '#E7E9ED' },
+  stepBar: { height: 3, borderRadius: 2, backgroundColor: themeColor('#E7E9ED', 'elevated') },
   stepBarActive: { backgroundColor: '#B76518' },
-  stepLabel: { color: '#939BA7', fontSize: 11, fontWeight: '600' },
-  stepLabelActive: { color: '#9A5515' },
+  stepLabel: { color: themeColor('#939BA7', 'muted'), fontSize: 11, fontWeight: '600' },
+  stepLabelActive: { color: themeColor('#9A5515', 'warning') },
   content: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, gap: 16 },
   locationSearch: { alignItems: 'center', gap: 22, paddingVertical: 32 },
   locationArt: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#FFF3E8',
+    backgroundColor: themeColor('#FFF3E8', 'warningSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   locationExplanation: {
-    color: '#667185',
+    color: themeColor('#667185', 'muted'),
     fontSize: 15,
     lineHeight: 23,
     textAlign: 'center',
   },
-  gpsText: { color: '#8C5A2D', fontSize: 13, textAlign: 'center' },
-  small: { color: '#8A94A3', fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  gpsText: { color: themeColor('#8C5A2D', 'warning'), fontSize: 13, textAlign: 'center' },
+  small: { color: themeColor('#8A94A3', 'muted'), fontSize: 12, lineHeight: 18, textAlign: 'center' },
   locationSummary: {
     gap: 5,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: themeColor('#F7F8FA', 'surface'),
   },
-  locationZone: { color: '#243147', fontSize: 14, fontWeight: '600' },
-  locationHintPrompt: { color: '#A15C20', fontSize: 13, fontWeight: '600' },
+  locationZone: { color: themeColor('#243147', 'text'), fontSize: 14, fontWeight: '600' },
+  locationHintPrompt: { color: themeColor('#A15C20', 'warning'), fontSize: 13, fontWeight: '600' },
   locationHintInput: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 13,
     borderBottomWidth: 1,
-    borderBottomColor: '#D8DEE6',
+    borderBottomColor: themeColor('#D8DEE6', 'border'),
     paddingVertical: 4,
   },
   questionArt: {
@@ -872,7 +884,7 @@ const styles = StyleSheet.create({
   },
   questionImage: { width: 156, height: 156 },
   sectionTitle: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 19,
     lineHeight: 25,
     fontWeight: '700',
@@ -882,25 +894,25 @@ const styles = StyleSheet.create({
   optionCard: {
     minHeight: 68,
     borderWidth: 1.5,
-    borderColor: '#E1E5EB',
-    backgroundColor: '#FAFBFC',
+    borderColor: themeColor('#E1E5EB', 'border'),
+    backgroundColor: themeColor('#FAFBFC', 'surface'),
     borderRadius: 16,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  optionCardSelected: { borderColor: '#C46A1A', backgroundColor: '#FFF5EA' },
+  optionCardSelected: { borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
   optionCopy: { flex: 1, gap: 3 },
-  optionTitle: { color: '#354456', fontSize: 14, fontWeight: '700' },
-  optionTitleSelected: { color: '#9A5515' },
-  optionDescription: { color: '#7B8594', fontSize: 12, lineHeight: 18 },
+  optionTitle: { color: themeColor('#354456', 'secondary'), fontSize: 14, fontWeight: '700' },
+  optionTitleSelected: { color: themeColor('#9A5515', 'warning') },
+  optionDescription: { color: themeColor('#7B8594', 'muted'), fontSize: 12, lineHeight: 18 },
   radio: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#C8CED7',
+    borderColor: themeColor('#C8CED7', 'border'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -912,8 +924,8 @@ const styles = StyleSheet.create({
     minWidth: 130,
     minHeight: 62,
     borderWidth: 1.5,
-    borderColor: '#E1E5EB',
-    backgroundColor: '#FAFBFC',
+    borderColor: themeColor('#E1E5EB', 'border'),
+    backgroundColor: themeColor('#FAFBFC', 'surface'),
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -922,23 +934,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  vehicleOptionSelected: { borderColor: '#C46A1A', backgroundColor: '#FFF5EA' },
-  vehicleOptionText: { flex: 1, color: '#354456', fontSize: 13, fontWeight: '700' },
-  label: { color: '#3D485A', fontSize: 14, fontWeight: '700', marginTop: 6 },
+  vehicleOptionSelected: { borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
+  vehicleOptionText: { flex: 1, color: themeColor('#354456', 'secondary'), fontSize: 13, fontWeight: '700' },
+  label: { color: themeColor('#3D485A', 'secondary'), fontSize: 14, fontWeight: '700', marginTop: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#DCE1E7',
+    borderColor: themeColor('#DCE1E7', 'border'),
     borderRadius: 14,
     padding: 14,
-    color: '#243147',
-    backgroundColor: '#FAFBFC',
+    color: themeColor('#243147', 'text'),
+    backgroundColor: themeColor('#FAFBFC', 'surface'),
     fontSize: 14,
   },
   notes: { minHeight: 100, textAlignVertical: 'top' },
-  optional: { color: '#929AA6', fontSize: 11, marginTop: -10 },
+  optional: { color: themeColor('#929AA6', 'muted'), fontSize: 11, marginTop: -10 },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: themeColor('#E5E7EB', 'border'),
     paddingHorizontal: 22,
     paddingTop: 13,
     gap: 8,
@@ -954,12 +966,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryAction: { backgroundColor: '#B76518' },
-  secondaryAction: { backgroundColor: '#F1F3F6' },
+  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  secondaryActionText: { color: '#243147' },
-  inlineError: { color: '#BD2E40', fontSize: 13, lineHeight: 19, textAlign: 'center' },
-  progress: { color: '#8C5A2D', fontSize: 12, textAlign: 'center' },
+  secondaryActionText: { color: themeColor('#243147', 'text') },
+  inlineError: { color: themeColor('#BD2E40', 'accent'), fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  progress: { color: themeColor('#8C5A2D', 'warning'), fontSize: 12, textAlign: 'center' },
   laterButton: { minHeight: 32, justifyContent: 'center', alignItems: 'center' },
-  footerHint: { color: '#A1A7B0', fontSize: 10, lineHeight: 14, textAlign: 'center' },
+  footerHint: { color: themeColor('#A1A7B0', 'muted'), fontSize: 10, lineHeight: 14, textAlign: 'center' },
   dimmed: { opacity: 0.6 },
-});
+}));

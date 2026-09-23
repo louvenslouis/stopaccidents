@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   nearbyEvents,
@@ -17,6 +18,7 @@ type Pending = {
   cancel: () => void;
 };
 export function useEventChoice(kind: ReportKind) {
+  const styles = useStyles();
   const [pending, setPending] = useState<Pending | null>(null);
   const current = useRef<Pending | null>(null);
   useEffect(() => () => current.current?.cancel(), []);
@@ -104,18 +106,18 @@ export function useEventChoice(kind: ReportKind) {
   ) : null;
   return { choose, panel };
 }
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((color) => StyleSheet.create({
   content: { padding: 24, gap: 16 },
-  title: { fontSize: 24, fontWeight: "700", color: "#1C2637" },
-  body: { fontSize: 14, lineHeight: 21, color: "#667185" },
-  name: { fontSize: 15, fontWeight: "600", color: "#243147" },
+  title: { fontSize: 24, fontWeight: "700", color: color("#1C2637", 'text') },
+  body: { fontSize: 14, lineHeight: 21, color: color("#667185", 'muted') },
+  name: { fontSize: 15, fontWeight: "600", color: color("#243147", 'text') },
   card: {
     borderWidth: 1,
-    borderColor: "#DCE5EB",
+    borderColor: color("#DCE5EB", 'border'),
     borderRadius: 16,
     padding: 16,
     gap: 12,
-    backgroundColor: "#F7FAFC",
+    backgroundColor: color("#F7FAFC", 'elevated'),
   },
   button: {
     backgroundColor: "#267E70",
@@ -125,4 +127,4 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: "#fff", fontWeight: "700", textAlign: "center" },
   secondary: { padding: 14, minHeight: 48, alignItems: "center" },
-});
+}));

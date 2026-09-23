@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
@@ -145,6 +146,10 @@ function IdentifierInputs({
   capitalize?: boolean;
   onChange: (value: string) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const rows = identifierRows(value);
   const updateRow = (index: number, next: string) => {
     const updated = [...rows];
@@ -169,16 +174,16 @@ function IdentifierInputs({
             (pressed || disabled || rows.length >= 10) && styles.dimmed,
           ]}
         >
-          <AppIcon icon={Plus} size={19} color="#267E70" />
+          <AppIcon icon={Plus} size={19} color={themeColor("#267E70", 'success')} />
         </Pressable>
       </View>
       {rows.map((row, index) => (
         <View key={`${label}-${index}`} style={styles.identifierRow}>
-          <TextInput
+          <TextInput keyboardAppearance={scheme}
             editable={!disabled}
             accessibilityLabel={`${label} ${index + 1}`}
             placeholder={placeholder}
-            placeholderTextColor="#89919E"
+            placeholderTextColor={themeColor("#89919E", 'muted')}
             value={row}
             onChangeText={(next) => updateRow(index, next)}
             maxLength={80}
@@ -194,7 +199,7 @@ function IdentifierInputs({
               onPress={() => removeRow(index)}
               style={styles.removeIdentifier}
             >
-              <AppIcon icon={X} size={18} color="#7A8493" />
+              <AppIcon icon={X} size={18} color={themeColor("#7A8493", 'muted')} />
             </Pressable>
           )}
         </View>
@@ -218,6 +223,9 @@ function Action({
   disabled?: boolean;
   busy?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -232,17 +240,17 @@ function Action({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={secondary ? '#243147' : '#fff'} />
+        <ActivityIndicator color={secondary ? themeColor('#243147', 'text') : '#fff'} />
       ) : (
         icon && (
           <AppIcon
             icon={icon}
             size={19}
-            color={secondary ? '#243147' : '#fff'}
+            color={secondary ? themeColor('#243147', 'text') : '#fff'}
           />
         )
       )}
-      <Text style={[styles.actionText, secondary && { color: '#243147' }]}>
+      <Text style={[styles.actionText, secondary && { color: themeColor('#243147', 'text') }]}>
         {label}
       </Text>
     </Pressable>
@@ -262,6 +270,10 @@ export function ReportSheet({
   onBackToTypes: () => void;
   onClose: () => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
@@ -512,7 +524,7 @@ export function ReportSheet({
               </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
-                  <AppIcon icon={TriangleAlert} size={23} color="#DA3D32" />
+                  <AppIcon icon={TriangleAlert} size={23} color={themeColor("#DA3D32", 'accent')} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>CHAQUE SIGNALEMENT COMPTE</Text>
@@ -527,7 +539,7 @@ export function ReportSheet({
                   onPress={close}
                   style={styles.iconButton}
                 >
-                  <AppIcon icon={X} size={21} color="#667185" />
+                  <AppIcon icon={X} size={21} color={themeColor("#667185", 'muted')} />
                 </Pressable>
               </View>
               {step > 0 && (
@@ -572,7 +584,7 @@ export function ReportSheet({
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
               >
-                {storageError && <Text accessibilityRole="alert" style={{ color: "#BD2E40" }}>{storageError}</Text>}
+                {storageError && <Text accessibilityRole="alert" style={{ color: themeColor("#BD2E40", 'accent') }}>{storageError}</Text>}
                 {step === 0 && (
                   <View style={styles.locationSearch}>
                     {locationError ? (
@@ -592,7 +604,7 @@ export function ReportSheet({
                     ) : (
                       <>
                         <View style={styles.locationArt}>
-                          <AppIcon icon={LocateFixed} size={46} color="#267E70" />
+                          <AppIcon icon={LocateFixed} size={46} color={themeColor("#267E70", 'success')} />
                         </View>
                         <Text accessibilityRole="header" style={styles.sectionTitle}>
                           Localisation automatique
@@ -604,7 +616,7 @@ export function ReportSheet({
                         </Text>
                         {(locating || sending) && (
                           <>
-                            <ActivityIndicator color="#267E70" size="large" />
+                            <ActivityIndicator color={themeColor("#267E70", 'success')} size="large" />
                             <Text accessibilityLiveRegion="polite" style={styles.gpsText}>
                               {sending ? progress : locationProgress}
                             </Text>
@@ -625,12 +637,12 @@ export function ReportSheet({
                         {draft.location || 'Zone détectée par GPS'}
                       </Text>
                       {editingLocationHint ? (
-                        <TextInput
+                        <TextInput keyboardAppearance={scheme}
                           autoFocus
                           editable={!sending}
                           accessibilityLabel="Repère précis sur le lieu de l’accident, facultatif"
                           placeholder="Ajoutez un repère sur place"
-                          placeholderTextColor="#8A93A1"
+                          placeholderTextColor={themeColor("#8A93A1", 'muted')}
                           value={draft.locationHint || ''}
                           onChangeText={(value) => update('locationHint', value)}
                           onBlur={() => setEditingLocationHint(false)}
@@ -775,17 +787,17 @@ export function ReportSheet({
                           onPress={() => setCameraOpen(true)}
                           style={styles.addPhoto}
                         >
-                          <AppIcon icon={Camera} size={25} color="#D94235" />
+                          <AppIcon icon={Camera} size={25} color={themeColor("#D94235", 'accent')} />
                           <Text style={styles.addPhotoText}>Ajouter</Text>
                         </Pressable>
                       )}
                     </View>
                     <Text style={styles.label}>Autres informations</Text>
-                    <TextInput
+                    <TextInput keyboardAppearance={scheme}
                       editable={!sending}
                       accessibilityLabel="Autres informations sur l’accident"
                       placeholder="Ajouter une information"
-                      placeholderTextColor="#89919E"
+                      placeholderTextColor={themeColor("#89919E", 'muted')}
                       value={draft.notes}
                       onChangeText={(value) => update('notes', value)}
                       maxLength={2000}
@@ -879,42 +891,42 @@ export function ReportSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   locationSearch: { alignItems: 'center', gap: 22, paddingVertical: 32 },
   locationArt: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#EAF6F1',
+    backgroundColor: themeColor('#EAF6F1', 'successSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   locationExplanation: {
-    color: '#667185',
+    color: themeColor('#667185', 'muted'),
     fontSize: 15,
     lineHeight: 23,
     textAlign: 'center',
   },
   locationSummary: { gap: 6, paddingVertical: 2 },
   locationZone: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 15,
     lineHeight: 21,
     fontWeight: '700',
   },
   locationHintPrompt: {
-    color: '#267E70',
+    color: themeColor('#267E70', 'success'),
     fontSize: 13,
     lineHeight: 20,
     fontWeight: '600',
   },
   locationHintInput: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 13,
     lineHeight: 20,
     padding: 0,
     borderBottomWidth: 1,
-    borderBottomColor: '#A8D1C8',
+    borderBottomColor: themeColor('#A8D1C8', 'border'),
   },
   laterButton: {
     minHeight: 36,
@@ -925,19 +937,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: '#11182780',
+    backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
     width: '100%',
     maxWidth: 620,
-    backgroundColor: '#fff',
+    backgroundColor: themeColor('#fff', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
     boxShadow: '0 -8px 50px rgba(17, 24, 39, 0.16)',
   },
   handleArea: { height: 22, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D8DDE5' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     paddingHorizontal: 22,
     paddingBottom: 20,
@@ -949,20 +961,20 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 15,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: themeColor('#FFF0EB', 'accentSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   flex: { flex: 1 },
   eyebrow: {
-    color: '#AD5044',
+    color: themeColor('#AD5044', 'accent'),
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 1.3,
     marginBottom: 6,
   },
   title: {
-    color: '#1C2637',
+    color: themeColor('#1C2637', 'text'),
     fontSize: 20,
     fontWeight: '700',
     letterSpacing: -0.6,
@@ -973,7 +985,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 20,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: themeColor('#F5F6F8', 'elevated'),
   },
   steps: {
     flexDirection: 'row',
@@ -981,18 +993,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEF0F3',
+    borderBottomColor: themeColor('#EEF0F3', 'border'),
   },
   stepItem: { flex: 1, minHeight: 40 },
   stepBar: {
     height: 3,
     borderRadius: 3,
-    backgroundColor: '#EAEDF1',
+    backgroundColor: themeColor('#EAEDF1', 'elevated'),
     marginBottom: 9,
   },
   stepBarActive: { backgroundColor: '#E14D3E' },
-  stepLabel: { color: '#9299A4', fontSize: 12, fontWeight: '600' },
-  stepLabelActive: { color: '#B93F35' },
+  stepLabel: { color: themeColor('#9299A4', 'muted'), fontSize: 12, fontWeight: '600' },
+  stepLabelActive: { color: themeColor('#B93F35', 'accent') },
   content: { padding: 24, gap: 14, paddingBottom: 30 },
   sectionHeading: {
     flexDirection: 'row',
@@ -1005,27 +1017,27 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 13,
-    backgroundColor: '#FFF0EB',
+    backgroundColor: themeColor('#FFF0EB', 'accentSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: -0.35,
   },
-  small: { color: '#768091', fontSize: 12, lineHeight: 18 },
-  body: { color: '#768091', fontSize: 14, lineHeight: 21 },
+  small: { color: themeColor('#768091', 'muted'), fontSize: 12, lineHeight: 18 },
+  body: { color: themeColor('#768091', 'muted'), fontSize: 14, lineHeight: 21 },
   input: {
-    borderColor: '#DFE3EA',
+    borderColor: themeColor('#DFE3EA', 'border'),
     borderWidth: 1,
     borderRadius: 14,
     padding: 14,
     fontSize: 14,
     lineHeight: 21,
-    color: '#243147',
-    backgroundColor: '#FAFBFC',
+    color: themeColor('#243147', 'text'),
+    backgroundColor: themeColor('#FAFBFC', 'surface'),
     minHeight: 50,
   },
   locationInput: { minHeight: 74, textAlignVertical: 'top' },
@@ -1035,11 +1047,11 @@ const styles = StyleSheet.create({
     gap: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF8F5',
+    backgroundColor: themeColor('#EEF8F5', 'successSoft'),
     borderRadius: 13,
   },
   gpsText: {
-    color: '#267E70',
+    color: themeColor('#267E70', 'success'),
     fontWeight: '600',
     fontSize: 13,
     lineHeight: 19,
@@ -1050,20 +1062,20 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 13,
     borderWidth: 1,
-    borderColor: '#DCEEE7',
+    borderColor: themeColor('#DCEEE7', 'border'),
   },
   radio: {
     width: 19,
     height: 19,
     borderRadius: 10,
     borderWidth: 1.5,
-    borderColor: '#D6DCE5',
+    borderColor: themeColor('#D6DCE5', 'border'),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: { color: '#273347', fontSize: 14, fontWeight: '700' },
+  cardTitle: { color: themeColor('#273347', 'text'), fontSize: 14, fontWeight: '700' },
   cardDescription: {
-    color: '#86909E',
+    color: themeColor('#86909E', 'muted'),
     fontSize: 11,
     lineHeight: 17,
     marginTop: 3,
@@ -1075,7 +1087,7 @@ const styles = StyleSheet.create({
     padding: 14,
     minHeight: 78,
     borderWidth: 1.5,
-    borderColor: '#E6E9EE',
+    borderColor: themeColor('#E6E9EE', 'border'),
     borderRadius: 17,
   },
   severityIcon: {
@@ -1087,13 +1099,13 @@ const styles = StyleSheet.create({
   },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   optional: {
-    color: '#9099A7',
+    color: themeColor('#9099A7', 'muted'),
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
   },
   label: {
-    color: '#485469',
+    color: themeColor('#485469', 'secondary'),
     fontSize: 13,
     fontWeight: '600',
   },
@@ -1109,7 +1121,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#EAF6F1',
+    backgroundColor: themeColor('#EAF6F1', 'successSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1141,10 +1153,10 @@ const styles = StyleSheet.create({
     width: 100,
     height: 105,
     borderWidth: 1.5,
-    borderColor: '#E9BCB3',
+    borderColor: themeColor('#E9BCB3', 'border'),
     borderStyle: 'dashed',
     borderRadius: 15,
-    backgroundColor: '#FFFAF7',
+    backgroundColor: themeColor('#FFFAF7', 'surface'),
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
@@ -1154,15 +1166,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 15,
     fontWeight: '600',
-    color: '#C85443',
+    color: themeColor('#C85443', 'accent'),
   },
   footer: {
     paddingHorizontal: 22,
     paddingTop: 16,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#EEF0F3',
-    backgroundColor: '#fff',
+    borderTopColor: themeColor('#EEF0F3', 'border'),
+    backgroundColor: themeColor('#fff', 'surface'),
   },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   action: {
@@ -1176,7 +1188,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryAction: { backgroundColor: '#DF493B' },
-  secondaryAction: { backgroundColor: '#F1F3F6' },
+  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: {
     color: '#fff',
     fontWeight: '700',
@@ -1185,26 +1197,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footerHint: {
-    color: '#929BA8',
+    color: themeColor('#929BA8', 'muted'),
     fontSize: 10,
     lineHeight: 15,
     textAlign: 'center',
   },
-  inlineError: { color: '#BA3540', fontSize: 12, lineHeight: 18 },
-  progress: { color: '#637087', fontSize: 12, textAlign: 'center' },
+  inlineError: { color: themeColor('#BA3540', 'accent'), fontSize: 12, lineHeight: 18 },
+  progress: { color: themeColor('#637087', 'muted'), fontSize: 12, textAlign: 'center' },
   success: { flex: 1, justifyContent: 'center', padding: 30, gap: 22 },
   successTitle: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 29,
     fontWeight: '700',
     letterSpacing: -0.7,
   },
-  successBody: { color: '#768091', fontSize: 16, lineHeight: 25 },
+  successBody: { color: themeColor('#768091', 'muted'), fontSize: 16, lineHeight: 25 },
   receipt: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: themeColor('#F5F7FA', 'surface'),
     gap: 8,
   },
-  reference: { color: '#36465D', fontSize: 12, fontWeight: '700' },
-});
+  reference: { color: themeColor('#36465D', 'secondary'), fontSize: 12, fontWeight: '700' },
+}));

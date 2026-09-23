@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapLocation } from '@/features/map/use-map-location';
 import { useAccident } from '@/features/accident-report/use-accident';
 import { readTransportStations } from '@/features/transport/api';
@@ -66,6 +67,9 @@ function PlaceBubble({
   onPress: () => void;
   busy: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const progress = useSharedValue(0);
   useEffect(() => {
     progress.value = expanded
@@ -112,11 +116,11 @@ function PlaceBubble({
         ]}
       >
         {busy ? (
-          <ActivityIndicator size="small" color="#1767A6" />
+          <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
         ) : (
           <Icon
             size={21}
-            color={index === 0 ? '#1767A6' : '#C75A3C'}
+            color={index === 0 ? themeColor('#1767A6', 'info') : themeColor('#C75A3C', 'accent')}
             strokeWidth={2.2}
           />
         )}
@@ -134,6 +138,10 @@ export function OpenStreetMap({
   onSelect: (id: string) => void;
   reportsState: MapReportsState;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [attempt, setAttempt] = useState(0);
   const stations = useAccident(readTransportStations, true, 60000);
   const transportMarkers = useMemo(() => stationMarkers(stations.data ?? []), [stations.data]);
@@ -319,7 +327,7 @@ export function OpenStreetMap({
         {status !== 'ready' && (
           <View style={styles.loadingOverlay} accessibilityLiveRegion="polite">
             {status === 'loading' ? (
-              <ActivityIndicator size="large" color="#FF5A45" />
+              <ActivityIndicator size="large" color={themeColor("#FF5A45", 'accent')} />
             ) : (
               <AnimatedPressable
                 accessibilityHint="Recharge la carte"
@@ -389,9 +397,9 @@ export function OpenStreetMap({
             style={[styles.iconButton, styles.locateButton, stations.error && styles.errorButton]}
           >
             {stations.loading && !stations.data ? (
-              <ActivityIndicator size="small" color="#087F75" />
+              <ActivityIndicator size="small" color={themeColor("#087F75", 'success')} />
             ) : (
-              <BusFront size={23} color={stations.error ? '#C63E31' : '#087F75'} />
+              <BusFront size={23} color={stations.error ? themeColor('#C63E31', 'accent') : themeColor('#087F75', 'success')} />
             )}
           </AnimatedPressable>
         )}
@@ -418,9 +426,9 @@ export function OpenStreetMap({
           ]}
         >
           {gps.locating ? (
-            <ActivityIndicator size="small" color="#1767A6" />
+            <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
           ) : (
-            <LocateFixed size={23} color={gps.error ? '#C63E31' : '#1767A6'} />
+            <LocateFixed size={23} color={gps.error ? themeColor('#C63E31', 'accent') : themeColor('#1767A6', 'info')} />
           )}
         </AnimatedPressable>
         {!planner.open && (
@@ -535,11 +543,11 @@ export function OpenStreetMap({
               />
               <Animated.View style={[styles.searchPill, searchWidthStyle]}>
                 {suggestions.status === 'loading' ? (
-                  <ActivityIndicator size="small" color="#1767A6" />
+                  <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
                 ) : (
-                  <Search color="#6F7782" size={21} strokeWidth={2.2} />
+                  <Search color={themeColor("#6F7782", 'muted')} size={21} strokeWidth={2.2} />
                 )}
-                <TextInput
+                <TextInput keyboardAppearance={scheme}
                   ref={inputRef}
                   onFocus={() => setSearchOpen(true)}
                   accessibilityHint="Saisissez au moins deux caractères puis choisissez un lieu suggéré en Haïti"
@@ -564,7 +572,7 @@ export function OpenStreetMap({
                     }
                   }}
                   placeholder="Rechercher un lieu"
-                  placeholderTextColor="#8B929B"
+                  placeholderTextColor={themeColor("#8B929B", 'muted')}
                   returnKeyType="search"
                   selectionColor="#1767A6"
                   style={styles.searchInput}
@@ -598,7 +606,7 @@ export function OpenStreetMap({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   destinationPosition: {
     position: 'absolute',
     left: 20,
@@ -610,7 +618,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 430,
     borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -623,7 +631,7 @@ const styles = StyleSheet.create({
   },
   destinationLabel: {
     flex: 1,
-    color: '#233750',
+    color: themeColor('#233750', 'text'),
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
@@ -647,17 +655,17 @@ const styles = StyleSheet.create({
   },
   screen: {
     flex: 1,
-    backgroundColor: '#E8EEF0',
+    backgroundColor: themeColor('#E8EEF0', 'background'),
   },
   map: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#E8EEF0',
+    backgroundColor: themeColor('#E8EEF0', 'elevated'),
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EEF2F3',
+    backgroundColor: themeColor('#EEF2F3', 'elevated'),
   },
   retryButton: {
     width: 54,
@@ -693,12 +701,12 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   locateButton: {
-    borderColor: 'rgba(255,255,255,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    borderColor: themeColor('rgba(255,255,255,0.9)', 'border'),
+    backgroundColor: themeColor('rgba(255,255,255,0.96)', 'surface'),
   },
   errorButton: {
-    borderColor: '#F3B1A9',
-    backgroundColor: '#FFF5F3',
+    borderColor: themeColor('#F3B1A9', 'border'),
+    backgroundColor: themeColor('#FFF5F3', 'surface'),
   },
   followButton: {
     borderColor: '#155E95',
@@ -743,26 +751,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.94)',
+    borderColor: themeColor('rgba(255,255,255,0.94)', 'border'),
     shadowColor: '#101828',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
     shadowRadius: 12,
     elevation: 8,
   },
-  workBubble: { backgroundColor: '#EFF7FF' },
-  homeBubble: { backgroundColor: '#FFF3ED' },
+  workBubble: { backgroundColor: themeColor('#EFF7FF', 'infoSoft') },
+  homeBubble: { backgroundColor: themeColor('#FFF3ED', 'accentSoft') },
   searchPill: {
     height: SEARCH_HEIGHT,
     borderRadius: SEARCH_HEIGHT / 2,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.94)',
+    borderColor: themeColor('rgba(255,255,255,0.94)', 'border'),
     paddingLeft: 20,
     paddingRight: 11,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: themeColor('rgba(255,255,255,0.96)', 'surface'),
     shadowColor: '#101828',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
@@ -774,7 +782,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     height: '100%',
     paddingVertical: 0,
-    color: '#171719',
+    color: themeColor('#171719', 'text'),
     fontSize: 16,
     lineHeight: 22,
     fontWeight: '500',
@@ -787,4 +795,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#9AA1AA',
   },
-});
+}));

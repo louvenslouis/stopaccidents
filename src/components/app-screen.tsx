@@ -1,5 +1,5 @@
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import Head from 'expo-router/head';
-import { StatusBar } from 'expo-status-bar';
 import type { ReactNode } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
@@ -27,12 +27,13 @@ export function AppScreen({
   contentContainerStyle,
   onScroll,
 }: AppScreenProps) {
+  const styles = useStyles();
+
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <Head>
         <title>{title} — Stop Accidents</title>
       </Head>
-      <StatusBar style="dark" />
 
       <Animated.ScrollView
         contentContainerStyle={[styles.content, contentContainerStyle]}
@@ -62,10 +63,10 @@ export function AppScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: themeColor('#F7F7F7', 'background'),
   },
   content: {
     flexGrow: 1,
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   eyebrow: {
-    color: '#FF5A45',
+    color: themeColor('#FF5A45', 'accent'),
     fontSize: 12,
     lineHeight: 16,
     fontWeight: '700',
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 8,
-    color: '#171719',
+    color: themeColor('#171719', 'text'),
     fontSize: 36,
     lineHeight: 42,
     fontWeight: '700',
@@ -103,8 +104,8 @@ const styles = StyleSheet.create({
   description: {
     maxWidth: 480,
     marginTop: 10,
-    color: '#77777C',
+    color: themeColor('#77777C', 'muted'),
     fontSize: 16,
     lineHeight: 24,
   },
-});
+}));

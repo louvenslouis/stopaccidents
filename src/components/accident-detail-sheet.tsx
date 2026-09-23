@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import { Image } from 'expo-image';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
@@ -39,6 +40,8 @@ const statusLabels = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
@@ -50,6 +53,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Photo({ photo, index }: { photo: AccidentPhoto; index: number }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [failed, setFailed] = useState(false);
   return (
     <View style={styles.photoBlock}>
@@ -63,7 +69,7 @@ function Photo({ photo, index }: { photo: AccidentPhoto; index: number }) {
         />
       ) : (
         <View style={[styles.photo, styles.photoError]}>
-          <AppIcon icon={ImageOff} size={28} color="#89909C" />
+          <AppIcon icon={ImageOff} size={28} color={themeColor("#89909C", 'muted')} />
           <Text style={styles.muted}>Photo indisponible</Text>
         </View>
       )}
@@ -83,6 +89,9 @@ export function AccidentDetailSheet({
   onClose: () => void;
   hideContributions?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback(
@@ -150,7 +159,7 @@ export function AccidentDetailSheet({
               onPress={onClose}
               style={styles.close}
             >
-              <AppIcon icon={X} size={22} color="#667185" />
+              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
             </Pressable>
           </View>
           <ScrollView
@@ -159,7 +168,7 @@ export function AccidentDetailSheet({
           >
             {!report ? (
               <View style={styles.state}>
-                {loading && <ActivityIndicator color="#D94235" />}
+                {loading && <ActivityIndicator color={themeColor("#D94235", 'accent')} />}
                 <Text style={styles.body}>
                   {loading
                     ? 'Chargement de l’accident…'
@@ -181,7 +190,7 @@ export function AccidentDetailSheet({
                 <View style={styles.summary}>
                   <View style={styles.summaryTop}>
                     <View style={styles.iconBox}>
-                      <AppIcon icon={CarFront} size={27} color="#D94235" />
+                      <AppIcon icon={CarFront} size={27} color={themeColor("#D94235", 'accent')} />
                     </View>
                     <View style={styles.heading}>
                       <Text style={styles.label}>Type d’accident</Text>
@@ -216,7 +225,7 @@ export function AccidentDetailSheet({
                 )}
                 <Section title="Lieu de l’accident">
                   <View style={styles.locationRow}>
-                    <AppIcon icon={MapPin} size={19} color="#737D8D" />
+                    <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
                       {location.estimated ? `Zone estimée : ${location.label}` : location.label}
                     </Text>
@@ -238,7 +247,7 @@ export function AccidentDetailSheet({
                     style={styles.linkButton}
                   >
                     <Text style={styles.linkText}>Voir sur la carte</Text>
-                    <AppIcon icon={ArrowUpRight} size={17} color="#C43F32" />
+                    <AppIcon icon={ArrowUpRight} size={17} color={themeColor("#C43F32", 'accent')} />
                   </Pressable>
                   {mapError && (
                     <Text accessibilityRole="alert" style={styles.error}>
@@ -321,7 +330,7 @@ export function AccidentDetailSheet({
                   style={styles.refresh}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#667185" />
+                    <ActivityIndicator color={themeColor("#667185", 'muted')} />
                   ) : (
                     <Text style={styles.refreshText}>
                       Actualiser les informations
@@ -337,19 +346,19 @@ export function AccidentDetailSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(19, 28, 44, 0.42)',
+    backgroundColor: themeColor('rgba(19, 28, 44, 0.42)', 'overlay'),
   },
   wideOverlay: { justifyContent: 'center', padding: 24 },
   sheet: {
     width: '100%',
     maxWidth: 640,
     flexShrink: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
@@ -359,7 +368,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#DDE0E5',
+    backgroundColor: themeColor('#DDE0E5', 'elevated'),
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 8,
@@ -371,33 +380,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F1F3',
+    borderBottomColor: themeColor('#F0F1F3', 'border'),
   },
   heading: { flex: 1, minWidth: 0 },
   eyebrow: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.2,
-    color: '#D94235',
+    color: themeColor('#D94235', 'accent'),
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: -0.6,
-    color: '#202A3A',
+    color: themeColor('#202A3A', 'text'),
     marginTop: 5,
   },
   close: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F3F5F7',
+    backgroundColor: themeColor('#F3F5F7', 'elevated'),
     justifyContent: 'center',
     alignItems: 'center',
   },
   content: { padding: 24, paddingBottom: 12, gap: 22 },
   summary: {
-    backgroundColor: '#F8F9FB',
+    backgroundColor: themeColor('#F8F9FB', 'surface'),
     borderRadius: 20,
     padding: 18,
     gap: 18,
@@ -407,15 +416,15 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 17,
-    backgroundColor: '#FFF0EC',
+    backgroundColor: themeColor('#FFF0EC', 'accentSoft'),
     justifyContent: 'center',
     alignItems: 'center',
   },
-  label: { fontSize: 12, color: '#778293', fontWeight: '500' },
+  label: { fontSize: 12, color: themeColor('#778293', 'muted'), fontWeight: '500' },
   accidentTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#283448',
+    color: themeColor('#283448', 'text'),
     marginTop: 4,
   },
   severityRow: {
@@ -432,8 +441,8 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 12, fontWeight: '700' },
   notice: {
-    color: '#8B662B',
-    backgroundColor: '#FFF8EA',
+    color: themeColor('#8B662B', 'warning'),
+    backgroundColor: themeColor('#FFF8EA', 'warningSoft'),
     padding: 14,
     borderRadius: 14,
     fontSize: 13,
@@ -443,11 +452,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#29364A',
+    color: themeColor('#29364A', 'text'),
     marginBottom: 2,
   },
-  body: { fontSize: 14, lineHeight: 22, color: '#455168' },
-  muted: { fontSize: 13, lineHeight: 20, color: '#808999' },
+  body: { fontSize: 14, lineHeight: 22, color: themeColor('#455168', 'secondary') },
+  muted: { fontSize: 13, lineHeight: 20, color: themeColor('#808999', 'muted') },
   locationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   linkButton: {
     flexDirection: 'row',
@@ -456,10 +465,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignSelf: 'flex-start',
   },
-  linkText: { color: '#C43F32', fontSize: 13, fontWeight: '600' },
+  linkText: { color: themeColor('#C43F32', 'accent'), fontSize: 13, fontWeight: '600' },
   status: {
-    color: '#41605C',
-    backgroundColor: '#EFF5F3',
+    color: themeColor('#41605C', 'secondary'),
+    backgroundColor: themeColor('#EFF5F3', 'elevated'),
     paddingVertical: 7,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -467,24 +476,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  reference: { color: '#939BA7', fontSize: 10, lineHeight: 16 },
+  reference: { color: themeColor('#939BA7', 'muted'), fontSize: 10, lineHeight: 16 },
   photoBlock: { gap: 7, marginBottom: 6 },
   photo: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: '#F1F3F6',
+    backgroundColor: themeColor('#F1F3F6', 'elevated'),
     borderRadius: 16,
   },
   photoError: { justifyContent: 'center', alignItems: 'center', gap: 10 },
-  caption: { color: '#8A93A0', fontSize: 11, lineHeight: 17 },
+  caption: { color: themeColor('#8A93A0', 'muted'), fontSize: 11, lineHeight: 17 },
   state: { alignItems: 'center', paddingVertical: 40, gap: 16 },
-  error: { color: '#B14832', fontSize: 13, lineHeight: 20 },
+  error: { color: themeColor('#B14832', 'accent'), fontSize: 13, lineHeight: 20 },
   refresh: {
     minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 14,
-    backgroundColor: '#F3F5F7',
+    backgroundColor: themeColor('#F3F5F7', 'elevated'),
   },
-  refreshText: { fontSize: 13, fontWeight: '600', color: '#667185' },
-});
+  refreshText: { fontSize: 13, fontWeight: '600', color: themeColor('#667185', 'muted') },
+}));

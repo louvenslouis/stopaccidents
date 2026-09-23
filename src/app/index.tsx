@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
 import { HomeSections } from '@/components/home/home-sections';
@@ -32,6 +33,9 @@ const WIDE_LAYOUT_BREAKPOINT = 960;
 const WIDE_LAYOUT_GAP = 16;
 
 export default function HomeScreen() {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const router = useRouter();
   const { signalement } = useLocalSearchParams<{ signalement?: string | string[] }>();
   const insets = useSafeAreaInsets();
@@ -115,7 +119,7 @@ export default function HomeScreen() {
             hitSlop={8}
             pressedScale={0.9}
             style={styles.notificationButton}>
-            <AppIcon icon={Bell} size={21} color="#49614D" />
+            <AppIcon icon={Bell} size={21} color={themeColor("#49614D", 'secondary')} />
           </AnimatedPressable>
         }
       >
@@ -201,14 +205,14 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   notificationButton: {
     width: 46,
     height: 46,
     borderRadius: 23,
     borderWidth: 1,
-    borderColor: '#E0E5D7',
-    backgroundColor: '#FFFFFF',
+    borderColor: themeColor('#E0E5D7', 'border'),
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -259,4 +263,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-});
+}));

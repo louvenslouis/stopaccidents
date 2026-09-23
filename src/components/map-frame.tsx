@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/features/appearance/theme-provider';
 import { Linking } from 'react-native';
 import { useCallback, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
@@ -21,7 +22,15 @@ export function MapFrame({
   stations,
   onSelectStation,
 }: MapFrameProps) {
+  const { scheme, color } = useAppTheme();
   const frame = useRef<WebView>(null);
+  const updateTheme = useCallback(() => {
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsTheme && window.stopAccidentsTheme(${JSON.stringify(scheme)}); true;`,
+    );
+  }, [scheme]);
+  useEffect(updateTheme, [updateTheme]);
+
   const updateMarkers = useCallback(() => {
     const json = JSON.stringify(illustratedMapMarkers(markers))
       .replace(/</g, '\\u003c')
@@ -70,8 +79,9 @@ export function MapFrame({
     <WebView
       ref={frame}
       source={source}
+      onLoadEnd={updateTheme}
       originWhitelist={['*']}
-      style={{ flex: 1, backgroundColor: '#E8EEF0' }}
+      style={{ flex: 1, backgroundColor: color('#E8EEF0', 'background') }}
       applicationNameForUserAgent="StopAccidents/1.0"
       cacheEnabled
       javaScriptEnabled
@@ -82,6 +92,7 @@ export function MapFrame({
       onMessage={({ nativeEvent }) => {
         const message = readMapMessage(nativeEvent.data);
         if (message?.status === 'ready') {
+          updateTheme();
           updateLocation();
           updatePlaceFocus();
           updateMarkers();

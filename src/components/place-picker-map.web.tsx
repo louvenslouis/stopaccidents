@@ -1,10 +1,18 @@
+import { useAppTheme } from '@/features/appearance/theme-provider';
 import { useEffect, useRef } from 'react';
 
 import { PLACE_PICKER_DOCUMENT, readPlacePickerMessage } from './place-picker-document';
 import type { PlacePickerMapProps } from './place-picker-map-props';
 
 export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePickerMapProps) {
+  const { scheme, color } = useAppTheme();
   const frame = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    frame.current?.contentWindow?.postMessage(
+      { source: 'stopaccidents-app', theme: scheme }, window.location.origin,
+    );
+  }, [scheme]);
 
   useEffect(() => {
     const receive = (event: MessageEvent) => {
@@ -12,7 +20,7 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
       const message = readPlacePickerMessage(event.data);
       if (message?.status === 'ready') {
         frame.current?.contentWindow?.postMessage(
-          { source: 'stopaccidents-app', selection },
+          { source: 'stopaccidents-app', selection, theme: scheme },
           window.location.origin,
         );
         onLoad();
@@ -23,7 +31,7 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [selection, onLoad, onError, onPick]);
+  }, [scheme, selection, onLoad, onError, onPick]);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
@@ -38,9 +46,10 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
       title="Carte pour choisir un lieu en Haïti"
       srcDoc={PLACE_PICKER_DOCUMENT}
       sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+      onLoad={() => frame.current?.contentWindow?.postMessage({ source: 'stopaccidents-app', theme: scheme }, window.location.origin)}
       onError={onError}
       referrerPolicy="strict-origin-when-cross-origin"
-      style={{ width: '100%', height: '100%', border: 0, display: 'block' }}
+      style={{ width: '100%', height: '100%', border: 0, display: 'block', backgroundColor: color('#E8EEF0', 'background') }}
     />
   );
 }

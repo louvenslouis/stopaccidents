@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -38,7 +39,7 @@ import { readHomePlaces } from "@/features/home/api";
 import { nearbyReports, reportAge, savedPoint } from "@/features/home/model";
 import { formatRouteDistance } from "@/features/map/route-geometry";
 import { JourneyArt, RadarArt } from "./home-art";
-import { styles } from "./styles";
+import { useStyles } from "./styles";
 
 const reportAppearance = {
   accident: {
@@ -109,6 +110,9 @@ function ReportRow({
   item: ReturnType<typeof nearbyReports>[number];
   onOpen: (id: string) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { report, distance, observedAt } = item;
   const appearance = reportAppearance[report.report_kind];
   const Icon = appearance.icon;
@@ -144,7 +148,7 @@ function ReportRow({
           )}
         </View>
       </View>
-      <ChevronRight size={17} color="#8F9991" />
+      <ChevronRight size={17} color={themeColor("#8F9991", 'muted')} />
     </AnimatedPressable>
   );
 }
@@ -160,6 +164,9 @@ function SectionHeading({
   action?: string;
   onPress?: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <View style={styles.sectionHeading}>
       <View style={styles.headingLabel}>
@@ -175,7 +182,7 @@ function SectionHeading({
           style={styles.textAction}
         >
           <Text style={styles.textActionLabel}>{action}</Text>
-          <ArrowUpRight size={17} color="#3D574C" />
+          <ArrowUpRight size={17} color={themeColor("#3D574C", 'secondary')} />
         </AnimatedPressable>
       )}
     </View>
@@ -191,10 +198,13 @@ type ReportListProps = {
   onOpen: (id: string) => void;
 };
 function ReportList({ items, limit, reports, onOpen }: ReportListProps) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   if (reports.loading && !reports.data)
     return (
       <View style={styles.empty}>
-        <ActivityIndicator color="#365D4D" />
+        <ActivityIndicator color={themeColor("#365D4D", 'secondary')} />
         <Text style={styles.body}>Les dernières informations arrivent…</Text>
       </View>
     );
@@ -208,7 +218,7 @@ function ReportList({ items, limit, reports, onOpen }: ReportListProps) {
           onPress={reports.refresh}
           style={styles.inlineButton}
         >
-          <RefreshCw size={16} color="#355447" />
+          <RefreshCw size={16} color={themeColor("#355447", 'secondary')} />
           <Text style={styles.linkLabel}>Réessayer</Text>
         </AnimatedPressable>
       </View>
@@ -228,7 +238,7 @@ function ReportList({ items, limit, reports, onOpen }: ReportListProps) {
       ) : (
         <View style={styles.empty}>
           <View style={styles.emptyIcon}>
-            <LocateFixed size={24} color="#66806A" />
+            <LocateFixed size={24} color={themeColor("#66806A", 'muted')} />
           </View>
           <Text style={styles.emptyTitle}>Aucun signalement récent ici.</Text>
           <Text style={styles.emptyBody}>
@@ -265,6 +275,9 @@ export function HomeSections({
   onZonesOpen: () => void;
   onZonesClose: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gps = useAppLocation();
@@ -361,16 +374,16 @@ export function HomeSections({
               style={styles.locationPrompt}
             >
               {gps.locating ? (
-                <ActivityIndicator size="small" color="#536B58" />
+                <ActivityIndicator size="small" color={themeColor("#536B58", 'secondary')} />
               ) : (
-                <LocateFixed size={19} color="#536B58" />
+                <LocateFixed size={19} color={themeColor("#536B58", 'secondary')} />
               )}
               <Text style={styles.locationPromptText}>
                 {gps.locating
                   ? "Recherche de votre position…"
                   : "Activez la localisation pour voir autour de vous"}
               </Text>
-              {!gps.locating && <ArrowRight size={17} color="#536B58" />}
+              {!gps.locating && <ArrowRight size={17} color={themeColor("#536B58", 'secondary')} />}
             </AnimatedPressable>
           )}
           {!center && gps.error && (
@@ -394,9 +407,9 @@ export function HomeSections({
               style={styles.refresh}
             >
               {reports.loading ? (
-                <ActivityIndicator size="small" color="#6B776E" />
+                <ActivityIndicator size="small" color={themeColor("#6B776E", 'muted')} />
               ) : (
-                <RefreshCw size={15} color="#6B776E" />
+                <RefreshCw size={15} color={themeColor("#6B776E", 'muted')} />
               )}
             </AnimatedPressable>
           </View>
@@ -411,7 +424,7 @@ export function HomeSections({
               <Text style={styles.journeyEyebrow}>UN DÉPART BIEN PRÉPARÉ</Text>
             </View>
             <View style={styles.journeyCompass}>
-              <ArrowUpRight size={20} color="#A9C2AD" />
+              <ArrowUpRight size={20} color={themeColor("#A9C2AD", 'muted')} />
             </View>
           </View>
           <Text style={styles.journeyTitle}>
@@ -511,7 +524,7 @@ export function HomeSections({
         >
           <View style={styles.grow}>
             <View style={styles.eyebrowLine}>
-              <Bell size={13} color="#5C715C" />
+              <Bell size={13} color={themeColor("#5C715C", 'secondary')} />
               <Text style={styles.softEyebrow}>VOS REPÈRES</Text>
             </View>
             <Text style={styles.zonesTitle}>
@@ -520,7 +533,7 @@ export function HomeSections({
             <Text style={styles.zonesBody}>Position, domicile, travail.</Text>
             <View style={styles.zonesLink}>
               <Text style={styles.linkLabel}>Voir les alertes</Text>
-              <ArrowUpRight size={17} color="#355447" />
+              <ArrowUpRight size={17} color={themeColor("#355447", 'secondary')} />
             </View>
           </View>
           <View pointerEvents="none" style={styles.radar}>
@@ -535,7 +548,7 @@ export function HomeSections({
           pressedScale={0.985}
         >
           <View style={styles.bookIcon}>
-            <BookOpen size={22} color="#A3563C" strokeWidth={1.7} />
+            <BookOpen size={22} color={themeColor("#A3563C", 'accent')} strokeWidth={1.7} />
           </View>
           <View style={styles.grow}>
             <Text style={styles.tipEyebrow}>LE PETIT GUIDE</Text>
@@ -544,7 +557,7 @@ export function HomeSections({
               S’informer. Préparer. Contribuer.
             </Text>
           </View>
-          <ArrowUpRight size={20} color="#98654F" />
+          <ArrowUpRight size={20} color={themeColor("#98654F", 'accent')} />
         </AnimatedPressable>
       </View>
       <View style={styles.signature}>
@@ -591,7 +604,7 @@ export function HomeSections({
                 onPress={closeSheet}
                 style={styles.closeButton}
               >
-                <X size={21} color="#445348" />
+                <X size={21} color={themeColor("#445348", 'secondary')} />
               </AnimatedPressable>
             </View>
             <ScrollView
@@ -604,7 +617,7 @@ export function HomeSections({
                   <View key={tip.title} style={styles.guideItem}>
                     <View style={styles.guideTop}>
                       <Text style={styles.guideNumber}>0{index + 1}</Text>
-                      <tip.icon size={23} color="#A66045" />
+                      <tip.icon size={23} color={themeColor("#A66045", 'accent')} />
                     </View>
                     <Text style={styles.guideTitle}>{tip.title}</Text>
                     <Text style={styles.guideBody}>{tip.body}</Text>
@@ -644,7 +657,7 @@ export function HomeSections({
                       >
                         <item.icon
                           size={17}
-                          color={zone === item.key ? "#FFFFFF" : "#637466"}
+                          color={zone === item.key ? "#FFFFFF" : themeColor("#637466", 'secondary')}
                         />
                         <Text
                           style={[
@@ -660,7 +673,7 @@ export function HomeSections({
                   {zoneCenter ? (
                     <>
                       <View style={styles.zoneContext}>
-                        <MapPin size={15} color="#697B6A" />
+                        <MapPin size={15} color={themeColor("#697B6A", 'muted')} />
                         <Text style={styles.zoneContextText}>
                           {zone === "position"
                             ? locationLabel || "Votre position"
@@ -686,7 +699,7 @@ export function HomeSections({
                         disabled={reports.loading}
                         style={styles.inlineButton}
                       >
-                        <RefreshCw size={17} color="#355447" />
+                        <RefreshCw size={17} color={themeColor("#355447", 'secondary')} />
                         <Text style={styles.linkLabel}>
                           {reports.loading
                             ? "Actualisation…"

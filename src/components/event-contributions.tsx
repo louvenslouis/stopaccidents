@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles } from '@/features/appearance/theme-provider';
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,6 +22,9 @@ export function EventContributions({
   kind: ReportKind;
   reportId: string;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+
   const loader = useCallback(
     (signal: AbortSignal) => readReportEvent(kind, reportId, signal),
     [kind, reportId],
@@ -138,7 +142,7 @@ export function EventContributions({
             Regroupez uniquement les fiches décrivant le même événement. Les
             témoignages et leurs photos sont conservés.
           </Text>
-          <TextInput
+          <TextInput keyboardAppearance={scheme}
             accessibilityLabel="Identifiant de l’événement de destination"
             placeholder="Identifiant de l’événement de destination"
             value={target}
@@ -147,7 +151,7 @@ export function EventContributions({
             style={styles.input}
             editable={!busy}
           />
-          <TextInput
+          <TextInput keyboardAppearance={scheme}
             accessibilityLabel="Motif de la fusion"
             placeholder="Motif de la fusion"
             value={reason}
@@ -202,19 +206,19 @@ export function EventContributions({
     </View>
   );
 }
-const styles = StyleSheet.create({
-  card: { backgroundColor: "#F0F7F5", padding: 16, borderRadius: 16, gap: 8 },
-  title: { fontSize: 15, fontWeight: "700", color: "#245F54" },
-  body: { color: "#63766F", fontSize: 13, lineHeight: 20 },
-  link: { fontWeight: "600", color: "#267E70", fontSize: 14 },
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  card: { backgroundColor: themeColor("#F0F7F5", 'elevated'), padding: 16, borderRadius: 16, gap: 8 },
+  title: { fontSize: 15, fontWeight: "700", color: themeColor("#245F54", 'text') },
+  body: { color: themeColor("#63766F", 'secondary'), fontSize: 13, lineHeight: 20 },
+  link: { fontWeight: "600", color: themeColor("#267E70", 'success'), fontSize: 14 },
   button: { minHeight: 44, paddingVertical: 12 },
-  row: { borderTopWidth: 1, borderColor: "#D3E4DD", paddingTop: 12, gap: 8 },
+  row: { borderTopWidth: 1, borderColor: themeColor("#D3E4DD", 'border'), paddingTop: 12, gap: 8 },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: themeColor("#fff", 'surface'),
     borderWidth: 1,
-    borderColor: "#CEDDD6",
+    borderColor: themeColor("#CEDDD6", 'border'),
     borderRadius: 10,
     padding: 12,
     minHeight: 46,
   },
-});
+}));

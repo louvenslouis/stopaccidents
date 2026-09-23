@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
@@ -82,6 +83,9 @@ function Action({
   disabled?: boolean;
   busy?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -96,13 +100,13 @@ function Action({
       ]}
     >
       {busy ? (
-        <ActivityIndicator color={secondary ? '#243147' : '#fff'} />
+        <ActivityIndicator color={secondary ? themeColor('#243147', 'text') : '#fff'} />
       ) : (
         icon && (
           <AppIcon
             icon={icon}
             size={19}
-            color={secondary ? '#243147' : '#fff'}
+            color={secondary ? themeColor('#243147', 'text') : '#fff'}
           />
         )
       )}
@@ -124,6 +128,10 @@ export function SuspiciousVehicleReportSheet({
   onBackToTypes: () => void;
   onClose: () => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
@@ -383,7 +391,7 @@ export function SuspiciousVehicleReportSheet({
               </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
-                  <AppIcon icon={ShieldAlert} size={23} color="#DA3D32" />
+                  <AppIcon icon={ShieldAlert} size={23} color={themeColor("#DA3D32", 'accent')} />
                 </View>
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>SITUATION OBSERVÉE</Text>
@@ -398,7 +406,7 @@ export function SuspiciousVehicleReportSheet({
                   onPress={close}
                   style={styles.iconButton}
                 >
-                  <AppIcon icon={X} size={21} color="#667185" />
+                  <AppIcon icon={X} size={21} color={themeColor("#667185", 'muted')} />
                 </Pressable>
               </View>
               {step > 0 && (
@@ -443,10 +451,10 @@ export function SuspiciousVehicleReportSheet({
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}
               >
-                {storageError && <Text accessibilityRole="alert" style={{ color: "#BD2E40" }}>{storageError}</Text>}
+                {storageError && <Text accessibilityRole="alert" style={{ color: themeColor("#BD2E40", 'accent') }}>{storageError}</Text>}
                 {savedSteps > 0 && (
                   <View style={styles.savedNotice}>
-                    <AppIcon icon={CheckCheck} size={19} color="#267E70" />
+                    <AppIcon icon={CheckCheck} size={19} color={themeColor("#267E70", 'success')} />
                     <View style={styles.flex}>
                       <Text style={styles.gpsText}>
                         {draft.eventId ? 'Témoignage rattaché à l’événement' : 'Signalement déjà enregistré'}
@@ -462,7 +470,7 @@ export function SuspiciousVehicleReportSheet({
                     {!locationError && (
                       <>
                     <View style={styles.locationArt}>
-                      <AppIcon icon={LocateFixed} size={46} color="#267E70" />
+                      <AppIcon icon={LocateFixed} size={46} color={themeColor("#267E70", 'success')} />
                     </View>
                     <Text
                       accessibilityRole="header"
@@ -477,7 +485,7 @@ export function SuspiciousVehicleReportSheet({
                     </Text>
                     {(locating || sending) && (
                       <>
-                        <ActivityIndicator color="#267E70" size="large" />
+                        <ActivityIndicator color={themeColor("#267E70", 'success')} size="large" />
                         <Text
                           accessibilityLiveRegion="polite"
                           style={styles.gpsText}
@@ -513,7 +521,7 @@ export function SuspiciousVehicleReportSheet({
                   <>
                     <View style={styles.locationCard}>
                       <View style={styles.inline}>
-                        <AppIcon icon={MapPin} size={22} color="#267E70" />
+                        <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
                         <View style={styles.flex}>
                           <Text style={styles.gpsText}>
                             {draft.location || 'Position GPS enregistrée'}
@@ -530,18 +538,18 @@ export function SuspiciousVehicleReportSheet({
                             </Text>
                           )}
                         </View>
-                        <AppIcon icon={CheckCheck} size={20} color="#267E70" />
+                        <AppIcon icon={CheckCheck} size={20} color={themeColor("#267E70", 'success')} />
                       </View>
                       {Boolean(draft.location) && <GeocodingCredit />}
                       <View style={styles.sectionHeading}>
                         <Text style={styles.label}>Un repère sur place</Text>
                         <Text style={styles.optional}>FACULTATIF</Text>
                       </View>
-                      <TextInput
+                      <TextInput keyboardAppearance={scheme}
                         editable={!sending}
                         accessibilityLabel="Repère précis du lieu de la voiture suspecte, facultatif"
                         placeholder="Ex. : devant la pharmacie, près du carrefour"
-                        placeholderTextColor="#89919E"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
                         value={draft.locationHint}
                         onChangeText={(value) => update('locationHint', value)}
                         maxLength={250}
@@ -551,7 +559,7 @@ export function SuspiciousVehicleReportSheet({
                     </View>
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
-                        <AppIcon icon={CarFront} color="#D94235" size={23} />
+                        <AppIcon icon={CarFront} color={themeColor("#D94235", 'accent')} size={23} />
                       </View>
                       <View style={styles.flex}>
                         <Text style={styles.sectionTitle}>
@@ -563,7 +571,7 @@ export function SuspiciousVehicleReportSheet({
                       </View>
                     </View>
                     <Text style={styles.label}>Couleur du véhicule</Text>
-                    <TextInput editable={!sending} accessibilityLabel="Couleur du véhicule" placeholder="Ex. : blanc, noir, bleu… ou inconnue" placeholderTextColor="#89919E" value={draft.color} onChangeText={(value) => update('color', value)} maxLength={80} style={styles.input} />
+                    <TextInput keyboardAppearance={scheme} editable={!sending} accessibilityLabel="Couleur du véhicule" placeholder="Ex. : blanc, noir, bleu… ou inconnue" placeholderTextColor={themeColor("#89919E", 'muted')} value={draft.color} onChangeText={(value) => update('color', value)} maxLength={80} style={styles.input} />
                     <Text style={styles.label}>Type de véhicule</Text>
                     <View style={styles.choices}>
                       {vehicleTypes.map((type) => (
@@ -581,13 +589,13 @@ export function SuspiciousVehicleReportSheet({
                       ))}
                     </View>
                     <Text style={styles.label}>Numéro d’immatriculation · facultatif</Text>
-                    <TextInput editable={!sending} accessibilityLabel="Numéro d’immatriculation, facultatif" placeholder="Si vous avez pu le relever" placeholderTextColor="#89919E" autoCapitalize="characters" value={draft.registration} onChangeText={(value) => update('registration', value)} maxLength={80} style={styles.input} />
+                    <TextInput keyboardAppearance={scheme} editable={!sending} accessibilityLabel="Numéro d’immatriculation, facultatif" placeholder="Si vous avez pu le relever" placeholderTextColor={themeColor("#89919E", 'muted')} autoCapitalize="characters" value={draft.registration} onChangeText={(value) => update('registration', value)} maxLength={80} style={styles.input} />
                     <Text style={styles.label}>Marque, modèle ou signes distinctifs · facultatif</Text>
-                    <TextInput
+                    <TextInput keyboardAppearance={scheme}
                       editable={!sending}
                       accessibilityLabel="Description de la voiture"
                       placeholder="Ex. : Toyota, rétroviseur cassé, autocollant…"
-                      placeholderTextColor="#89919E"
+                      placeholderTextColor={themeColor("#89919E", 'muted')}
                       value={draft.vehicleDescription}
                       onChangeText={(value) => update('vehicleDescription', value)}
                       maxLength={1000}
@@ -596,7 +604,7 @@ export function SuspiciousVehicleReportSheet({
                     />
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
-                        <AppIcon icon={Route} color="#D94235" size={23} />
+                        <AppIcon icon={Route} color={themeColor("#D94235", 'accent')} size={23} />
                       </View>
                       <View style={styles.flex}>
                         <Text style={styles.sectionTitle}>Faits observés</Text>
@@ -605,11 +613,11 @@ export function SuspiciousVehicleReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput
+                    <TextInput keyboardAppearance={scheme}
                       editable={!sending}
                       accessibilityLabel="Faits observés"
                       placeholder="Ex. : passages répétés, véhicule suivant des personnes… Décrivez les faits."
-                      placeholderTextColor="#89919E"
+                      placeholderTextColor={themeColor("#89919E", 'muted')}
                       value={draft.observedBehavior}
                       onChangeText={(value) => update('observedBehavior', value)}
                       maxLength={MAX_OBSERVED_BEHAVIOR_LENGTH}
@@ -617,7 +625,7 @@ export function SuspiciousVehicleReportSheet({
                       style={[styles.input, styles.notes]}
                     />
                     <View style={styles.warning}>
-                      <AppIcon icon={ShieldAlert} size={20} color="#B63838" />
+                      <AppIcon icon={ShieldAlert} size={20} color={themeColor("#B63838", 'accent')} />
                       <Text style={styles.warningText}>
                         Ne suivez pas le véhicule et ne vous approchez pas pour
                         recueillir des informations. Signalez depuis un endroit sûr.
@@ -632,7 +640,7 @@ export function SuspiciousVehicleReportSheet({
                         Observations enregistrées
                       </Text>
                       <View style={styles.inline}>
-                        <AppIcon icon={MapPin} size={17} color="#64748B" />
+                        <AppIcon icon={MapPin} size={17} color={themeColor("#64748B", 'muted')} />
                         <Text style={[styles.small, styles.flex]}>
                           {suspiciousVehicleLocationDescription(draft) ||
                             'Position GPS ajoutée'}
@@ -647,7 +655,7 @@ export function SuspiciousVehicleReportSheet({
                     </View>
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
-                        <AppIcon icon={Info} color="#D94235" size={23} />
+                        <AppIcon icon={Info} color={themeColor("#D94235", 'accent')} size={23} />
                       </View>
                       <View style={styles.flex}>
                         <Text style={styles.sectionTitle}>
@@ -658,11 +666,11 @@ export function SuspiciousVehicleReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput
+                    <TextInput keyboardAppearance={scheme}
                       editable={!sending}
                       accessibilityLabel="Précisions facultatives"
                       placeholder="Ex. : heure de l’observation, durée, direction déjà observée…"
-                      placeholderTextColor="#89919E"
+                      placeholderTextColor={themeColor("#89919E", 'muted')}
                       value={draft.details}
                       onChangeText={(value) =>
                         update('details', value)
@@ -682,7 +690,7 @@ export function SuspiciousVehicleReportSheet({
                       <Action secondary label="Prendre une photo" icon={Camera} disabled={sending} onPress={() => setCameraOpen(true)} />
                     )}
                     <View style={styles.privacy}>
-                      <AppIcon icon={ShieldCheck} size={18} color="#6C7789" />
+                      <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
                         Ces observations et la photo seront visibles avec le signalement.
                         Ne renseignez pas de noms ni de coordonnées personnelles.
@@ -765,27 +773,27 @@ export function SuspiciousVehicleReportSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  choice: { minHeight: 44, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#DFE4EB', backgroundColor: '#F8F9FB' },
-  choiceSelected: { borderColor: '#B96B16', backgroundColor: '#FFF1DD' },
-  choiceText: { color: '#39465A', fontSize: 13, fontWeight: '600' },
+  choice: { minHeight: 44, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: themeColor('#DFE4EB', 'border'), backgroundColor: themeColor('#F8F9FB', 'surface') },
+  choiceSelected: { borderColor: '#B96B16', backgroundColor: themeColor('#FFF1DD', 'warningSoft') },
+  choiceText: { color: themeColor('#39465A', 'secondary'), fontSize: 13, fontWeight: '600' },
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: '#11182780',
+    backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
     width: '100%',
     maxWidth: 620,
-    backgroundColor: '#fff',
+    backgroundColor: themeColor('#fff', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
   },
   handleArea: { height: 28, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D8DDE5' },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -798,7 +806,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 15,
-    backgroundColor: '#FCE9E2',
+    backgroundColor: themeColor('#FCE9E2', 'accentSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -806,19 +814,19 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: themeColor('#F5F6F8', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   eyebrow: {
-    color: '#AD5044',
+    color: themeColor('#AD5044', 'accent'),
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.2,
     marginBottom: 5,
   },
   title: {
-    color: '#1C2637',
+    color: themeColor('#1C2637', 'text'),
     fontSize: 22,
     lineHeight: 28,
     fontWeight: '700',
@@ -831,10 +839,10 @@ const styles = StyleSheet.create({
     paddingBottom: 13,
   },
   stepItem: { flex: 1, gap: 7 },
-  stepBar: { height: 3, borderRadius: 3, backgroundColor: '#E4E7EC' },
+  stepBar: { height: 3, borderRadius: 3, backgroundColor: themeColor('#E4E7EC', 'elevated') },
   stepBarActive: { backgroundColor: '#DF493B' },
-  stepLabel: { color: '#98A0AC', fontSize: 10, fontWeight: '600' },
-  stepLabelActive: { color: '#BA3E34' },
+  stepLabel: { color: themeColor('#98A0AC', 'muted'), fontSize: 10, fontWeight: '600' },
+  stepLabelActive: { color: themeColor('#BA3E34', 'accent') },
   content: { paddingHorizontal: 22, paddingVertical: 16, gap: 18 },
   flex: { flex: 1 },
   locationSearch: { alignItems: 'center', gap: 22, paddingVertical: 32 },
@@ -842,12 +850,12 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: '#EAF6F1',
+    backgroundColor: themeColor('#EAF6F1', 'successSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   locationExplanation: {
-    color: '#667185',
+    color: themeColor('#667185', 'muted'),
     fontSize: 15,
     lineHeight: 23,
     textAlign: 'center',
@@ -855,7 +863,7 @@ const styles = StyleSheet.create({
   locationCard: {
     padding: 16,
     borderRadius: 18,
-    backgroundColor: '#F0F8F5',
+    backgroundColor: themeColor('#F0F8F5', 'elevated'),
     gap: 10,
   },
   savedNotice: {
@@ -864,10 +872,10 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: '#EEF8F5',
+    backgroundColor: themeColor('#EEF8F5', 'successSoft'),
   },
-  gpsText: { color: '#345B55', fontSize: 13, fontWeight: '700' },
-  small: { color: '#7A8493', fontSize: 11, lineHeight: 17 },
+  gpsText: { color: themeColor('#345B55', 'text'), fontSize: 13, fontWeight: '700' },
+  small: { color: themeColor('#7A8493', 'muted'), fontSize: 11, lineHeight: 17 },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -877,30 +885,30 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 13,
-    backgroundColor: '#FCE9E2',
+    backgroundColor: themeColor('#FCE9E2', 'accentSoft'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   sectionTitle: {
-    color: '#29364C',
+    color: themeColor('#29364C', 'text'),
     fontSize: 17,
     lineHeight: 23,
     fontWeight: '700',
   },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  label: { color: '#485469', fontSize: 13, fontWeight: '600' },
+  label: { color: themeColor('#485469', 'secondary'), fontSize: 13, fontWeight: '600' },
   optional: {
-    color: '#9099A7',
+    color: themeColor('#9099A7', 'muted'),
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#E1E5EB',
+    borderColor: themeColor('#E1E5EB', 'border'),
     borderRadius: 15,
-    backgroundColor: '#fff',
-    color: '#273347',
+    backgroundColor: themeColor('#fff', 'surface'),
+    color: themeColor('#273347', 'text'),
     fontSize: 14,
     lineHeight: 21,
     paddingHorizontal: 15,
@@ -915,19 +923,19 @@ const styles = StyleSheet.create({
     gap: 9,
     padding: 14,
     borderRadius: 14,
-    backgroundColor: '#FFF0EE',
+    backgroundColor: themeColor('#FFF0EE', 'accentSoft'),
   },
-  warningText: { flex: 1, color: '#884039', fontSize: 12, lineHeight: 18 },
+  warningText: { flex: 1, color: themeColor('#884039', 'accent'), fontSize: 12, lineHeight: 18 },
   privacy: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   summary: {
-    backgroundColor: '#F5F7FA',
+    backgroundColor: themeColor('#F5F7FA', 'surface'),
     borderRadius: 17,
     padding: 16,
     gap: 9,
   },
-  summaryTitle: { color: '#29364C', fontSize: 13, fontWeight: '700' },
+  summaryTitle: { color: themeColor('#29364C', 'text'), fontSize: 13, fontWeight: '700' },
   summaryDetails: {
-    color: '#637087',
+    color: themeColor('#637087', 'muted'),
     fontSize: 12,
     lineHeight: 18,
     fontWeight: '600',
@@ -937,8 +945,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: '#EEF0F3',
-    backgroundColor: '#fff',
+    borderTopColor: themeColor('#EEF0F3', 'border'),
+    backgroundColor: themeColor('#fff', 'surface'),
   },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   action: {
@@ -952,7 +960,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryAction: { backgroundColor: '#DF493B' },
-  secondaryAction: { backgroundColor: '#F1F3F6' },
+  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: {
     color: '#fff',
     fontWeight: '700',
@@ -960,33 +968,33 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     textAlign: 'center',
   },
-  secondaryActionText: { color: '#243147' },
+  secondaryActionText: { color: themeColor('#243147', 'text') },
   laterButton: {
     minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   footerHint: {
-    color: '#929BA8',
+    color: themeColor('#929BA8', 'muted'),
     fontSize: 10,
     lineHeight: 15,
     textAlign: 'center',
   },
-  inlineError: { color: '#BA3540', fontSize: 12, lineHeight: 18 },
-  progress: { color: '#637087', fontSize: 12, textAlign: 'center' },
+  inlineError: { color: themeColor('#BA3540', 'accent'), fontSize: 12, lineHeight: 18 },
+  progress: { color: themeColor('#637087', 'muted'), fontSize: 12, textAlign: 'center' },
   success: { flex: 1, justifyContent: 'center', padding: 30, gap: 22 },
   successTitle: {
-    color: '#243147',
+    color: themeColor('#243147', 'text'),
     fontSize: 29,
     fontWeight: '700',
     letterSpacing: -0.7,
   },
-  successBody: { color: '#768091', fontSize: 16, lineHeight: 25 },
+  successBody: { color: themeColor('#768091', 'muted'), fontSize: 16, lineHeight: 25 },
   receipt: {
     padding: 16,
     borderRadius: 16,
-    backgroundColor: '#F5F7FA',
+    backgroundColor: themeColor('#F5F7FA', 'surface'),
     gap: 7,
   },
-  reference: { color: '#29364C', fontSize: 12, fontWeight: '700' },
-});
+  reference: { color: themeColor('#29364C', 'text'), fontSize: 12, fontWeight: '700' },
+}));

@@ -14,7 +14,11 @@ function compile(source, dependencies) {
   });
   new Function('exports', 'require', outputText)(
     exports,
-    (name) => dependencies[name] || {},
+    (name) => dependencies[name] || (name === '@/features/appearance/theme-provider' ? {
+      createThemedStyles: (factory) => () => factory((light) => light),
+      useThemeColor: () => (light) => light,
+      useAppTheme: () => ({ scheme: 'light' }),
+    } : {}),
   );
   return exports;
 }

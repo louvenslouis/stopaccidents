@@ -261,6 +261,9 @@ test("nearby choice requires an explicit response, supports a distinct event, an
     },
   ];
   const { useEventChoice } = compile(sources["use-event-choice.tsx"], {
+    '@/features/appearance/theme-provider': {
+      createThemedStyles: (factory) => () => factory((light) => light),
+    },
     react: h.react,
     "react/jsx-runtime": {
       jsx: (type, props) => ({ type, props }),

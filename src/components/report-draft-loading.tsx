@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useThemeColor } from '@/features/appearance/theme-provider';
 export function ReportDraftLoading({
   error,
   onRetry,
@@ -8,17 +9,18 @@ export function ReportDraftLoading({
   onRetry: () => void;
   onClose: () => void;
 }) {
+  const color = useThemeColor();
   return (
     <View style={{ padding: 28, gap: 20 }}>
-      {!error && <ActivityIndicator />}
-      <Text>{error ?? "Restauration de votre brouillon…"}</Text>
+      {!error && <ActivityIndicator color={color('#667185', 'muted')} />}
+      <Text style={{ color: color('#243147', 'text') }}>{error ?? "Restauration de votre brouillon…"}</Text>
       {error && (
         <Pressable
           accessibilityRole="button"
           onPress={onRetry}
           style={{ padding: 14 }}
         >
-          <Text>Réessayer</Text>
+          <Text style={{ color: color('#C43F32', 'accent') }}>Réessayer</Text>
         </Pressable>
       )}
       <Pressable
@@ -26,7 +28,7 @@ export function ReportDraftLoading({
         onPress={onClose}
         style={{ padding: 14 }}
       >
-        <Text>Fermer</Text>
+        <Text style={{ color: color('#667185', 'muted') }}>Fermer</Text>
       </Pressable>
     </View>
   );

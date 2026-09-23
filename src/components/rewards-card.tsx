@@ -1,3 +1,4 @@
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { useRewards } from '@/features/rewards/use-rewards';
 import { useFocusEffect } from 'expo-router';
@@ -5,6 +6,8 @@ import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 export function RewardsCard() {
+  const styles = useStyles();
+
   const { summary, error, refresh } = useRewards();
   useFocusEffect(
     useCallback(() => {
@@ -53,11 +56,11 @@ export function RewardsCard() {
     </View>
   );
 }
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   card: {
-    backgroundColor: '#FDF6E6',
+    backgroundColor: themeColor('#FDF6E6', 'warningSoft'),
     borderWidth: 1,
-    borderColor: '#F0E2C2',
+    borderColor: themeColor('#F0E2C2', 'border'),
     padding: 22,
     borderRadius: 24,
     gap: 12,
@@ -72,13 +75,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     letterSpacing: 1,
-    color: '#8B682B',
+    color: themeColor('#8B682B', 'warning'),
     fontWeight: '800',
   },
   level: {
     fontSize: 11,
-    color: '#6D612F',
-    backgroundColor: '#F3E9C9',
+    color: themeColor('#6D612F', 'warning'),
+    backgroundColor: themeColor('#F3E9C9', 'warningSoft'),
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 20,
@@ -87,17 +90,17 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 42,
     fontWeight: '800',
-    color: '#72521F',
+    color: themeColor('#72521F', 'warning'),
     letterSpacing: -1,
   },
   unit: { fontSize: 16, fontWeight: '500', letterSpacing: 0 },
-  body: { color: '#918063', fontSize: 12, lineHeight: 18 },
+  body: { color: themeColor('#918063', 'muted'), fontSize: 12, lineHeight: 18 },
   track: {
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#EEE3C6',
+    backgroundColor: themeColor('#EEE3C6', 'warningSoft'),
     overflow: 'hidden',
   },
   fill: { height: '100%', backgroundColor: '#CAA14C', borderRadius: 4 },
-  error: { fontSize: 13, color: '#A24436', paddingVertical: 6 },
-});
+  error: { fontSize: 13, color: themeColor('#A24436', 'accent'), paddingVertical: 6 },
+}));

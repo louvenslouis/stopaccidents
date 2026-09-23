@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import Copy from 'lucide-react-native/icons/copy';
@@ -10,12 +11,16 @@ import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
 import { AppIcon } from './ui/app-icon';
 import type { ReportShare } from '@/features/safety-report/share';
 import { prepareReportImage } from '@/features/safety-report/share-image';
 import type { PreparedReportImage } from '@/features/safety-report/share-image.types';
 
 export function ReportShareSheet({ report, onClose }: { report: ReportShare; onClose: () => void }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const insets = useSafeAreaInsets();
   const card = useRef<View>(null);
   const busy = useRef(false);
@@ -91,7 +96,7 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
           <View style={styles.header}>
             <Text accessibilityRole="header" style={styles.title}>Partager l’événement</Text>
             <Pressable accessibilityRole="button" accessibilityLabel="Fermer le partage" disabled={sharing} onPress={onClose} style={styles.close}>
-              <AppIcon icon={X} size={21} color="#667080" />
+              <AppIcon icon={X} size={21} color={themeColor("#667080", 'muted')} />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.content}>
@@ -125,16 +130,15 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
                   )}
                   {report.estimated && <Text style={styles.credit}>Données géographiques © OpenStreetMap</Text>}
                 </View>
-                <View style={styles.imageFooter}>
-                  <Text style={styles.linkLabel}>Voir l’événement et ses mises à jour</Text>
-                  <Text style={styles.imageLink}>{report.url}</Text>
+                <View style={styles.imageFooter} accessible accessibilityLabel="QR code vers l’événement">
+                  <QRCode value={report.url} size={132} quietZone={16} ecl="M" color="#000000" backgroundColor="#FFFFFF" />
                 </View>
               </View>
               {image && <Image source={{ uri: image.uri }} accessible={false} contentFit="fill" style={styles.generatedImage} />}
             </View>
             {preparing ? (
               <View accessibilityLiveRegion="polite" style={styles.loading}>
-                <ActivityIndicator size="small" color="#C43F32" />
+                <ActivityIndicator size="small" color={themeColor("#C43F32", 'accent')} />
                 <Text style={styles.help}>Préparation de l’image…</Text>
               </View>
             ) : image ? (
@@ -152,7 +156,7 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
                     image.download?.();
                     setNotice('Téléchargement lancé. Copiez aussi la description et le lien.');
                   }} style={styles.secondary}>
-                    <AppIcon icon={Download} size={18} color="#3E4551" />
+                    <AppIcon icon={Download} size={18} color={themeColor("#3E4551", 'secondary')} />
                     <Text style={styles.secondaryText}>Télécharger l’image</Text>
                   </Pressable>
                 )}
@@ -161,7 +165,7 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
               <Pressable accessibilityRole="button" onPress={() => setAttempt((value) => value + 1)} style={styles.secondary}><Text style={styles.secondaryText}>Réessayer la génération</Text></Pressable>
             )}
             <Pressable accessibilityRole="button" onPress={() => void copy()} style={styles.secondary}>
-              <AppIcon icon={Copy} size={17} color="#3E4551" />
+              <AppIcon icon={Copy} size={17} color={themeColor("#3E4551", 'secondary')} />
               <Text style={styles.secondaryText}>Copier le texte et le lien</Text>
             </Pressable>
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
@@ -174,14 +178,14 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(17,24,39,0.42)', paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  sheet: { width: '100%', maxWidth: 480, maxHeight: '100%', backgroundColor: '#FFFFFF', borderRadius: 26, overflow: 'hidden' },
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: themeColor('rgba(17,24,39,0.42)', 'overlay'), paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+  sheet: { width: '100%', maxWidth: 480, maxHeight: '100%', backgroundColor: themeColor('#FFFFFF', 'surface'), borderRadius: 26, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 10, paddingVertical: 10 },
-  title: { fontSize: 18, fontWeight: '700', color: '#24262C', flexShrink: 1 },
+  title: { fontSize: 18, fontWeight: '700', color: themeColor('#24262C', 'text'), flexShrink: 1 },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingTop: 0, gap: 12 },
-  preview: { borderWidth: 1, borderColor: '#E9ECF0', borderRadius: 20, overflow: 'hidden' },
+  preview: { borderWidth: 1, borderColor: themeColor('#E9ECF0', 'border'), borderRadius: 20, overflow: 'hidden' },
   generatedImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#FFFFFF' },
   imageCard: { padding: 20, backgroundColor: '#FFFFFF' },
   brandRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 22 },
@@ -197,16 +201,14 @@ const styles = StyleSheet.create({
   badge: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
   badgeText: { fontSize: 12, fontWeight: '600' },
   credit: { color: '#777E89', fontSize: 10 },
-  imageFooter: { marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#E9ECF0', gap: 6 },
-  linkLabel: { fontSize: 11, color: '#C43F32', fontWeight: '600' },
-  imageLink: { fontSize: 10, lineHeight: 15, color: '#737C89' },
+  imageFooter: { marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#E9ECF0', alignItems: 'center' },
   loading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12 },
-  help: { fontSize: 12, lineHeight: 18, color: '#667080' },
+  help: { fontSize: 12, lineHeight: 18, color: themeColor('#667080', 'muted') },
   primary: { minHeight: 48, borderRadius: 14, backgroundColor: '#C43F32', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, gap: 9 },
   primaryText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14, flexShrink: 1 },
-  secondary: { minHeight: 44, borderRadius: 12, backgroundColor: '#F4F5F7', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12 },
-  secondaryText: { color: '#3E4551', fontSize: 13, fontWeight: '600', flexShrink: 1 },
-  message: { fontSize: 12, lineHeight: 19, color: '#737C89', paddingTop: 4 },
-  error: { color: '#B94025', fontSize: 12, lineHeight: 18 },
+  secondary: { minHeight: 44, borderRadius: 12, backgroundColor: themeColor('#F4F5F7', 'elevated'), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12 },
+  secondaryText: { color: themeColor('#3E4551', 'secondary'), fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  message: { fontSize: 12, lineHeight: 19, color: themeColor('#737C89', 'muted'), paddingTop: 4 },
+  error: { color: themeColor('#B94025', 'accent'), fontSize: 12, lineHeight: 18 },
   disabled: { opacity: 0.6 },
-});
+}));

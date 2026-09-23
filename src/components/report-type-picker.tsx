@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportIllustration } from "@/components/report-illustration";
 import ShieldCheck from "lucide-react-native/icons/shield-check";
 import X from "lucide-react-native/icons/x";
@@ -80,6 +81,9 @@ function ReportTypeChoice({
   width: number;
   onSelect: (type: ReportType) => void;
 }) {
+  const styles = useStyles();
+
+  const themeColor = useThemeColor();
   const reducedMotion = useReducedMotion();
   const entrance = useSharedValue(reducedMotion ? 1 : 0);
 
@@ -121,7 +125,7 @@ function ReportTypeChoice({
         <View
           style={[
             styles.circle,
-            { backgroundColor: type.tint, borderColor: type.border },
+            { backgroundColor: themeColor(type.tint, 'elevated'), borderColor: themeColor(type.border, 'border') },
           ]}
         >
           <ReportIllustration kind={type.id} size={76} />
@@ -139,6 +143,9 @@ export function ReportTypePicker({
   onSelect: (type: ReportType) => void;
   onClose: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const dragStartY = useRef(0);
   const { width: windowWidth, fontScale } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(0);
@@ -178,7 +185,7 @@ export function ReportTypePicker({
           onPress={onClose}
           style={styles.close}
         >
-          <AppIcon icon={X} size={21} color="#667185" />
+          <AppIcon icon={X} size={21} color={themeColor("#667185", 'muted')} />
         </AnimatedPressable>
       </View>
       <ScrollView
@@ -200,7 +207,7 @@ export function ReportTypePicker({
           ))}
         </View>
         <View style={styles.note}>
-          <AppIcon icon={ShieldCheck} size={18} color="#7C8797" />
+          <AppIcon icon={ShieldCheck} size={18} color={themeColor("#7C8797", 'muted')} />
           <Text style={styles.noteText}>
             Ces signalements resteront anonymes pour le public.
           </Text>
@@ -210,9 +217,9 @@ export function ReportTypePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   handleArea: { height: 28, alignItems: "center", justifyContent: "center" },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D8DDE5" },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor("#D8DDE5", 'elevated') },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -223,7 +230,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: "#1C2637",
+    color: themeColor("#1C2637", 'text'),
     fontSize: 24,
     lineHeight: 30,
     fontWeight: "700",
@@ -233,7 +240,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#F5F6F8",
+    backgroundColor: themeColor("#F5F6F8", 'elevated'),
     alignItems: "center",
     justifyContent: "center",
   },
@@ -261,7 +268,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   choiceTitle: {
-    color: "#273347",
+    color: themeColor("#273347", 'text'),
     fontSize: 13,
     lineHeight: 18,
     fontWeight: "600",
@@ -274,7 +281,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderRadius: 16,
-    backgroundColor: "#F5F7FA",
+    backgroundColor: themeColor("#F5F7FA", 'surface'),
   },
-  noteText: { flex: 1, color: "#8A94A3", fontSize: 12, lineHeight: 18 },
-});
+  noteText: { flex: 1, color: themeColor("#8A94A3", 'muted'), fontSize: 12, lineHeight: 18 },
+}));

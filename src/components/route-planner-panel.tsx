@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import {
   ActivityIndicator,
@@ -38,6 +39,8 @@ function Action({
   disabled?: boolean;
   primary?: boolean;
 }) {
+  const styles = useStyles();
+
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -66,6 +69,10 @@ export function RoutePlannerPanel({
   reportsState: MapReportsState;
   onSelect: (id: string) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [details, setDetails] = useState(true);
   const [editing, setEditing] = useState(false);
   const [directions, setDirections] = useState(false);
@@ -113,7 +120,7 @@ export function RoutePlannerPanel({
             onPress={p.close}
             style={styles.close}
           >
-            <X size={21} color="#465267" />
+            <X size={21} color={themeColor("#465267", 'secondary')} />
           </AnimatedPressable>
         </View>
         <ScrollView
@@ -126,10 +133,10 @@ export function RoutePlannerPanel({
                 <Text style={[styles.point, styles.startPoint]}>A</Text>
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>DÉPART</Text>
-                  <TextInput
+                  <TextInput keyboardAppearance={scheme}
                     accessibilityLabel="Point de départ"
                     placeholder="Adresse ou ville de départ"
-                    placeholderTextColor="#7C8697"
+                    placeholderTextColor={themeColor("#7C8697", 'muted')}
                     value={p.origin.query}
                     onChangeText={(text) => p.edit("origin", text)}
                     maxLength={120}
@@ -143,17 +150,17 @@ export function RoutePlannerPanel({
                   onPress={p.swap}
                   style={styles.close}
                 >
-                  <ArrowDownUp size={20} color="#1767A6" />
+                  <ArrowDownUp size={20} color={themeColor("#1767A6", 'info')} />
                 </AnimatedPressable>
               </View>
               <View style={styles.fieldRow}>
                 <Text style={[styles.point, styles.endPoint]}>B</Text>
                 <View style={styles.field}>
                   <Text style={styles.fieldLabel}>ARRIVÉE</Text>
-                  <TextInput
+                  <TextInput keyboardAppearance={scheme}
                     accessibilityLabel="Point d’arrivée"
                     placeholder="Adresse ou ville d’arrivée"
-                    placeholderTextColor="#7C8697"
+                    placeholderTextColor={themeColor("#7C8697", 'muted')}
                     value={p.destination.query}
                     onChangeText={(text) => p.edit("destination", text)}
                     maxLength={120}
@@ -191,7 +198,7 @@ export function RoutePlannerPanel({
           )}
           {busy && (
             <View style={styles.row} accessibilityLiveRegion="polite">
-              <ActivityIndicator color="#1767A6" />
+              <ActivityIndicator color={themeColor("#1767A6", 'info')} />
               <Text style={styles.body}>
                 {p.status === "locating"
                   ? "Recherche de votre position…"
@@ -452,7 +459,7 @@ export function RoutePlannerPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   position: {
     position: "absolute",
     left: 12,
@@ -464,7 +471,7 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 460,
     borderRadius: 22,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: themeColor("#FFFFFF", 'surface'),
     shadowColor: "#182B49",
     shadowOpacity: 0.18,
     shadowRadius: 18,
@@ -479,9 +486,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#EDF0F4",
+    borderBottomColor: themeColor("#EDF0F4", 'border'),
   },
-  title: { flex: 1, fontWeight: "800", fontSize: 18, color: "#162C46" },
+  title: { flex: 1, fontWeight: "800", fontSize: 18, color: themeColor("#162C46", 'text') },
   close: {
     minWidth: 44,
     minHeight: 44,
@@ -502,14 +509,14 @@ const styles = StyleSheet.create({
   },
   startPoint: { backgroundColor: "#1767A6" },
   endPoint: { backgroundColor: "#E75840" },
-  field: { flex: 1, borderBottomWidth: 1, borderBottomColor: "#DBE2EB" },
+  field: { flex: 1, borderBottomWidth: 1, borderBottomColor: themeColor("#DBE2EB", 'border') },
   fieldLabel: {
-    color: "#748092",
+    color: themeColor("#748092", 'muted'),
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
   },
-  input: { minHeight: 42, color: "#162C46", fontSize: 15, paddingVertical: 6 },
+  input: { minHeight: 42, color: themeColor("#162C46", 'text'), fontSize: 15, paddingVertical: 6 },
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -524,10 +531,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#EEF5FB",
+    backgroundColor: themeColor("#EEF5FB", 'infoSoft'),
   },
   primary: { backgroundColor: "#1767A6" },
-  actionText: { color: "#1767A6", fontSize: 13, fontWeight: "700" },
+  actionText: { color: themeColor("#1767A6", 'info'), fontSize: 13, fontWeight: "700" },
   white: { color: "#FFFFFF" },
   disabled: { opacity: 0.45 },
   summary: {
@@ -536,11 +543,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  duration: { fontSize: 25, fontWeight: "800", color: "#1767A6" },
-  body: { fontSize: 14, color: "#34445A", lineHeight: 20 },
-  caption: { color: "#697589", fontSize: 12, lineHeight: 18 },
-  error: { color: "#A5402E", fontSize: 13, lineHeight: 19 },
-  success: { color: "#217345", lineHeight: 20 },
+  duration: { fontSize: 25, fontWeight: "800", color: themeColor("#1767A6", 'info') },
+  body: { fontSize: 14, color: themeColor("#34445A", 'secondary'), lineHeight: 20 },
+  caption: { color: themeColor("#697589", 'muted'), fontSize: 12, lineHeight: 18 },
+  error: { color: themeColor("#A5402E", 'accent'), fontSize: 13, lineHeight: 19 },
+  success: { color: themeColor("#217345", 'success'), lineHeight: 20 },
   guidance: {
     padding: 14,
     backgroundColor: "#1767A6",
@@ -549,17 +556,17 @@ const styles = StyleSheet.create({
   },
   guidanceDistance: { color: "#DBECFF", fontSize: 13 },
   guidanceText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
-  sectionTitle: { fontSize: 15, fontWeight: "800", color: "#162C46" },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: themeColor("#162C46", 'text') },
   options: { gap: 8 },
   option: {
     padding: 12,
     gap: 3,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#DEE5EE",
+    borderColor: themeColor("#DEE5EE", 'border'),
   },
-  optionSelected: { borderColor: "#1767A6", backgroundColor: "#EEF6FE" },
-  optionTitle: { color: "#1767A6", fontWeight: "700" },
+  optionSelected: { borderColor: "#1767A6", backgroundColor: themeColor("#EEF6FE", 'infoSoft') },
+  optionTitle: { color: themeColor("#1767A6", 'info'), fontWeight: "700" },
   report: {
     flexDirection: "row",
     alignItems: "center",
@@ -567,7 +574,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: "#EEF1F5",
+    borderTopColor: themeColor("#EEF1F5", 'border'),
   },
   reportDot: { width: 10, height: 10, borderRadius: 5 },
   flex: { flex: 1 },
@@ -575,6 +582,6 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEF1F5",
+    borderBottomColor: themeColor("#EEF1F5", 'border'),
   },
-});
+}));

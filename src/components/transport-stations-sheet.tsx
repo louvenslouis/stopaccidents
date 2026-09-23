@@ -1,3 +1,4 @@
+import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useAccident } from "@/features/accident-report/use-accident";
 import { readStationRoutes } from "@/features/transport/api";
 import {
@@ -41,6 +42,9 @@ function Refresh({
   loading: boolean;
   onPress: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <Pressable
       accessibilityRole="button"
@@ -49,7 +53,7 @@ function Refresh({
       style={styles.refresh}
     >
       {loading ? (
-        <ActivityIndicator color="#087F75" />
+        <ActivityIndicator color={themeColor("#087F75", 'success')} />
       ) : (
         <Text style={styles.link}>Actualiser</Text>
       )}
@@ -64,12 +68,15 @@ function RouteCard({
   route: TransportRoute;
   onShowStation: (station: TransportStation) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const fare = routeFare(route);
   return (
     <View style={styles.routeCard}>
       <View style={styles.row}>
         <View style={styles.vehicleBadge}>
-          <BusFront size={16} color="#087F75" />
+          <BusFront size={16} color={themeColor("#087F75", 'success')} />
           <Text style={styles.vehicleText}>{route.vehicle.label}</Text>
         </View>
         <View style={styles.fare}>
@@ -85,9 +92,9 @@ function RouteCard({
             <Text style={styles.stopName}>{route.departure.name}</Text>
           </View>
         </View>
-        <ArrowDown size={14} color="#8FACA7" style={styles.routeArrow} />
+        <ArrowDown size={14} color={themeColor("#8FACA7", 'muted')} style={styles.routeArrow} />
         <View style={styles.stopRow}>
-          <MapPin size={18} color="#087F75" />
+          <MapPin size={18} color={themeColor("#087F75", 'success')} />
           <View style={styles.grow}>
             <Text style={styles.caption}>Arrivée</Text>
             <Text style={styles.stopName}>{route.arrival.name}</Text>
@@ -103,7 +110,7 @@ function RouteCard({
         style={styles.arrivalButton}
       >
         <Text style={styles.link}>Voir l’arrivée sur la carte</Text>
-        <ChevronRight size={16} color="#087F75" />
+        <ChevronRight size={16} color={themeColor("#087F75", 'success')} />
       </Pressable>
     </View>
   );
@@ -116,6 +123,9 @@ function StationDetails({
   station: TransportStation;
   onShowStation: (station: TransportStation) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const loader = useCallback(
     (signal: AbortSignal) => readStationRoutes(station.id, signal),
     [station.id],
@@ -193,7 +203,7 @@ function StationDetails({
         </Text>
       )}
       {routes.loading && !routes.data && (
-        <ActivityIndicator color="#087F75" style={styles.loader} />
+        <ActivityIndicator color={themeColor("#087F75", 'success')} style={styles.loader} />
       )}
       {!routes.loading && !routes.error && filtered.length === 0 && (
         <Text style={styles.empty}>
@@ -220,6 +230,10 @@ export function TransportStationsSheet({
   onClose: () => void;
   onShowStation: (station: TransportStation) => void;
 }) {
+  const { scheme } = useAppTheme();
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const [selected, setSelected] = useState(initialStation);
   const [query, setQuery] = useState("");
   const { height, width } = useWindowDimensions();
@@ -263,11 +277,11 @@ export function TransportStationsSheet({
                 onPress={() => setSelected(null)}
                 style={styles.close}
               >
-                <ArrowLeft size={21} color="#087F75" />
+                <ArrowLeft size={21} color={themeColor("#087F75", 'success')} />
               </Pressable>
             ) : (
               <View style={styles.icon}>
-                <BusFront size={25} color="#087F75" />
+                <BusFront size={25} color={themeColor("#087F75", 'success')} />
               </View>
             )}
             <View style={styles.grow}>
@@ -282,7 +296,7 @@ export function TransportStationsSheet({
               onPress={onClose}
               style={styles.close}
             >
-              <X size={21} color="#667185" />
+              <X size={21} color={themeColor("#667185", 'muted')} />
             </Pressable>
           </View>
           <ScrollView
@@ -303,8 +317,8 @@ export function TransportStationsSheet({
                   tarifs.
                 </Text>
                 <View style={styles.search}>
-                  <Search size={19} color="#71827F" />
-                  <TextInput
+                  <Search size={19} color={themeColor("#71827F", 'muted')} />
+                  <TextInput keyboardAppearance={scheme}
                     accessibilityLabel="Rechercher une station"
                     placeholder="Station ou commune"
                     value={query}
@@ -325,7 +339,7 @@ export function TransportStationsSheet({
                   </Text>
                 )}
                 {stations.loading && !stations.data && (
-                  <ActivityIndicator color="#087F75" style={styles.loader} />
+                  <ActivityIndicator color={themeColor("#087F75", 'success')} style={styles.loader} />
                 )}
                 {!stations.loading &&
                   !stations.error &&
@@ -345,13 +359,13 @@ export function TransportStationsSheet({
                     style={styles.stationRow}
                   >
                     <View style={styles.smallIcon}>
-                      <BusFront size={21} color="#087F75" />
+                      <BusFront size={21} color={themeColor("#087F75", 'success')} />
                     </View>
                     <View style={styles.grow}>
                       <Text style={styles.stationName}>{station.name}</Text>
                       <Text style={styles.caption}>{station.commune}</Text>
                     </View>
-                    <ChevronRight size={19} color="#8B9B98" />
+                    <ChevronRight size={19} color={themeColor("#8B9B98", 'muted')} />
                   </Pressable>
                 ))}
                 <Refresh
@@ -367,19 +381,19 @@ export function TransportStationsSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
     alignItems: "center",
-    backgroundColor: "rgba(19, 28, 44, 0.42)",
+    backgroundColor: themeColor("rgba(19, 28, 44, 0.42)", 'overlay'),
   },
   wideOverlay: { justifyContent: "center", padding: 24 },
   sheet: {
     width: "100%",
     maxWidth: 580,
     flexShrink: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: themeColor("#FFFFFF", 'surface'),
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     overflow: "hidden",
@@ -389,7 +403,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#DDE6E3",
+    backgroundColor: themeColor("#DDE6E3", 'elevated'),
     alignSelf: "center",
     marginTop: 12,
   },
@@ -399,14 +413,14 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#EDF2F0",
+    borderBottomColor: themeColor("#EDF2F0", 'border'),
   },
   grow: { flex: 1, minWidth: 0 },
   icon: {
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: "#E6F5EF",
+    backgroundColor: themeColor("#E6F5EF", 'successSoft'),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -414,7 +428,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: "#EAF6F1",
+    backgroundColor: themeColor("#EAF6F1", 'successSoft'),
     justifyContent: "center",
     alignItems: "center",
   },
@@ -422,12 +436,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1.1,
-    color: "#087F75",
+    color: themeColor("#087F75", 'success'),
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#203A35",
+    color: themeColor("#203A35", 'text'),
     marginTop: 5,
     letterSpacing: -0.5,
   },
@@ -435,17 +449,17 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F3F6F5",
+    backgroundColor: themeColor("#F3F6F5", 'elevated'),
     alignItems: "center",
     justifyContent: "center",
   },
   content: { padding: 20, gap: 14 },
-  body: { fontSize: 14, lineHeight: 21, color: "#667A75" },
+  body: { fontSize: 14, lineHeight: 21, color: themeColor("#667A75", 'muted') },
   search: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#F3F6F5",
+    backgroundColor: themeColor("#F3F6F5", 'elevated'),
     borderRadius: 14,
     paddingHorizontal: 14,
   },
@@ -454,7 +468,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     minHeight: 48,
     fontSize: 15,
-    color: "#203A35",
+    color: themeColor("#203A35", 'text'),
   },
   sectionHeading: {
     flexDirection: "row",
@@ -463,8 +477,8 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 4,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#243D37" },
-  caption: { fontSize: 12, lineHeight: 18, color: "#6C807A" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: themeColor("#243D37", 'text') },
+  caption: { fontSize: 12, lineHeight: 18, color: themeColor("#6C807A", 'muted') },
   stationRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -472,16 +486,16 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#E7EFEB",
+    borderColor: themeColor("#E7EFEB", 'border'),
   },
   stationName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#233B35",
+    color: themeColor("#233B35", 'text'),
     marginBottom: 3,
   },
   stationIntro: { gap: 8 },
-  commune: { fontSize: 16, fontWeight: "600", color: "#314E45" },
+  commune: { fontSize: 16, fontWeight: "600", color: themeColor("#314E45", 'text') },
   mapButton: {
     minHeight: 46,
     padding: 12,
@@ -505,18 +519,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17,
     justifyContent: "center",
     borderRadius: 22,
-    backgroundColor: "#F0F5F3",
+    backgroundColor: themeColor("#F0F5F3", 'elevated'),
   },
   activeFilter: { backgroundColor: "#087F75" },
-  filterText: { color: "#5C756C", fontSize: 13, fontWeight: "600" },
+  filterText: { color: themeColor("#5C756C", 'secondary'), fontSize: 13, fontWeight: "600" },
   activeFilterText: { color: "#FFFFFF" },
   routeCard: {
     borderWidth: 1,
-    borderColor: "#E1ECE7",
+    borderColor: themeColor("#E1ECE7", 'border'),
     borderRadius: 20,
     padding: 16,
     gap: 14,
-    backgroundColor: "#FCFEFD",
+    backgroundColor: themeColor("#FCFEFD", 'surface'),
   },
   row: {
     flexDirection: "row",
@@ -529,14 +543,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#EAF6F1",
+    backgroundColor: themeColor("#EAF6F1", 'successSoft'),
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 9,
   },
-  vehicleText: { color: "#087F75", fontWeight: "700", fontSize: 12 },
+  vehicleText: { color: themeColor("#087F75", 'success'), fontWeight: "700", fontSize: 12 },
   fare: { alignItems: "flex-end" },
-  amount: { fontSize: 21, fontWeight: "700", color: "#163D32", marginTop: 2 },
+  amount: { fontSize: 21, fontWeight: "700", color: themeColor("#163D32", 'text'), marginTop: 2 },
   routeStops: { gap: 4 },
   stopRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   departureDot: {
@@ -544,42 +558,42 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 3,
-    borderColor: "#9DB9AD",
+    borderColor: themeColor("#9DB9AD", 'border'),
     marginHorizontal: 3,
   },
   routeArrow: { marginLeft: 2 },
   stopName: {
-    color: "#233D34",
+    color: themeColor("#233D34", 'text'),
     fontSize: 14,
     fontWeight: "600",
     lineHeight: 21,
   },
-  fareDetail: { fontSize: 11, lineHeight: 17, color: "#7A7460" },
+  fareDetail: { fontSize: 11, lineHeight: 17, color: themeColor("#7A7460", 'secondary') },
   arrivalButton: {
     minHeight: 44,
     borderTopWidth: 1,
-    borderTopColor: "#EAF0ED",
+    borderTopColor: themeColor("#EAF0ED", 'border'),
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     gap: 8,
     paddingTop: 10,
   },
-  link: { color: "#087F75", fontSize: 13, fontWeight: "600" },
+  link: { color: themeColor("#087F75", 'success'), fontSize: 13, fontWeight: "600" },
   refresh: {
     minHeight: 46,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F0F6F3",
+    backgroundColor: themeColor("#F0F6F3", 'elevated'),
     borderRadius: 14,
   },
   empty: {
     paddingVertical: 24,
     fontSize: 14,
-    color: "#76897F",
+    color: themeColor("#76897F", 'muted'),
     lineHeight: 22,
     textAlign: "center",
   },
-  error: { color: "#AD4230", fontSize: 13, lineHeight: 20 },
+  error: { color: themeColor("#AD4230", 'accent'), fontSize: 13, lineHeight: 20 },
   loader: { padding: 26 },
-});
+}));

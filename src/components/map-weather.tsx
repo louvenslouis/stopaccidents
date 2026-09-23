@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapWeather } from "@/features/map/use-map-weather";
 import { useAppLocation } from "@/features/location/app-location";
 import { reverseGeocodeZone } from "@/features/accident-report/reverse-geocode";
@@ -39,6 +40,9 @@ function forecastHour(time: number) {
 }
 
 export function MapWeather({ center }: { center: WeatherPoint }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { location } = useAppLocation();
   const result = useMapWeather(location?.coordinates ?? center);
   const roundedCenter = weatherPoint(center);
@@ -99,7 +103,7 @@ export function MapWeather({ center }: { center: WeatherPoint }) {
               : "Chargement de la météo"
         }
       >
-        <Icon size={21} color="#596975" strokeWidth={1.6} />
+        <Icon size={21} color={themeColor("#596975", 'secondary')} strokeWidth={1.6} />
         <Text style={styles.temperature}>
           {weather ? `${Math.round(weather.temperature)}°` : "—"}
         </Text>
@@ -152,7 +156,7 @@ export function MapWeather({ center }: { center: WeatherPoint }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   card: {
     width: 240,
     maxWidth: 260,
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 3,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    backgroundColor: themeColor("rgba(255,255,255,0.94)", 'surface'),
     borderWidth: 1,
     borderColor: "rgba(218,225,228,0.8)",
     shadowColor: "#263846",
@@ -171,34 +175,34 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   temperature: {
-    color: "#283842",
+    color: themeColor("#283842", 'text'),
     fontSize: 22,
     fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
-  condition: { color: "#4B5C67", fontSize: 12, flexShrink: 1 },
-  detail: { color: "#64727D", fontSize: 10, lineHeight: 15 },
+  condition: { color: themeColor("#4B5C67", 'secondary'), fontSize: 12, flexShrink: 1 },
+  detail: { color: themeColor("#64727D", 'muted'), fontSize: 10, lineHeight: 15 },
   forecast: { marginTop: 5, gap: 4 },
-  forecastTitle: { color: "#64727D", fontSize: 10, lineHeight: 15 },
+  forecastTitle: { color: themeColor("#64727D", 'muted'), fontSize: 10, lineHeight: 15 },
   forecastHours: { flexDirection: "row", gap: 6 },
   forecastHour: {
     flex: 1,
     alignItems: "center",
     borderRadius: 7,
-    backgroundColor: "#F0F5F8",
+    backgroundColor: themeColor("#F0F5F8", 'elevated'),
     paddingVertical: 4,
   },
-  forecastTime: { color: "#64727D", fontSize: 10 },
+  forecastTime: { color: themeColor("#64727D", 'muted'), fontSize: 10 },
   forecastProbability: {
-    color: "#283842",
+    color: themeColor("#283842", 'text'),
     fontSize: 12,
     fontWeight: "600",
     fontVariant: ["tabular-nums"],
   },
   source: {
-    color: "#64727D",
+    color: themeColor("#64727D", 'muted'),
     fontSize: 10,
     lineHeight: 15,
     textDecorationLine: "underline",
   },
-});
+}));

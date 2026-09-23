@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, {
   Circle,
@@ -26,6 +27,9 @@ export function TimelineChart({
   onSelect: (key: string | null) => void;
   color: string;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const max = Math.max(1, ...buckets.map((b) => b.count));
   const ceiling = max <= 4 ? 4 : Math.ceil(max / 4) * 4;
   return (
@@ -61,7 +65,7 @@ export function TimelineChart({
                     height: bucket.count
                       ? Math.max(4, (bucket.count / ceiling) * 156)
                       : 2,
-                    backgroundColor: bucket.count ? color : "#E5E5EB",
+                    backgroundColor: bucket.count ? color : themeColor("#E5E5EB", 'elevated'),
                     opacity: selected && selected !== bucket.key ? 0.28 : 1,
                   },
                 ]}
@@ -94,6 +98,9 @@ export function HourChart({
   selected: number | null;
   onSelect: (hour: number) => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const max = Math.max(1, ...hours.map((item) => item.count));
   return (
     <View>
@@ -113,7 +120,7 @@ export function HourChart({
                 style={[
                   styles.hourCell,
                   {
-                    backgroundColor: count ? "#7874E8" : "#EFEEF8",
+                    backgroundColor: count ? themeColor("#7874E8", 'infoSoft') : themeColor("#EFEEF8", 'infoSoft'),
                     opacity: count ? 0.25 + (0.75 * count) / max : 1,
                   },
                 ]}
@@ -188,12 +195,12 @@ export function CommunityIllustration() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   plot: { height: 176, marginTop: 26 },
   grid: { ...StyleSheet.absoluteFill, justifyContent: "space-between" },
   gridRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  gridLine: { height: 1, backgroundColor: "#EEEFF3", flex: 1 },
-  axis: { color: "#92929D", fontSize: 10, fontWeight: "500", minWidth: 12 },
+  gridLine: { height: 1, backgroundColor: themeColor("#EEEFF3", 'elevated'), flex: 1 },
+  axis: { color: themeColor("#92929D", 'muted'), fontSize: 10, fontWeight: "500", minWidth: 12 },
   bars: {
     position: "absolute",
     top: 5,
@@ -212,7 +219,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   bar: { width: "100%", maxWidth: 32, borderRadius: 5, alignSelf: "center" },
-  selectedColumn: { backgroundColor: "#F3F3F7" },
+  selectedColumn: { backgroundColor: themeColor("#F3F3F7", 'elevated') },
   xAxis: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -229,5 +236,5 @@ const styles = StyleSheet.create({
     borderColor: "transparent",
   },
   hourCell: { flex: 1, borderRadius: 4 },
-  hourSelected: { borderColor: "#7772E8" },
-});
+  hourSelected: { borderColor: themeColor("#7772E8", 'border') },
+}));

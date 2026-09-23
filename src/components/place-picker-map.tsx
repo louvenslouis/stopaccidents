@@ -1,3 +1,4 @@
+import { useAppTheme } from '@/features/appearance/theme-provider';
 import { Linking } from 'react-native';
 import { useCallback, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
@@ -8,7 +9,15 @@ import type { PlacePickerMapProps } from './place-picker-map-props';
 const source = { html: PLACE_PICKER_DOCUMENT };
 
 export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePickerMapProps) {
+  const { scheme, color } = useAppTheme();
   const frame = useRef<WebView>(null);
+  const updateTheme = useCallback(() => {
+    frame.current?.injectJavaScript(
+      `window.stopAccidentsTheme && window.stopAccidentsTheme(${JSON.stringify(scheme)}); true;`,
+    );
+  }, [scheme]);
+  useEffect(updateTheme, [updateTheme]);
+
   const updateSelection = useCallback(() => {
     frame.current?.injectJavaScript(
       `window.stopAccidentsSetPlace && window.stopAccidentsSetPlace(${JSON.stringify(selection)}); true;`,
@@ -24,8 +33,9 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
     <WebView
       ref={frame}
       source={source}
+      onLoadEnd={updateTheme}
       originWhitelist={['*']}
-      style={{ flex: 1, backgroundColor: '#E8EEF0' }}
+      style={{ flex: 1, backgroundColor: color('#E8EEF0', 'background') }}
       applicationNameForUserAgent="StopAccidents/1.0"
       cacheEnabled
       javaScriptEnabled
@@ -36,6 +46,7 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
       onMessage={({ nativeEvent }) => {
         const message = readPlacePickerMessage(nativeEvent.data);
         if (message?.status === 'ready') {
+          updateTheme();
           updateSelection();
           onLoad();
         }

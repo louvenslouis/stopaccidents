@@ -1,3 +1,4 @@
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import { AppIcon } from '@/components/ui/app-icon';
@@ -37,6 +38,8 @@ const statusLabels = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.sectionTitle}>
@@ -48,6 +51,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Field({ label, value }: { label: string; value: string }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -65,6 +70,9 @@ export function BreakdownDetailSheet({
   onClose: () => void;
   hideContributions?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback(
@@ -131,7 +139,7 @@ export function BreakdownDetailSheet({
               onPress={onClose}
               style={styles.close}
             >
-              <AppIcon icon={X} size={22} color="#667185" />
+              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
             </Pressable>
           </View>
           <ScrollView
@@ -140,7 +148,7 @@ export function BreakdownDetailSheet({
           >
             {!report ? (
               <View style={styles.state}>
-                {loading && <ActivityIndicator color="#B76518" />}
+                {loading && <ActivityIndicator color={themeColor("#B76518", 'warning')} />}
                 <Text style={styles.body}>
                   {loading
                     ? 'Chargement du signalement…'
@@ -184,7 +192,7 @@ export function BreakdownDetailSheet({
                 )}
                 <Section title="Lieu du véhicule">
                   <View style={styles.locationRow}>
-                    <AppIcon icon={MapPin} size={19} color="#737D8D" />
+                    <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
                       {location.estimated
                         ? `Zone estimée : ${location.label}`
@@ -208,7 +216,7 @@ export function BreakdownDetailSheet({
                     style={styles.linkButton}
                   >
                     <Text style={styles.linkText}>Voir sur la carte</Text>
-                    <AppIcon icon={ArrowUpRight} size={17} color="#B76518" />
+                    <AppIcon icon={ArrowUpRight} size={17} color={themeColor("#B76518", 'warning')} />
                   </Pressable>
                   {mapError && (
                     <Text accessibilityRole="alert" style={styles.error}>
@@ -248,7 +256,7 @@ export function BreakdownDetailSheet({
                 </Section>
                 <Section title="Informations du signalement">
                   <View style={styles.statusRow}>
-                    <AppIcon icon={Wrench} size={18} color="#B76518" />
+                    <AppIcon icon={Wrench} size={18} color={themeColor("#B76518", 'warning')} />
                     <Text style={styles.status}>{statusLabels[report.status]}</Text>
                   </View>
                   <Text style={styles.body}>
@@ -276,7 +284,7 @@ export function BreakdownDetailSheet({
                   style={styles.refresh}
                 >
                   {loading ? (
-                    <ActivityIndicator color="#667185" />
+                    <ActivityIndicator color={themeColor("#667185", 'muted')} />
                   ) : (
                     <Text style={styles.refreshText}>Actualiser les informations</Text>
                   )}
@@ -290,19 +298,19 @@ export function BreakdownDetailSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: 'rgba(19, 28, 44, 0.42)',
+    backgroundColor: themeColor('rgba(19, 28, 44, 0.42)', 'overlay'),
   },
   wideOverlay: { justifyContent: 'center', padding: 24 },
   sheet: {
     width: '100%',
     maxWidth: 640,
     flexShrink: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
@@ -312,7 +320,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#DDE0E5',
+    backgroundColor: themeColor('#DDE0E5', 'elevated'),
     alignSelf: 'center',
     marginTop: 12,
     marginBottom: 8,
@@ -324,16 +332,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F1F3',
+    borderBottomColor: themeColor('#F0F1F3', 'border'),
   },
   heading: { flex: 1, minWidth: 0 },
-  eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: '#9A6B3E' },
-  title: { color: '#1C2637', fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
+  eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: themeColor('#9A6B3E', 'warning') },
+  title: { color: themeColor('#1C2637', 'text'), fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
   close: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F5F6F8',
+    backgroundColor: themeColor('#F5F6F8', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -345,44 +353,44 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 16,
     borderRadius: 20,
-    backgroundColor: '#FFF6EC',
+    backgroundColor: themeColor('#FFF6EC', 'warningSoft'),
   },
   artBox: {
     width: 68,
     height: 68,
     borderRadius: 18,
-    backgroundColor: '#fff',
+    backgroundColor: themeColor('#fff', 'surface'),
     overflow: 'hidden',
   },
   art: { width: 68, height: 68 },
-  label: { color: '#777F8C', fontSize: 12, fontWeight: '600' },
-  reportTitle: { color: '#8D4C13', fontSize: 20, fontWeight: '700', marginTop: 4 },
+  label: { color: themeColor('#777F8C', 'muted'), fontSize: 12, fontWeight: '600' },
+  reportTitle: { color: themeColor('#8D4C13', 'warning'), fontSize: 20, fontWeight: '700', marginTop: 4 },
   notice: {
-    color: '#8D5C2D',
+    color: themeColor('#8D5C2D', 'warning'),
     fontSize: 13,
     lineHeight: 20,
     padding: 13,
     borderRadius: 13,
-    backgroundColor: '#FFF8F0',
+    backgroundColor: themeColor('#FFF8F0', 'surface'),
   },
   section: { gap: 11, paddingTop: 4 },
-  sectionTitle: { color: '#263348', fontSize: 17, fontWeight: '700' },
+  sectionTitle: { color: themeColor('#263348', 'text'), fontSize: 17, fontWeight: '700' },
   field: { gap: 4, paddingVertical: 3 },
-  body: { color: '#4F5A6B', fontSize: 14, lineHeight: 21 },
-  muted: { color: '#7B8593', fontSize: 12, lineHeight: 18 },
+  body: { color: themeColor('#4F5A6B', 'secondary'), fontSize: 14, lineHeight: 21 },
+  muted: { color: themeColor('#7B8593', 'muted'), fontSize: 12, lineHeight: 18 },
   locationRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   linkButton: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  linkText: { color: '#A35716', fontSize: 14, fontWeight: '700' },
+  linkText: { color: themeColor('#A35716', 'warning'), fontSize: 14, fontWeight: '700' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  status: { color: '#8D4C13', fontSize: 14, fontWeight: '700' },
-  reference: { color: '#7B8593', fontSize: 11 },
-  error: { color: '#BD2E40', fontSize: 13, lineHeight: 19 },
+  status: { color: themeColor('#8D4C13', 'warning'), fontSize: 14, fontWeight: '700' },
+  reference: { color: themeColor('#7B8593', 'muted'), fontSize: 11 },
+  error: { color: themeColor('#BD2E40', 'accent'), fontSize: 13, lineHeight: 19 },
   refresh: {
     minHeight: 48,
     borderRadius: 14,
-    backgroundColor: '#F1F3F6',
+    backgroundColor: themeColor('#F1F3F6', 'elevated'),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  refreshText: { color: '#4F5A6B', fontSize: 14, fontWeight: '700' },
-});
+  refreshText: { color: themeColor('#4F5A6B', 'secondary'), fontSize: 14, fontWeight: '700' },
+}));

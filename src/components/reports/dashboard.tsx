@@ -1,3 +1,4 @@
+import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useCallback, useState, type ReactNode } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated";
@@ -30,7 +31,7 @@ import {
   type DateRange,
 } from "@/features/reports/model";
 import { CommunityIllustration, HourChart, TimelineChart } from "./charts";
-import { styles } from "./styles";
+import { useStyles } from "./styles";
 import { EventWheel } from "./event-wheel";
 import { TerritoryCards } from "./territory-cards";
 import {
@@ -56,6 +57,9 @@ export function IconButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   return (
     <AnimatedPressable
       accessibilityRole="button"
@@ -65,7 +69,7 @@ export function IconButton({
       onPress={onPress}
       style={[styles.iconButton, disabled && { opacity: 0.25 }]}
     >
-      <AppIcon icon={icon} size={19} color="#555561" />
+      <AppIcon icon={icon} size={19} color={themeColor("#555561", 'secondary')} />
     </AnimatedPressable>
   );
 }
@@ -78,6 +82,8 @@ function Card({
   style?: object;
   delay?: number;
 }) {
+  const styles = useStyles();
+
   return (
     <Animated.View
       entering={FadeInDown.delay(delay)
@@ -100,6 +106,8 @@ function CardTitle({
   color?: string;
   right?: ReactNode;
 }) {
+  const styles = useStyles();
+
   return (
     <View style={styles.cardTitleRow}>
       <View style={[styles.inline, styles.flex]}>
@@ -137,6 +145,9 @@ export function ReportDashboard({
   onViewEvents: () => void;
   onReset: () => void;
 }) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+
   const { start, end } = range;
   const { department, commune } = territory;
   const [selectedBar, setSelectedBar] = useState<string | null>(null);
@@ -157,7 +168,7 @@ export function ReportDashboard({
         accessibilityLabel="Chargement des statistiques"
         accessibilityRole="progressbar"
       >
-        <ActivityIndicator color="#F04F66" />
+        <ActivityIndicator color={themeColor("#F04F66", 'accent')} />
         <Text style={styles.loadingText}>Vos données prennent forme…</Text>
         <View style={styles.skeletonRow}>
           <View style={styles.skeleton} />
@@ -168,7 +179,7 @@ export function ReportDashboard({
   if (!data)
     return (
       <Card style={styles.empty}>
-        <AppIcon icon={ChartNoAxesCombined} size={38} color="#B1A8D9" />
+        <AppIcon icon={ChartNoAxesCombined} size={38} color={themeColor("#B1A8D9", 'info')} />
         <Text style={styles.emptyTitle}>Les données se font attendre</Text>
         <Text style={styles.emptyText}>{error}</Text>
         <AnimatedPressable
@@ -212,7 +223,7 @@ export function ReportDashboard({
       )}
       {!data.total && (
         <View style={styles.noResults}>
-          <AppIcon icon={SlidersHorizontal} size={20} color="#868091" />
+          <AppIcon icon={SlidersHorizontal} size={20} color={themeColor("#868091", 'muted')} />
           <View style={styles.flex}>
             <Text style={styles.noResultsTitle}>
               Aucun événement sur cette sélection
@@ -235,7 +246,7 @@ export function ReportDashboard({
           <CardTitle
             icon={Activity}
             title="Vue d’ensemble"
-            color="#F04F66"
+            color={themeColor("#F04F66", 'accent')}
             right={
               <View style={styles.scopeBadge}>
                 <Text numberOfLines={2} style={styles.scopeText}>
@@ -293,7 +304,7 @@ export function ReportDashboard({
                     : ArrowUpRight
                 }
                 size={20}
-                color="#74707F"
+                color={themeColor("#74707F", 'muted')}
               />
             </View>
             <View style={styles.flex}>
@@ -315,8 +326,8 @@ export function ReportDashboard({
       </View>
       <View style={[styles.metricsRow, wide && styles.metricsWide]}>
         <Card delay={100} style={styles.metricCard}>
-          <CardTitle icon={UsersRound} title="Témoignages" color="#3E94B8" />
-          <Text style={[styles.metricNumber, { color: "#3186AB" }]}>
+          <CardTitle icon={UsersRound} title="Témoignages" color={themeColor("#3E94B8", 'info')} />
+          <Text style={[styles.metricNumber, { color: themeColor("#3186AB", 'info') }]}>
             {numberLabel(data.testimonies)}
           </Text>
           <Text style={styles.metricDescription}>
@@ -332,7 +343,7 @@ export function ReportDashboard({
                     backgroundColor:
                       index < Math.min(data.testimonies, 8)
                         ? "#76BDD4"
-                        : "#EAF4F7",
+                        : themeColor("#EAF4F7", 'infoSoft'),
                   },
                 ]}
               />
@@ -343,9 +354,9 @@ export function ReportDashboard({
           <CardTitle
             icon={CheckCheck}
             title="Détails recueillis"
-            color="#3B9473"
+            color={themeColor("#3B9473", 'success')}
           />
-          <Text style={[styles.metricNumber, { color: "#398B6C" }]}>
+          <Text style={[styles.metricNumber, { color: themeColor("#398B6C", 'success') }]}>
             {detailPercent}
             <Text style={styles.percentUnit}> %</Text>
           </Text>
@@ -376,7 +387,7 @@ export function ReportDashboard({
           <CardTitle
             icon={SlidersHorizontal}
             title="Par type d’événement"
-            color="#D17E17"
+            color={themeColor("#D17E17", 'warning')}
           />
           <Text style={styles.cardDescription}>
             Ce que la communauté a observé.
@@ -427,11 +438,11 @@ export function ReportDashboard({
               <Text style={styles.severityTitle}>Gravité des accidents</Text>
               <View style={styles.severityItems}>
                 {[
-                  { id: "material", label: "Matériel", color: "#419675" },
-                  { id: "injuries", label: "Blessés", color: "#CE871C" },
-                  { id: "serious", label: "Graves", color: "#DF7253" },
-                  { id: "fatal", label: "Décès", color: "#C34F69" },
-                  { id: "unknown", label: "À préciser", color: "#888592" },
+                  { id: "material", label: "Matériel", color: themeColor("#419675", 'success') },
+                  { id: "injuries", label: "Blessés", color: themeColor("#CE871C", 'warning') },
+                  { id: "serious", label: "Graves", color: themeColor("#DF7253", 'accent') },
+                  { id: "fatal", label: "Décès", color: themeColor("#C34F69", 'accent') },
+                  { id: "unknown", label: "À préciser", color: themeColor("#888592", 'muted') },
                 ].map((item) => (
                   <View key={item.id} style={styles.severityItem}>
                     <View
@@ -498,7 +509,7 @@ export function ReportDashboard({
           <Card style={styles.insightCard} delay={220}>
             <View style={styles.inline}>
               <View style={styles.insightIcon}>
-                <AppIcon icon={Activity} size={20} color="#9A7B42" />
+                <AppIcon icon={Activity} size={20} color={themeColor("#9A7B42", 'warning')} />
               </View>
               <Text style={styles.insightTitle}>À retenir</Text>
             </View>
@@ -537,12 +548,12 @@ export function ReportDashboard({
           </Text>
         </View>
         <View style={styles.eventsLinkArrow}>
-          <AppIcon icon={ChevronRight} size={22} color="#F04F66" />
+          <AppIcon icon={ChevronRight} size={22} color={themeColor("#F04F66", 'accent')} />
         </View>
       </AnimatedPressable>
       {!wide && <CommunityCard />}
       <View style={styles.method}>
-        <AppIcon icon={Info} size={15} color="#9898A2" />
+        <AppIcon icon={Info} size={15} color={themeColor("#9898A2", 'muted')} />
         <View style={styles.flex}>
           <Text style={styles.methodText}>
             Des données pour mieux comprendre, ensemble.
@@ -565,6 +576,8 @@ export function ReportDashboard({
 }
 
 function CommunityCard({ wide = false }: { wide?: boolean }) {
+  const styles = useStyles();
+
   return (
     <View style={[styles.community, wide && { flex: 1.1 }]}>
       <View style={styles.flex}>
