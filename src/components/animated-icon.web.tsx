@@ -1,5 +1,6 @@
+import { View } from '@/features/language/native';
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
 
 import classes from './animated-icon.module.css';

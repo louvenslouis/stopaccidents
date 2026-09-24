@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
@@ -5,17 +6,7 @@ import MapPin from 'lucide-react-native/icons/map-pin';
 import Construction from 'lucide-react-native/icons/construction';
 import X from 'lucide-react-native/icons/x';
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '@/components/ui/app-icon';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -142,7 +133,7 @@ export function BarricadeDetailSheet({ id, onClose, hideContributions = false }:
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
-                      {location.estimated ? `Zone estimée : ${location.label}` : location.label}
+                      {location.estimated ? <>{"Zone estimée : "}<Text translate={false}>{location.label}</Text>{""}</> : <Text translate={false}>{location.label}</Text>}
                     </Text>
                   </View>
                   {location.estimated && <GeocodingCredit />}
@@ -192,11 +183,11 @@ export function BarricadeDetailSheet({ id, onClose, hideContributions = false }:
                     </Text>
                     <Text style={styles.label}>Possibilité de passage</Text>
                     <Text selectable style={styles.body}>
-                      {report.passage || 'Non renseignée'}
+                      {report.passage ? <Text translate={false}>{report.passage}</Text> : 'Non renseignée'}
                     </Text>
                     <Text style={styles.label}>Informations complémentaires</Text>
                     <Text selectable style={styles.body}>
-                      {report.details || 'Non renseigné'}
+                      {report.details ? <Text translate={false}>{report.details}</Text> : 'Non renseigné'}
                     </Text>
                   </Section>
                 {error && (

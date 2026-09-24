@@ -1,13 +1,7 @@
+import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles } from '@/features/appearance/theme-provider';
 import { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { supabase } from "@/lib/supabase";
 import { readReportEvent, type ReportKind } from "@/features/report-events/api";
 import { useAccident } from "@/features/accident-report/use-accident";
@@ -115,7 +109,7 @@ export function EventContributions({
               Témoignage {index + 1} · {formatAccidentDate(report.created_at)}
             </Text>
             <Text style={styles.body}>
-              {report.location_description || "Lieu à préciser"}
+              {report.location_description ? <Text translate={false}>{report.location_description}</Text> : "Lieu à préciser"}
             </Text>
             {report.id === reportId ? (
               <Text style={styles.body}>Témoignage affiché</Text>

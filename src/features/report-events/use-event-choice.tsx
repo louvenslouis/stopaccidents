@@ -1,6 +1,7 @@
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { useEffect, useRef, useState } from "react";
 import { createThemedStyles } from '@/features/appearance/theme-provider';
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from 'react-native';
 import {
   nearbyEvents,
   type EventDraft,

@@ -1,19 +1,10 @@
+import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { useRewards, type RewardSummary } from '@/features/rewards/use-rewards';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import {
-  AccessibilityInfo,
-  ActivityIndicator,
-  Animated,
-  Easing,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Platform, StyleSheet } from 'react-native';
 
 export function ReportReward({
   reportId,

@@ -1,7 +1,8 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Image } from 'expo-image';
 import Check from 'lucide-react-native/icons/check';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { AppIcon } from '@/components/ui/app-icon';
 import { barricadeTypes, type BarricadeType } from '@/features/barricade-report/model';
 

@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import { Image } from 'expo-image';
@@ -6,17 +7,7 @@ import MapPin from 'lucide-react-native/icons/map-pin';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import X from 'lucide-react-native/icons/x';
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '@/components/ui/app-icon';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -143,7 +134,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
-                      {location.estimated ? `Zone estimée : ${location.label}` : location.label}
+                      {location.estimated ? <>{"Zone estimée : "}<Text translate={false}>{location.label}</Text>{""}</> : <Text translate={false}>{location.label}</Text>}
                     </Text>
                   </View>
                   {location.estimated && <GeocodingCredit />}
@@ -189,15 +180,15 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
                     </Text>
                     <Text style={styles.label}>Description de la voiture</Text>
                     <Text selectable style={styles.body}>
-                      {report.vehicle_description || 'Non renseigné'}
+                      {report.vehicle_description ? <Text translate={false}>{report.vehicle_description}</Text> : 'Non renseigné'}
                     </Text>
                     <Text style={styles.label}>Faits observés</Text>
                     <Text selectable style={styles.body}>
-                      {report.observed_behavior || 'Non renseignée'}
+                      {report.observed_behavior ? <Text translate={false}>{report.observed_behavior}</Text> : 'Non renseignée'}
                     </Text>
                     <Text style={styles.label}>Précisions</Text>
                     <Text selectable style={styles.body}>
-                      {report.details || 'Non renseigné'}
+                      {report.details ? <Text translate={false}>{report.details}</Text> : 'Non renseigné'}
                     </Text>
                   </Section>
                 {Boolean(report.photos?.length) && (

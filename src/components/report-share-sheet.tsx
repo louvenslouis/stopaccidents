@@ -1,3 +1,6 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { localizeReportShare } from '@/features/language/documents';
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
@@ -8,8 +11,8 @@ import MapPin from 'lucide-react-native/icons/map-pin';
 import Clock3 from 'lucide-react-native/icons/clock-3';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Modal, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { AppIcon } from './ui/app-icon';
@@ -17,7 +20,9 @@ import type { ReportShare } from '@/features/safety-report/share';
 import { prepareReportImage } from '@/features/safety-report/share-image';
 import type { PreparedReportImage } from '@/features/safety-report/share-image.types';
 
-export function ReportShareSheet({ report, onClose }: { report: ReportShare; onClose: () => void }) {
+export function ReportShareSheet({ report: originalReport, onClose }: { report: ReportShare; onClose: () => void }) {
+  const { language } = useLanguage();
+  const report = useMemo(() => localizeReportShare(originalReport, language), [originalReport, language]);
   const styles = useStyles();
   const themeColor = useThemeColor();
 
@@ -117,7 +122,7 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
                 <View style={styles.details}>
                   <View style={styles.line}>
                     <AppIcon icon={MapPin} size={17} color="#858C98" />
-                    <Text style={styles.location}>{report.estimated ? 'Zone estimée · ' : ''}{report.location}</Text>
+                    <Text style={styles.location}>{report.estimated ? 'Zone estimée · ' : ''}{<Text translate={false}>{report.location}</Text>}</Text>
                   </View>
                   <View style={styles.line}>
                     <AppIcon icon={Clock3} size={16} color="#858C98" />
@@ -170,7 +175,7 @@ export function ReportShareSheet({ report, onClose }: { report: ReportShare; onC
             </Pressable>
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
             {notice && <Text accessibilityLiveRegion="polite" style={styles.help}>{notice}</Text>}
-            <Text selectable style={styles.message}>{report.message}</Text>
+            <Text translate={false} selectable style={styles.message}>{report.message}</Text>
           </ScrollView>
         </View>
       </View>

@@ -1,3 +1,4 @@
+import { LanguageProvider } from '@/features/language/language-provider';
 import AppTabs from '@/components/app-tabs';
 import { AppLocationProvider } from '@/features/location/app-location';
 import { startSupabaseAuthLifecycle } from '@/lib/supabase';
@@ -8,10 +9,12 @@ export default function RootLayout() {
   useEffect(() => startSupabaseAuthLifecycle(), []);
 
   return (
+    <LanguageProvider>
     <ThemeProvider>
       <AppLocationProvider>
         <AppTabs />
       </AppLocationProvider>
     </ThemeProvider>
+    </LanguageProvider>
   );
 }

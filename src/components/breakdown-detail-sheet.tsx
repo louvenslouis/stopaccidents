@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -18,17 +19,7 @@ import MapPin from 'lucide-react-native/icons/map-pin';
 import Wrench from 'lucide-react-native/icons/wrench';
 import X from 'lucide-react-native/icons/x';
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const statusLabels = {
@@ -194,9 +185,7 @@ export function BreakdownDetailSheet({
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
-                      {location.estimated
-                        ? `Zone estimée : ${location.label}`
-                        : location.label}
+                      {location.estimated ? <>{"Zone estimée : "}<Text translate={false}>{location.label}</Text>{""}</> : <Text translate={false}>{location.label}</Text>}
                     </Text>
                   </View>
                   {location.estimated && <GeocodingCredit />}

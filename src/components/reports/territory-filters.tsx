@@ -1,16 +1,7 @@
+import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
-import {
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet } from 'react-native';
 import MapPin from "lucide-react-native/icons/map-pin";
 import ChevronDown from "lucide-react-native/icons/chevron-down";
 import Check from "lucide-react-native/icons/check";
@@ -216,7 +207,7 @@ export function TerritoryFilters({
                       style={[s.option, selected && s.selected]}
                     >
                       <View style={styles.flex}>
-                        <Text style={s.optionName}>{item.name}</Text>
+                        <Text style={s.optionName}>{<Text translate={false}>{item.name}</Text>}</Text>
                         {"department_name" in item && (
                           <Text style={s.optionDetail}>
                             {String(item.department_name)}

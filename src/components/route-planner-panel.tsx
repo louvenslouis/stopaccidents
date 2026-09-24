@@ -1,15 +1,7 @@
+import { ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Keyboard,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Keyboard, StyleSheet, useWindowDimensions } from 'react-native';
 import X from "lucide-react-native/icons/x";
 import ArrowDownUp from "lucide-react-native/icons/arrow-down-up";
 import type { RoutePlanner } from "@/features/map/use-route-planner";

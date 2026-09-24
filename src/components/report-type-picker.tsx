@@ -1,15 +1,10 @@
+import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportIllustration } from "@/components/report-illustration";
 import ShieldCheck from "lucide-react-native/icons/shield-check";
 import X from "lucide-react-native/icons/x";
 import { useEffect, useRef, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   cancelAnimation,
   ReduceMotion,

@@ -1,8 +1,9 @@
+import { Text, View } from '@/features/language/native';
 import Monitor from 'lucide-react-native/icons/monitor';
 import Moon from 'lucide-react-native/icons/moon';
 import Sun from 'lucide-react-native/icons/sun';
 import Check from 'lucide-react-native/icons/check';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { AnimatedPressable } from './ui/animated-pressable';
 import { AppIcon } from './ui/app-icon';
 import { createThemedStyles, useAppTheme } from '@/features/appearance/theme-provider';

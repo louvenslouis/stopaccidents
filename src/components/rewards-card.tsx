@@ -1,9 +1,10 @@
+import { Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { useRewards } from '@/features/rewards/use-rewards';
 import { useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export function RewardsCard() {
   const styles = useStyles();

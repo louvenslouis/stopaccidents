@@ -1,3 +1,4 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
 import Construction from 'lucide-react-native/icons/construction';
@@ -15,13 +16,7 @@ import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import Wrench from 'lucide-react-native/icons/wrench';
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -130,7 +125,7 @@ export function LatestAccidentCard({
                 <View style={styles.compactLine}>
                   <AppIcon icon={MapPin} size={15} strokeWidth={1.7} color={themeColor("#858C98", 'muted')} />
                   <Text style={styles.compactLocation} numberOfLines={1}>
-                    {location.label}
+                    {<Text translate={false}>{location.label}</Text>}
                   </Text>
                 </View>
                 <View style={styles.compactBottom}>
@@ -201,7 +196,7 @@ export function LatestAccidentCard({
                       <AppIcon icon={MapPin} size={17} strokeWidth={1.6} color={themeColor("#858C98", 'muted')} />
                       <Text style={styles.label}>{location.estimated ? 'Zone estimée' : 'Lieu'}</Text>
                     </View>
-                    <Text style={styles.value}>{location.label}</Text>
+                    <Text style={styles.value}>{<Text translate={false}>{location.label}</Text>}</Text>
                     {location.estimated && <GeocodingCredit />}
                   </View>
                   <View style={styles.metric}>

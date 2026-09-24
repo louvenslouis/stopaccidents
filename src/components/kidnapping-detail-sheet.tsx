@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
@@ -5,17 +6,7 @@ import MapPin from 'lucide-react-native/icons/map-pin';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import X from 'lucide-react-native/icons/x';
 import { useCallback, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '@/components/ui/app-icon';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -142,7 +133,7 @@ export function KidnappingDetailSheet({ id, onClose, hideContributions = false }
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>
-                      {location.estimated ? `Zone estimée : ${location.label}` : location.label}
+                      {location.estimated ? <>{"Zone estimée : "}<Text translate={false}>{location.label}</Text>{""}</> : <Text translate={false}>{location.label}</Text>}
                     </Text>
                   </View>
                   {location.estimated && <GeocodingCredit />}
@@ -189,15 +180,15 @@ export function KidnappingDetailSheet({ id, onClose, hideContributions = false }
                     </Text>
                     <Text style={styles.label}>Véhicule(s)</Text>
                     <Text selectable style={styles.body}>
-                      {report.vehicle_clues || 'Non renseigné'}
+                      {report.vehicle_clues ? <Text translate={false}>{report.vehicle_clues}</Text> : 'Non renseigné'}
                     </Text>
                     <Text style={styles.label}>Direction prise</Text>
                     <Text selectable style={styles.body}>
-                      {report.direction_taken || 'Non renseignée'}
+                      {report.direction_taken ? <Text translate={false}>{report.direction_taken}</Text> : 'Non renseignée'}
                     </Text>
                     <Text style={styles.label}>Personne enlevée</Text>
                     <Text selectable style={styles.body}>
-                      {report.abducted_person_clues || 'Non renseigné'}
+                      {report.abducted_person_clues ? <Text translate={false}>{report.abducted_person_clues}</Text> : 'Non renseigné'}
                     </Text>
                   </Section>
                 ) : (

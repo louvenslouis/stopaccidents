@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import { PlacePickerMap } from '@/components/place-picker-map';
@@ -15,18 +16,7 @@ import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import Search from 'lucide-react-native/icons/search';
 import X from 'lucide-react-native/icons/x';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 function coordinates(place: SavedPlace | null): PlacePickerSelection | null {

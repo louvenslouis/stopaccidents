@@ -1,5 +1,6 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from 'react-native';
 import Svg, {
   Circle,
   Defs,

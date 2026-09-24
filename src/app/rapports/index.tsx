@@ -1,17 +1,8 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import {
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Modal, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
 import CalendarDays from "lucide-react-native/icons/calendar-days";
 import ChevronLeft from "lucide-react-native/icons/chevron-left";
 import ChevronRight from "lucide-react-native/icons/chevron-right";

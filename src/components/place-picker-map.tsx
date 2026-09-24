@@ -1,14 +1,17 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { localizeMapDocument } from '@/features/language/documents';
 import { useAppTheme } from '@/features/appearance/theme-provider';
 import { Linking } from 'react-native';
-import { useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
 
 import { PLACE_PICKER_DOCUMENT, readPlacePickerMessage } from './place-picker-document';
 import type { PlacePickerMapProps } from './place-picker-map-props';
 
-const source = { html: PLACE_PICKER_DOCUMENT };
 
 export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePickerMapProps) {
+  const { language } = useLanguage();
+  const source = useMemo(() => ({ html: localizeMapDocument(PLACE_PICKER_DOCUMENT, language) }), [language]);
   const { scheme, color } = useAppTheme();
   const frame = useRef<WebView>(null);
   const updateTheme = useCallback(() => {

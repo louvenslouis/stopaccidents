@@ -1,6 +1,7 @@
+import { Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useEffect, useId, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet } from 'react-native';
 import Svg, {
   Circle,
   Defs,

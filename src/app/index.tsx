@@ -1,3 +1,4 @@
+import { useLanguage } from '@/features/language/language-provider';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
@@ -33,6 +34,7 @@ const WIDE_LAYOUT_BREAKPOINT = 960;
 const WIDE_LAYOUT_GAP = 16;
 
 export default function HomeScreen() {
+  const { t } = useLanguage();
   const styles = useStyles();
   const themeColor = useThemeColor();
 
@@ -179,7 +181,7 @@ export default function HomeScreen() {
                 />
               </Animated.View>
               <Animated.Text numberOfLines={1} style={[styles.reportLabel, reportLabelStyle]}>
-                SIGNALER
+                {t('SIGNALER')}
               </Animated.Text>
             </AnimatedPressable>
           </Animated.View>

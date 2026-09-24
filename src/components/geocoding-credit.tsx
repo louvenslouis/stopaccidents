@@ -1,5 +1,6 @@
+import { Text } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
-import { Linking, StyleSheet, Text } from 'react-native';
+import { Linking, StyleSheet } from 'react-native';
 
 export function GeocodingCredit() {
   const styles = useStyles();

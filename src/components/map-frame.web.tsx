@@ -1,5 +1,7 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { localizeMapDocument } from '@/features/language/documents';
 import { useAppTheme } from '@/features/appearance/theme-provider';
-import { useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 
 import type { MapFrameProps } from './map-frame-props';
 import { illustratedMapMarkers } from './map-marker-assets';
@@ -18,6 +20,8 @@ export function MapFrame({
   stations,
   onSelectStation,
 }: MapFrameProps) {
+  const { language, t } = useLanguage();
+  const source = useMemo(() => ({ html: localizeMapDocument(MAP_DOCUMENT, language) }), [language]);
   const { scheme, color } = useAppTheme();
   const frame = useRef<HTMLIFrameElement>(null);
 
@@ -36,7 +40,7 @@ export function MapFrame({
           {
             source: 'stopaccidents-app',
             theme: scheme,
-            markers: illustratedMapMarkers(markers),
+            markers: illustratedMapMarkers(markers).map((marker) => ({ ...marker, title: t(marker.title) })),
             stations: stations ?? [],
             location,
             placeFocus,
@@ -59,7 +63,7 @@ export function MapFrame({
     };
     window.addEventListener('message', receive);
     return () => window.removeEventListener('message', receive);
-  }, [scheme, onLoad, onError, markers, onSelect, location, placeFocus, onPan, onCenterChange, route, stations, onSelectStation]);
+  }, [t, scheme, onLoad, onError, markers, onSelect, location, placeFocus, onPan, onCenterChange, route, stations, onSelectStation]);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
@@ -70,10 +74,10 @@ export function MapFrame({
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
-      { source: 'stopaccidents-app', markers: illustratedMapMarkers(markers) },
+      { source: 'stopaccidents-app', markers: illustratedMapMarkers(markers).map((marker) => ({ ...marker, title: t(marker.title) })) },
       window.location.origin,
     );
-  }, [markers]);
+  }, [markers, t]);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage(
@@ -99,8 +103,8 @@ export function MapFrame({
   return (
     <iframe
       ref={frame}
-      title="Carte interactive OpenStreetMap d’Haïti"
-      srcDoc={MAP_DOCUMENT}
+      title={t("Carte interactive OpenStreetMap d’Haïti")}
+      srcDoc={source.html}
       sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       onLoad={() => frame.current?.contentWindow?.postMessage({ source: 'stopaccidents-app', theme: scheme }, window.location.origin)}
       onError={onError}

@@ -1,17 +1,10 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { randomUUID } from 'expo-crypto';
 import Camera from 'lucide-react-native/icons/camera';
 import X from 'lucide-react-native/icons/x';
 import { useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Linking,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Linking, Platform, StyleSheet } from 'react-native';
 import { AppIcon } from '@/components/ui/app-icon';
 import {
   MAX_PHOTO_BYTES,

@@ -1,8 +1,10 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import Head from 'expo-router/head';
 import type { ReactNode } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, StyleProp, ViewStyle } from 'react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -27,12 +29,13 @@ export function AppScreen({
   contentContainerStyle,
   onScroll,
 }: AppScreenProps) {
+  const { t } = useLanguage();
   const styles = useStyles();
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <Head>
-        <title>{title} — Stop Accidents</title>
+        <title>{t(title)} — Stop Accidents</title>
       </Head>
 
       <Animated.ScrollView
@@ -52,7 +55,7 @@ export function AppScreen({
         {!hideIntro && description && <Animated.Text
           entering={FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System)}
           style={styles.description}>
-          {description}
+          {t(description)}
         </Animated.Text>}
         <Animated.View
           entering={FadeInDown.delay(120).duration(340).reduceMotion(ReduceMotion.System)}>

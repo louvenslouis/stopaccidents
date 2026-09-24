@@ -1,6 +1,7 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from 'react-native';
 import MapPin from "lucide-react-native/icons/map-pin";
 import Map from "lucide-react-native/icons/map";
 import ChevronRight from "lucide-react-native/icons/chevron-right";
@@ -142,7 +143,7 @@ function Distribution({
               <Text style={s.rank}>{String(index + 1).padStart(2, "0")}</Text>
               <View style={styles.flex}>
                 <View style={s.labels}>
-                  <Text style={s.name}>{item.name}</Text>
+                  <Text style={s.name}>{<Text translate={false}>{item.name}</Text>}</Text>
                   <Text style={s.value}>
                     {numberLabel(item.count)}
                     <Text style={s.percent}> · {percent} %</Text>

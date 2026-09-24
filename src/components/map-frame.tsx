@@ -1,13 +1,14 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { localizeMapDocument } from '@/features/language/documents';
 import { useAppTheme } from '@/features/appearance/theme-provider';
 import { Linking } from 'react-native';
-import { useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
 
 import type { MapFrameProps } from './map-frame-props';
 import { illustratedMapMarkers } from './map-marker-assets';
 import { MAP_DOCUMENT, readMapMessage } from './map-document';
 
-const source = { html: MAP_DOCUMENT };
 
 export function MapFrame({
   onLoad,
@@ -22,6 +23,8 @@ export function MapFrame({
   stations,
   onSelectStation,
 }: MapFrameProps) {
+  const { language, t } = useLanguage();
+  const source = useMemo(() => ({ html: localizeMapDocument(MAP_DOCUMENT, language) }), [language]);
   const { scheme, color } = useAppTheme();
   const frame = useRef<WebView>(null);
   const updateTheme = useCallback(() => {
@@ -32,14 +35,14 @@ export function MapFrame({
   useEffect(updateTheme, [updateTheme]);
 
   const updateMarkers = useCallback(() => {
-    const json = JSON.stringify(illustratedMapMarkers(markers))
+    const json = JSON.stringify(illustratedMapMarkers(markers).map((marker) => ({ ...marker, title: t(marker.title) })))
       .replace(/</g, '\\u003c')
       .replace(/\u2028/g, '\\u2028')
       .replace(/\u2029/g, '\\u2029');
     frame.current?.injectJavaScript(
       `window.stopAccidentsUpdate && window.stopAccidentsUpdate(${json}); true;`,
     );
-  }, [markers]);
+  }, [markers, t]);
   useEffect(updateMarkers, [updateMarkers]);
   const updateStations = useCallback(() => {
     const json = JSON.stringify(stations ?? [])

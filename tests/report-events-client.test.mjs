@@ -269,6 +269,7 @@ test("nearby choice requires an explicit response, supports a distinct event, an
       jsx: (type, props) => ({ type, props }),
       jsxs: (type, props) => ({ type, props }),
     },
+    "@/features/language/native": { Pressable: "button" },
     "react-native": { StyleSheet: { create: (x) => x }, Pressable: "button" },
     "./api": { nearbyEvents: async () => events },
     "@/features/accident-report/presentation": {

@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { ReportReward } from '@/components/report-reward';
@@ -29,19 +30,7 @@ import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import Wrench from 'lucide-react-native/icons/wrench';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const stepLabels = ['Emplacement', 'Véhicule', 'Circulation'];
@@ -575,7 +564,7 @@ export function BreakdownReportSheet({
                 {step > 0 && (
                   <View style={styles.locationSummary}>
                     <Text numberOfLines={1} style={styles.locationZone}>
-                      {draft.location || 'Zone détectée par GPS'}
+                      {draft.location ? <Text translate={false}>{draft.location}</Text> : 'Zone détectée par GPS'}
                     </Text>
                     {editingLocationHint ? (
                       <TextInput keyboardAppearance={scheme}
@@ -604,7 +593,7 @@ export function BreakdownReportSheet({
                         onPress={() => setEditingLocationHint(true)}
                       >
                         <Text numberOfLines={1} style={styles.locationHintPrompt}>
-                          {draft.locationHint || 'Ajouter un repère sur place'}
+                          {draft.locationHint ? <Text translate={false}>{draft.locationHint}</Text> : 'Ajouter un repère sur place'}
                         </Text>
                       </Pressable>
                     )}

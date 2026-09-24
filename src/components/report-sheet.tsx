@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
@@ -20,19 +21,7 @@ import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { ReportCamera } from '@/components/report-camera';
@@ -634,7 +623,7 @@ export function ReportSheet({
                   <>
                     <View style={styles.locationSummary}>
                       <Text numberOfLines={1} style={styles.locationZone}>
-                        {draft.location || 'Zone détectée par GPS'}
+                        {draft.location ? <Text translate={false}>{draft.location}</Text> : 'Zone détectée par GPS'}
                       </Text>
                       {editingLocationHint ? (
                         <TextInput keyboardAppearance={scheme}
@@ -663,7 +652,7 @@ export function ReportSheet({
                           onPress={() => setEditingLocationHint(true)}
                         >
                           <Text numberOfLines={1} style={styles.locationHintPrompt}>
-                            {draft.locationHint || 'Ajouter un repère sur place'}
+                            {draft.locationHint ? <Text translate={false}>{draft.locationHint}</Text> : 'Ajouter un repère sur place'}
                           </Text>
                         </Pressable>
                       )}

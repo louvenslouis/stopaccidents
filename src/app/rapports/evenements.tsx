@@ -1,13 +1,8 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, useWindowDimensions } from 'react-native';
 import ChevronLeft from "lucide-react-native/icons/chevron-left";
 import ChevronRight from "lucide-react-native/icons/chevron-right";
 import MapPin from "lucide-react-native/icons/map-pin";
@@ -311,7 +306,7 @@ function EventsList({
                       <View style={styles.reportLocation}>
                         <AppIcon icon={MapPin} size={12} color={themeColor("#9A9AA3", 'muted')} />
                         <Text numberOfLines={1} style={styles.reportPlace}>
-                          {report.location_description || "Lieu à préciser"}
+                          {report.location_description ? <Text translate={false}>{report.location_description}</Text> : "Lieu à préciser"}
                         </Text>
                       </View>
                       <Text style={styles.reportMeta}>

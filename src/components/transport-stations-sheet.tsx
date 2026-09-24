@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useAccident } from "@/features/accident-report/use-accident";
 import { readStationRoutes } from "@/features/transport/api";
@@ -15,17 +16,7 @@ import MapPin from "lucide-react-native/icons/map-pin";
 import Search from "lucide-react-native/icons/search";
 import X from "lucide-react-native/icons/x";
 import { useCallback, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type TransportStationsState = {
@@ -89,7 +80,7 @@ function RouteCard({
           <View style={styles.departureDot} />
           <View style={styles.grow}>
             <Text style={styles.caption}>Départ</Text>
-            <Text style={styles.stopName}>{route.departure.name}</Text>
+            <Text style={styles.stopName}>{<Text translate={false}>{route.departure.name}</Text>}</Text>
           </View>
         </View>
         <ArrowDown size={14} color={themeColor("#8FACA7", 'muted')} style={styles.routeArrow} />
@@ -97,8 +88,8 @@ function RouteCard({
           <MapPin size={18} color={themeColor("#087F75", 'success')} />
           <View style={styles.grow}>
             <Text style={styles.caption}>Arrivée</Text>
-            <Text style={styles.stopName}>{route.arrival.name}</Text>
-            <Text style={styles.caption}>{route.arrival.commune}</Text>
+            <Text style={styles.stopName}>{<Text translate={false}>{route.arrival.name}</Text>}</Text>
+            <Text style={styles.caption}>{<Text translate={false}>{route.arrival.commune}</Text>}</Text>
           </View>
         </View>
       </View>
@@ -150,9 +141,9 @@ function StationDetails({
   return (
     <>
       <View style={styles.stationIntro}>
-        <Text style={styles.commune}>{station.commune}</Text>
+        <Text style={styles.commune}>{<Text translate={false}>{station.commune}</Text>}</Text>
         {station.address.length > 0 && (
-          <Text style={styles.body}>{station.is_demo ? station.address.replace(/^Exemple /, "") : station.address}</Text>
+          <Text style={styles.body}>{station.is_demo ? <Text translate={false}>{station.address.replace(/^Exemple /, "")}</Text> : <Text translate={false}>{station.address}</Text>}</Text>
         )}
         <Pressable
           accessibilityRole="button"
@@ -362,8 +353,8 @@ export function TransportStationsSheet({
                       <BusFront size={21} color={themeColor("#087F75", 'success')} />
                     </View>
                     <View style={styles.grow}>
-                      <Text style={styles.stationName}>{station.name}</Text>
-                      <Text style={styles.caption}>{station.commune}</Text>
+                      <Text style={styles.stationName}>{<Text translate={false}>{station.name}</Text>}</Text>
+                      <Text style={styles.caption}>{<Text translate={false}>{station.commune}</Text>}</Text>
                     </View>
                     <ChevronRight size={19} color={themeColor("#8B9B98", 'muted')} />
                   </Pressable>

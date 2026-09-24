@@ -1,14 +1,8 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import ArrowUpRight from "lucide-react-native/icons/arrow-up-right";
@@ -110,6 +104,7 @@ function ReportRow({
   item: ReturnType<typeof nearbyReports>[number];
   onOpen: (id: string) => void;
 }) {
+  const { t } = useLanguage();
   const styles = useStyles();
   const themeColor = useThemeColor();
 
@@ -120,7 +115,7 @@ function ReportRow({
   return (
     <AnimatedPressable
       accessibilityRole="button"
-      accessibilityLabel={`${appearance.label}, ${location.label}, ${reportAge(observedAt)}. Voir le signalement`}
+      accessibilityLabel={`${t(appearance.label)}, ${location.label}, ${t(reportAge(observedAt))}. ${t('Voir le signalement')}`}
       onPress={() => onOpen(reportSelection(report))}
       hoverScale={1.005}
       pressedScale={0.985}
@@ -134,7 +129,7 @@ function ReportRow({
       <View style={styles.grow}>
         <Text style={styles.reportTitle}>{appearance.label}</Text>
         <Text numberOfLines={1} style={styles.reportLocation}>
-          {location.label}
+          {<Text translate={false}>{location.label}</Text>}
         </Text>
         <View style={styles.reportMeta}>
           <Text style={styles.metaText}>{reportAge(observedAt)}</Text>

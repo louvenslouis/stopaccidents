@@ -1,3 +1,4 @@
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
@@ -17,19 +18,7 @@ import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Info from 'lucide-react-native/icons/info';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
@@ -512,7 +501,7 @@ export function BarricadeReportSheet({
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
                         <View style={styles.flex}>
                           <Text style={styles.gpsText}>
-                            {draft.location || 'Position GPS enregistrée'}
+                            {draft.location ? <Text translate={false}>{draft.location}</Text> : 'Position GPS enregistrée'}
                           </Text>
                           <Text style={styles.small}>
                             Précision GPS : ±{' '}
@@ -620,15 +609,14 @@ export function BarricadeReportSheet({
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={17} color={themeColor("#64748B", 'muted')} />
                         <Text style={[styles.small, styles.flex]}>
-                          {barricadeLocationDescription(draft) ||
-                            'Position GPS ajoutée'}
+                          {barricadeLocationDescription(draft) ? <Text translate={false}>{barricadeLocationDescription(draft)}</Text> : 'Position GPS ajoutée'}
                         </Text>
                       </View>
                       <Text numberOfLines={3} style={styles.summaryDetails}>
                         {barricadeObstaclesDescription(draft)}
                       </Text>
                       <Text numberOfLines={2} style={styles.summaryDetails}>
-                        Passage : {draft.passage.trim()}
+                        Passage : {<Text translate={false}>{draft.passage.trim()}</Text>}
                       </Text>
                     </View>
                     <View style={styles.sectionHeading}>

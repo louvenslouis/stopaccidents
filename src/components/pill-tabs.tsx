@@ -1,3 +1,4 @@
+import { Text, View } from '@/features/language/native';
 import {
   TabList,
   TabSlot,
@@ -11,7 +12,7 @@ import House from 'lucide-react-native/icons/house';
 import Map from 'lucide-react-native/icons/map';
 import User from 'lucide-react-native/icons/user';
 import { useEffect, type Ref } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Animated, {
   interpolateColor,
   ReduceMotion,

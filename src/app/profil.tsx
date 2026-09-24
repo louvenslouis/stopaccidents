@@ -1,3 +1,5 @@
+import { LanguageCard } from '@/components/language-card';
+import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { RewardsCard } from '@/components/rewards-card';
 import { AppearanceCard } from '@/components/appearance-card';
@@ -27,16 +29,7 @@ import Save from 'lucide-react-native/icons/save';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import UserRound from 'lucide-react-native/icons/user-round';
 import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 
 type Feedback = {
   message: string;
@@ -255,7 +248,7 @@ export default function ProfileScreen() {
                     </View>
                     <Text style={styles.cardTitle}>Votre compte</Text>
                     <Text selectable style={styles.accountEmail}>
-                      {accountEmail}
+                      {<Text translate={false}>{accountEmail}</Text>}
                     </Text>
                   </View>
 
@@ -320,7 +313,7 @@ export default function ProfileScreen() {
                             <Text
                               numberOfLines={2}
                               style={homePlace ? styles.placeValue : styles.placePlaceholder}>
-                              {homePlace?.address || 'Choisir un point sur la carte'}
+                              {homePlace?.address ? <Text translate={false}>{homePlace?.address}</Text> : 'Choisir un point sur la carte'}
                             </Text>
                             {homePlace && (
                               <Text style={styles.placeCoordinates}>
@@ -348,7 +341,7 @@ export default function ProfileScreen() {
                             <Text
                               numberOfLines={2}
                               style={workPlace ? styles.placeValue : styles.placePlaceholder}>
-                              {workPlace?.address || 'Choisir un point sur la carte'}
+                              {workPlace?.address ? <Text translate={false}>{workPlace?.address}</Text> : 'Choisir un point sur la carte'}
                             </Text>
                             {workPlace && (
                               <Text style={styles.placeCoordinates}>
@@ -506,6 +499,7 @@ export default function ProfileScreen() {
               </View>
             )}
             <RewardsCard />
+            <LanguageCard />
             <AppearanceCard />
           </View>
         </AppScreen>

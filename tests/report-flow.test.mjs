@@ -14,7 +14,7 @@ function compile(source, dependencies) {
   });
   new Function('exports', 'require', outputText)(
     exports,
-    (name) => dependencies[name] || (name === '@/features/appearance/theme-provider' ? {
+    (name) => dependencies[name] || (name === '@/features/language/native' ? dependencies['react-native'] : null) || (name === '@/features/appearance/theme-provider' ? {
       createThemedStyles: (factory) => () => factory((light) => light),
       useThemeColor: () => (light) => light,
       useAppTheme: () => ({ scheme: 'light' }),

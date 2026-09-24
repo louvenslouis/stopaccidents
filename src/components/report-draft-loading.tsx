@@ -1,4 +1,5 @@
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from '@/features/language/native';
+import { ActivityIndicator } from 'react-native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
 export function ReportDraftLoading({
   error,

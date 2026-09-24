@@ -1,3 +1,4 @@
+import { Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapLocation } from '@/features/map/use-map-location';
 import { useAccident } from '@/features/accident-report/use-accident';
@@ -29,18 +30,7 @@ import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import Search from 'lucide-react-native/icons/search';
 import Square from 'lucide-react-native/icons/square';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Keyboard,
-  KeyboardAvoidingView,
-  Linking,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Linking, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from './ui/animated-pressable';

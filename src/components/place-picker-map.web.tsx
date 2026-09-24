@@ -1,10 +1,14 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { localizeMapDocument } from '@/features/language/documents';
 import { useAppTheme } from '@/features/appearance/theme-provider';
-import { useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 
 import { PLACE_PICKER_DOCUMENT, readPlacePickerMessage } from './place-picker-document';
 import type { PlacePickerMapProps } from './place-picker-map-props';
 
 export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePickerMapProps) {
+  const { language, t } = useLanguage();
+  const source = useMemo(() => ({ html: localizeMapDocument(PLACE_PICKER_DOCUMENT, language) }), [language]);
   const { scheme, color } = useAppTheme();
   const frame = useRef<HTMLIFrameElement>(null);
 
@@ -43,8 +47,8 @@ export function PlacePickerMap({ selection, onLoad, onError, onPick }: PlacePick
   return (
     <iframe
       ref={frame}
-      title="Carte pour choisir un lieu en Haïti"
-      srcDoc={PLACE_PICKER_DOCUMENT}
+      title={t("Carte pour choisir un lieu en Haïti")}
+      srcDoc={source.html}
       sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       onLoad={() => frame.current?.contentWindow?.postMessage({ source: 'stopaccidents-app', theme: scheme }, window.location.origin)}
       onError={onError}

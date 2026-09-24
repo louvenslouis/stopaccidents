@@ -1,3 +1,5 @@
+import { useLanguage } from '@/features/language/language-provider';
+import { View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { OpenStreetMap } from '@/components/open-street-map';
 import { SafetyReportDetailSheet } from '@/components/safety-report-detail-sheet';
@@ -6,9 +8,10 @@ import { safetyReportMarkers } from '@/features/safety-report/map-markers';
 import { readMapReports } from '@/features/safety-report/read';
 import Head from 'expo-router/head';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 export default function MapScreen() {
+  const { t } = useLanguage();
   const styles = useStyles();
 
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
@@ -18,7 +21,7 @@ export default function MapScreen() {
     <>
       <View style={styles.screen}>
         <Head>
-          <title>Carte — Stop Accidents</title>
+          <title>{t('Carte — Stop Accidents')}</title>
         </Head>
         <OpenStreetMap markers={markers} onSelect={setSelectedReport} reportsState={{ loading: reports.loading, error: reports.error, truncated: reports.data?.truncated ?? false, available: reports.data !== null, refresh: reports.refresh }} />
       </View>

@@ -1,3 +1,4 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapWeather } from "@/features/map/use-map-weather";
 import { useAppLocation } from "@/features/location/app-location";
@@ -17,7 +18,7 @@ import CloudSun from "lucide-react-native/icons/cloud-sun";
 import Moon from "lucide-react-native/icons/moon";
 import Sun from "lucide-react-native/icons/sun";
 import { useEffect, useState } from "react";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet } from 'react-native';
 
 const icons = {
   sun: Sun,

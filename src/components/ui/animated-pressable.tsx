@@ -1,12 +1,7 @@
+import { Pressable } from '@/features/language/native';
 import * as Haptics from 'expo-haptics';
 import { forwardRef, type ReactNode } from 'react';
-import {
-  Pressable,
-  type PressableProps,
-  type StyleProp,
-  type View,
-  type ViewStyle,
-} from 'react-native';
+import { type PressableProps, type StyleProp, type View, type ViewStyle } from 'react-native';
 import Animated, {
   ReduceMotion,
   type AnimatedStyle,

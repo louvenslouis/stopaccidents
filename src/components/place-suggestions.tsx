@@ -1,13 +1,8 @@
+import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import MapPin from 'lucide-react-native/icons/map-pin';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 
 import type { MapPlace } from '@/features/map/place-search';
 import { AnimatedPressable } from './ui/animated-pressable';

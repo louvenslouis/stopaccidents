@@ -1,6 +1,7 @@
+import { Pressable, Text, View } from '@/features/language/native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
 import { useCallback, useState, type ReactNode } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator } from 'react-native';
 import Animated, { FadeInDown, ReduceMotion } from "react-native-reanimated";
 import Activity from "lucide-react-native/icons/activity";
 import ArrowDownRight from "lucide-react-native/icons/arrow-down-right";
