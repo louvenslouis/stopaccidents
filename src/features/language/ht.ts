@@ -671,6 +671,8 @@ export const haitianCreole: Record<string, string> = {
   "Activez votre position pour consulter les signalements autour de vous.": "Aktive pozisyon ou pou gade rapò ki toupre ou yo.",
   "Enregistrez cette adresse dans votre profil pour retrouver les signalements à proximité.": "Anrejistre adrès sa a nan pwofil ou pou jwenn rapò ki toupre yo.",
   "Localisation…": "N ap jwenn pozisyon an…",
+  "Accès à la position refusé": "Aksè a pozisyon an refize",
+  "Localisation indisponible": "Lokalizasyon an pa disponib",
   "Ouvrir mon profil": "Ouvri pwofil mwen",
   "Dégâts matériels": "Dega materyèl",
   "Aucun blessé apparent": "Pa sanble gen moun blese",

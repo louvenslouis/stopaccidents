@@ -13,6 +13,7 @@ type AppScreenProps = {
   title: string;
   description?: string;
   hideIntro?: boolean;
+  headerLeft?: ReactNode;
   headerRight?: ReactNode;
   children?: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
@@ -24,6 +25,7 @@ export function AppScreen({
   title,
   description,
   hideIntro = false,
+  headerLeft,
   headerRight,
   children,
   contentContainerStyle,
@@ -45,7 +47,8 @@ export function AppScreen({
         showsVerticalScrollIndicator={false}>
         <Animated.View
           entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
-          style={[styles.header, hideIntro && styles.compactHeader]}>
+          style={[styles.header, hideIntro && styles.compactHeader, headerLeft && styles.headerWithLeft]}>
+          {headerLeft}
           {!hideIntro && <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
             <Text style={styles.title}>{title}</Text>
@@ -88,6 +91,10 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   compactHeader: {
     justifyContent: 'flex-end',
+  },
+  headerWithLeft: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   eyebrow: {
     color: themeColor('#FF5A45', 'accent'),

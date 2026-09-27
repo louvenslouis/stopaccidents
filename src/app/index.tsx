@@ -1,4 +1,6 @@
 import { useLanguage } from '@/features/language/language-provider';
+import { Text, View } from '@/features/language/native';
+import { useAppLocation } from '@/features/location/app-location';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
@@ -13,6 +15,7 @@ import type { ReportType } from '@/components/report-type-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import Bell from 'lucide-react-native/icons/bell';
+import MapPin from 'lucide-react-native/icons/map-pin';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, useWindowDimensions } from 'react-native';
@@ -37,6 +40,12 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   const styles = useStyles();
   const themeColor = useThemeColor();
+  const { location, locating, error } = useAppLocation();
+  const locationLabel = error
+    ? error.message === 'L’accès à la position exacte n’est pas autorisé.'
+      ? 'Accès à la position refusé'
+      : 'Localisation indisponible'
+    : location?.location || (location && !locating ? 'Lieu indisponible' : 'Localisation…');
 
   const router = useRouter();
   const { signalement } = useLocalSearchParams<{ signalement?: string | string[] }>();
@@ -112,6 +121,18 @@ export default function HomeScreen() {
         hideIntro
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
+        headerLeft={
+          <View style={styles.currentLocation} accessibilityLabel={locationLabel}>
+            <AppIcon icon={MapPin} size={20} color={themeColor('#49614D', 'secondary')} />
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              translate={!location?.location || Boolean(error)}
+              style={styles.currentLocationText}>
+              {locationLabel}
+            </Text>
+          </View>
+        }
         headerRight={
           <AnimatedPressable
             accessibilityLabel="Consulter mes alertes locales"
@@ -208,6 +229,20 @@ export default function HomeScreen() {
 }
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  currentLocation: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minHeight: 46,
+  },
+  currentLocationText: {
+    flexShrink: 1,
+    color: themeColor('#29392F', 'text'),
+    fontSize: 14,
+    fontWeight: '600',
+  },
   notificationButton: {
     width: 46,
     height: 46,
