@@ -1,5 +1,5 @@
 import { Text, View } from '@/features/language/native';
-import { BlurTargetView, BlurView } from 'expo-blur';
+import { BlurTargetView } from 'expo-blur';
 import {
   TabList,
   TabSlot,
@@ -23,9 +23,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FloatingGlass } from './ui/floating-glass';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
-import { createThemedStyles, useAppTheme, useThemeColor } from '@/features/appearance/theme-provider';
+import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
@@ -85,7 +86,6 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
 }) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
-  const { scheme } = useAppTheme();
 
   return (
     <View
@@ -93,14 +93,7 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
       pointerEvents="box-none"
       style={[styles.tabBarPosition, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
       <View style={styles.tabBar}>
-        <BlurView
-          pointerEvents="none"
-          blurTarget={blurTarget}
-          blurMethod="dimezisBlurViewSdk31Plus"
-          intensity={20}
-          tint={scheme === 'dark' ? 'dark' : 'light'}
-          style={styles.pillBlur}
-        />
+        <FloatingGlass blurTarget={blurTarget} radius={34} />
         {props.children}
       </View>
     </View>
@@ -155,11 +148,6 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     alignItems: 'center',
-  },
-  pillBlur: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 34,
-    overflow: 'hidden',
   },
   tabBar: {
     width: '100%',

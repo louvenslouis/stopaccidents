@@ -27,6 +27,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -63,7 +64,8 @@ export default function HomeScreen() {
     ? REPORT_BUTTON_WIDTH
     : Math.min(Math.max(width - 40, REPORT_FAB_SIZE), TAB_BAR_WIDTH);
   const reportButtonTravel = (reportButtonRailWidth - REPORT_FAB_SIZE) / 2;
-  const scrollY = useSharedValue(0);
+  const reportCollapsed = useSharedValue(false);
+  const reportProgress = useSharedValue(0);
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -80,12 +82,23 @@ export default function HomeScreen() {
 
   const handleScroll = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollY.value = Math.max(0, event.contentOffset.y);
+      const offset = Math.max(0, event.contentOffset.y);
+      const collapsed = reportCollapsed.value ? offset > 16 : offset >= 64;
+      if (collapsed !== reportCollapsed.value) {
+        reportCollapsed.value = collapsed;
+        reportProgress.value = withSpring(collapsed ? 1 : 0, {
+          damping: 10,
+          stiffness: 180,
+          mass: 0.8,
+          overshootClamping: false,
+          reduceMotion: ReduceMotion.System,
+        });
+      }
     },
   });
 
   const reportButtonStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [0, 64], [0, 1], Extrapolation.CLAMP);
+    const progress = reportProgress.value;
 
     return {
       width: interpolate(progress, [0, 1], [REPORT_BUTTON_WIDTH, REPORT_FAB_SIZE]),
@@ -98,7 +111,7 @@ export default function HomeScreen() {
   });
 
   const reportIconStyle = useAnimatedStyle(() => {
-    const progress = interpolate(scrollY.value, [0, 64], [0, 1], Extrapolation.CLAMP);
+    const progress = reportProgress.value;
 
     return {
       left: interpolate(progress, [0, 1], [20, 17]),
@@ -106,10 +119,10 @@ export default function HomeScreen() {
   });
 
   const reportLabelStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 30], [1, 0], Extrapolation.CLAMP),
+    opacity: interpolate(reportProgress.value, [0, 0.47], [1, 0], Extrapolation.CLAMP),
     transform: [
       {
-        translateX: interpolate(scrollY.value, [0, 48], [0, 10], Extrapolation.CLAMP),
+        translateX: interpolate(reportProgress.value, [0, 0.75], [0, 10], Extrapolation.CLAMP),
       },
     ],
   }));
@@ -261,7 +274,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     paddingBottom: 208,
   },
   reportButtonPosition: {
-    position: 'absolute',
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     alignItems: 'center',
   },
   reportButtonRail: {

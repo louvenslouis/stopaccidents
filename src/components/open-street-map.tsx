@@ -1,3 +1,5 @@
+import { BlurTargetView } from 'expo-blur';
+import { FloatingGlass } from './ui/floating-glass';
 import { Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapLocation } from '@/features/map/use-map-location';
@@ -148,6 +150,7 @@ export function OpenStreetMap({
     'home' | 'work' | null
   >(null);
   const inputRef = useRef<TextInput>(null);
+  const mapBlurTarget = useRef<View | null>(null);
   const searchExpansion = useSharedValue(0);
   useEffect(() => {
     searchExpansion.value = withSpring(shortcutsOpen ? 1 : 0, {
@@ -285,7 +288,7 @@ export function OpenStreetMap({
 
   return (
     <View style={styles.screen}>
-      <View style={styles.map}>
+      <BlurTargetView ref={mapBlurTarget} style={styles.map}>
         {status !== 'error' && (
           <MapFrame
             key={attempt}
@@ -336,7 +339,7 @@ export function OpenStreetMap({
             )}
           </View>
         )}
-      </View>
+      </BlurTargetView>
 
       {!planner.open && status === 'ready' && weatherCenter && (
         <View
@@ -532,6 +535,7 @@ export function OpenStreetMap({
                 onPress={() => void openSavedPlace('home')}
               />
               <Animated.View style={[styles.searchPill, searchWidthStyle]}>
+                <FloatingGlass blurTarget={mapBlurTarget} radius={SEARCH_HEIGHT / 2} />
                 {suggestions.status === 'loading' ? (
                   <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
                 ) : (
@@ -708,7 +712,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   disabled: { opacity: 0.5 },
   searchOverlay: {
-    position: 'absolute',
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     left: 20,
     right: 20,
     zIndex: 12,
@@ -760,7 +764,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: themeColor('rgba(255,255,255,0.96)', 'surface'),
+    backgroundColor: 'transparent',
     shadowColor: '#101828',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
