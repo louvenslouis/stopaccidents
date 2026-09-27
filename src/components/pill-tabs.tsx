@@ -1,4 +1,5 @@
 import { Text, View } from '@/features/language/native';
+import { BlurTargetView, BlurView } from 'expo-blur';
 import {
   TabList,
   TabSlot,
@@ -11,8 +12,8 @@ import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import House from 'lucide-react-native/icons/house';
 import Map from 'lucide-react-native/icons/map';
 import User from 'lucide-react-native/icons/user';
-import { useEffect, type Ref } from 'react';
-import { StyleSheet } from 'react-native';
+import { useEffect, useRef, type Ref, type RefObject } from 'react';
+import { Platform, StyleSheet } from 'react-native';
 import Animated, {
   interpolateColor,
   ReduceMotion,
@@ -24,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
-import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
+import { createThemedStyles, useAppTheme, useThemeColor } from '@/features/appearance/theme-provider';
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
@@ -37,7 +38,7 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
   const themeColor = useThemeColor();
   const color = isFocused ? themeColor('#FF5A45', 'accent') : themeColor('#8A8A8E', 'muted');
   const activeBackground = themeColor('#FFF0EC', 'accentSoft');
-  const inactiveBackground = themeColor('#FFFFFF', 'surface');
+  const inactiveBackground = 'transparent';
   const focusProgress = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
@@ -79,28 +80,44 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
   );
 }
 
-function FloatingTabList(props: TabListProps) {
+function FloatingTabList({ blurTarget, ...props }: TabListProps & {
+  blurTarget: RefObject<View | null>;
+}) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const { scheme } = useAppTheme();
 
   return (
     <View
       {...props}
       pointerEvents="box-none"
-      style={[styles.tabBarPosition, { bottom: Math.max(insets.bottom, 12) + 8 }]}>
-      <View style={styles.tabBar}>{props.children}</View>
+      style={[styles.tabBarPosition, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
+      <View style={styles.tabBar}>
+        <BlurView
+          pointerEvents="none"
+          blurTarget={blurTarget}
+          blurMethod="dimezisBlurViewSdk31Plus"
+          intensity={20}
+          tint={scheme === 'dark' ? 'dark' : 'light'}
+          style={styles.pillBlur}
+        />
+        {props.children}
+      </View>
     </View>
   );
 }
 
 export default function PillTabs() {
   const styles = useStyles();
+  const blurTarget = useRef<View | null>(null);
   return (
     <Tabs style={styles.container}>
-      <TabSlot style={styles.content} />
+      <BlurTargetView ref={blurTarget} style={styles.content}>
+        <TabSlot style={styles.content} />
+      </BlurTargetView>
 
       <TabList asChild>
-        <FloatingTabList>
+        <FloatingTabList blurTarget={blurTarget}>
           <TabTrigger name="home" href="/" asChild>
             <TabButton label="Accueil" icon={House} />
           </TabTrigger>
@@ -132,10 +149,17 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
     backgroundColor: color('#F7F7F7', 'background'),
   },
   tabBarPosition: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
     alignItems: 'center',
+  },
+  pillBlur: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 34,
+    overflow: 'hidden',
   },
   tabBar: {
     width: '100%',
@@ -143,7 +167,7 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
     minHeight: 68,
     padding: 7,
     borderRadius: 34,
-    backgroundColor: color('#FFFFFF', 'surface'),
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: color('#FFFFFF', 'border'),
     flexDirection: 'row',
