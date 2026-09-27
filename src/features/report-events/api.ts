@@ -1,9 +1,10 @@
+import { validManualContext, type ReportContext } from './context';
 import { supabase } from "@/lib/supabase";
 import type { Coordinates } from "@/features/accident-report/model";
 import type { SafetyReportSummary } from "@/features/safety-report/read";
 
 export type ReportKind = SafetyReportSummary["report_kind"];
-export type EventDraft = {
+export type EventDraft = ReportContext & {
   id: string;
   coordinates: Coordinates | null;
   eventId?: string | null;
@@ -55,6 +56,7 @@ export async function nearbyEvents(
   draft: EventDraft,
   signal?: AbortSignal,
 ): Promise<NearbyEvent[]> {
+  if (draft.locationSource === 'manual') return [];
   if (!draft.coordinates) throw new Error("La position est nécessaire.");
   await ensureReporter();
   const query = supabase.rpc("nearby_report_events", {
@@ -72,7 +74,10 @@ export async function nearbyEvents(
   return data as NearbyEvent[];
 }
 export async function prepareReportEvent(kind: ReportKind, draft: EventDraft) {
-  const { error } = await supabase.rpc("prepare_report_event", {
+  if (draft.locationSource === 'manual' && !validManualContext(draft))
+    throw new Error('Choisissez un lieu et un moment dans les trois dernières heures.');
+  const { error } = await supabase.rpc(draft.locationSource === 'manual' ? "prepare_manual_report_event" : "prepare_report_event", {
+    ...(draft.locationSource === 'manual' ? { p_occurred_at: draft.occurredAt, ...(draft.minutesAgo !== undefined ? { p_minutes_ago: draft.minutesAgo } : {}) } : {}),
     p_kind: kind,
     p_report_id: draft.id,
     p_event_id: draft.eventId ?? null,

@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -320,6 +321,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFF7E5', 'warningSoft'),
   },
   coin: {
+    ...surfaceDepth(themeColor, 'raised'),
     width: 100,
     height: 100,
     borderRadius: 50,
@@ -328,11 +330,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderColor: themeColor('#FFE295', 'border'),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#AD721C',
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 9 },
-    elevation: 5,
   },
   star: { fontSize: 52, color: themeColor('#956019', 'warning') },
   sparkLeft: {
@@ -372,6 +369,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   body: { fontSize: 14, lineHeight: 22, color: themeColor('#738079', 'muted'), textAlign: 'center' },
   balance: {
+    ...surfaceDepth(themeColor, 'card'),
     borderRadius: 20,
     padding: 18,
     backgroundColor: themeColor('#EDF5EF', 'elevated'),
@@ -396,6 +394,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     textAlign: 'center',
   },
   button: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 54,
     justifyContent: 'center',
     alignItems: 'center',

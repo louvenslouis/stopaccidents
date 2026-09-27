@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { Image } from 'expo-image';
@@ -114,6 +115,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   choice: { width: '47%', flexGrow: 0, alignItems: 'center', gap: 8 },
   dimmed: { opacity: 0.6 },
   circle: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 104,
     height: 104,
     borderRadius: 52,
@@ -125,7 +127,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     overflow: 'hidden',
   },
   illustration: { width: 94, height: 94 },
-  selected: { backgroundColor: themeColor('#FFF0E9', 'accentSoft'), borderColor: '#D94235' },
+  selected: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: themeColor('#FFF0E9', 'accentSoft'), borderColor: '#D94235' },
   check: {
     position: 'absolute',
     right: 1,

@@ -1,3 +1,5 @@
+import { PublicationModeration } from '@/components/publication-moderation';
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
@@ -177,6 +179,7 @@ export function AccidentDetailSheet({
               </View>
             ) : (
               <>
+                <PublicationModeration kind="accident" reportId={id} onDone={onClose} />
                 {!hideContributions && <EventContributions kind='accident' reportId={id} />}
                 <View style={styles.summary}>
                   <View style={styles.summaryTop}>
@@ -251,7 +254,7 @@ export function AccidentDetailSheet({
                     {statusLabels[report.status]}
                   </Text>
                   <Text style={styles.body}>
-                    Signalé le {formatAccidentDate(report.created_at)}
+                    {report.occurred_at ? 'Événement du' : 'Signalé le'} {formatAccidentDate(report.occurred_at ?? report.created_at)}
                   </Text>
                   {report.updated_at !== report.created_at && (
                     <Text style={styles.muted}>
@@ -346,6 +349,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   wideOverlay: { justifyContent: 'center', padding: 24 },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 640,
     flexShrink: 1,
@@ -388,6 +392,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     marginTop: 5,
   },
   close: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -397,6 +402,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   content: { padding: 24, paddingBottom: 12, gap: 22 },
   summary: {
+    ...surfaceDepth(themeColor, 'card'),
     backgroundColor: themeColor('#F8F9FB', 'surface'),
     borderRadius: 20,
     padding: 18,
@@ -404,6 +410,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   summaryTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 50,
     height: 50,
     borderRadius: 17,
@@ -480,6 +487,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   state: { alignItems: 'center', paddingVertical: 40, gap: 16 },
   error: { color: themeColor('#B14832', 'accent'), fontSize: 13, lineHeight: 20 },
   refresh: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 46,
     alignItems: 'center',
     justifyContent: 'center',

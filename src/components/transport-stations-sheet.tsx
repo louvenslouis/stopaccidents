@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useAccident } from "@/features/accident-report/use-accident";
@@ -381,6 +382,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   wideOverlay: { justifyContent: "center", padding: 24 },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: "100%",
     maxWidth: 580,
     flexShrink: 1,
@@ -408,6 +410,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   grow: { flex: 1, minWidth: 0 },
   icon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 48,
     height: 48,
     borderRadius: 16,
@@ -416,6 +419,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: "center",
   },
   smallIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 42,
     height: 42,
     borderRadius: 14,
@@ -437,6 +441,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     letterSpacing: -0.5,
   },
   close: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -447,6 +452,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   content: { padding: 20, gap: 14 },
   body: { fontSize: 14, lineHeight: 21, color: themeColor("#667A75", 'muted') },
   search: {
+    ...surfaceDepth(themeColor, 'inset'),
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
@@ -471,6 +477,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: "700", color: themeColor("#243D37", 'text') },
   caption: { fontSize: 12, lineHeight: 18, color: themeColor("#6C807A", 'muted') },
   stationRow: {
+    ...surfaceDepth(themeColor, 'control'),
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -488,6 +495,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   stationIntro: { gap: 8 },
   commune: { fontSize: 16, fontWeight: "600", color: themeColor("#314E45", 'text') },
   mapButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 46,
     padding: 12,
     borderRadius: 14,
@@ -506,16 +514,18 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   filter: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 44,
     paddingHorizontal: 17,
     justifyContent: "center",
     borderRadius: 22,
     backgroundColor: themeColor("#F0F5F3", 'elevated'),
   },
-  activeFilter: { backgroundColor: "#087F75" },
+  activeFilter: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: "#087F75" },
   filterText: { color: themeColor("#5C756C", 'secondary'), fontSize: 13, fontWeight: "600" },
   activeFilterText: { color: "#FFFFFF" },
   routeCard: {
+    ...surfaceDepth(themeColor, 'card'),
     borderWidth: 1,
     borderColor: themeColor("#E1ECE7", 'border'),
     borderRadius: 20,
@@ -572,6 +582,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   link: { color: themeColor("#087F75", 'success'), fontSize: 13, fontWeight: "600" },
   refresh: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 46,
     justifyContent: "center",
     alignItems: "center",

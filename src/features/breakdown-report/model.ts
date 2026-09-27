@@ -1,3 +1,4 @@
+import { validManualContext, type ReportContext } from '@/features/report-events/context';
 export const breakdownPositions = [
   {
     value: 'roadway',
@@ -69,7 +70,7 @@ export type BreakdownVehicleType =
   (typeof breakdownVehicleTypes)[number]['value'];
 export type TrafficImpact = (typeof trafficImpacts)[number]['value'];
 
-export type BreakdownReportDraft = {
+export type BreakdownReportDraft = ReportContext & {
   eventId?: string | null;
   eventChoiceMade?: boolean;
   id: string;
@@ -120,7 +121,7 @@ export function validateBreakdownStep(
   step: number,
 ): string | null {
   if (step < 0 || step > 3) return 'Étape inconnue.';
-  if (step === 0 && !isPreciseLocation(draft.coordinates)) {
+  if (step === 0 && !isPreciseLocation(draft.coordinates) && !(draft.locationSource === 'manual' && validManualContext(draft))) {
     return 'Une position GPS précise à 30 mètres ou mieux est nécessaire.';
   }
   if (breakdownLocationDescription(draft).length > 500) {

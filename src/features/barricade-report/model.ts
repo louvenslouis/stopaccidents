@@ -1,3 +1,4 @@
+import { validManualContext, type ReportContext } from '@/features/report-events/context';
 export const barricadeTypes = [
   { id: 'stones', label: 'Pierres' },
   { id: 'wrecks', label: 'Carcasses de véhicules' },
@@ -31,7 +32,7 @@ function isPreciseLocation(coordinates: Coordinates | null) {
   );
 }
 
-export type BarricadeReportDraft = {
+export type BarricadeReportDraft = ReportContext & {
   eventId?: string | null;
   eventChoiceMade?: boolean;
   id: string;
@@ -63,7 +64,7 @@ export function validateBarricadeStep(
   draft: BarricadeReportDraft,
   step: number,
 ): string | null {
-  if (step === 0 && !isPreciseLocation(draft.coordinates)) {
+  if (step === 0 && !isPreciseLocation(draft.coordinates) && !(draft.locationSource === 'manual' && validManualContext(draft))) {
     return 'Une position GPS précise à 30 mètres ou mieux est nécessaire.';
   }
   if (barricadeLocationDescription(draft).length > 500) {

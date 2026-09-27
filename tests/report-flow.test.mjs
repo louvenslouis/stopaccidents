@@ -14,7 +14,7 @@ function compile(source, dependencies) {
   });
   new Function('exports', 'require', outputText)(
     exports,
-    (name) => dependencies[name] || (name === '@/features/language/native' ? dependencies['react-native'] : null) || (name === '@/features/appearance/theme-provider' ? {
+    (name) => dependencies[name] || (name === '@/components/ui/surface-depth' ? { surfaceDepth: () => ({}) } : null) || (name === '@/features/language/native' ? dependencies['react-native'] : null) || (name === '@/features/appearance/theme-provider' ? {
       createThemedStyles: (factory) => () => factory((light) => light),
       useThemeColor: () => (light) => light,
       useAppTheme: () => ({ scheme: 'light' }),
@@ -108,6 +108,7 @@ function fixture(appLocation = null) {
       useSafeAreaInsets: () => ({ top: 0, bottom: 0 }),
     },
     'expo-crypto': { randomUUID: () => 'stable-report-id' },
+    '@/components/report-context-step': { ReportContextStep: 'ContextStep' },
     '@/components/report-type-picker': { ReportTypePicker: 'TypePicker' },
     '@/components/accident-type-picker': picker,
     '@/features/accident-report/model': model,
@@ -174,6 +175,8 @@ function fixture(appLocation = null) {
     render,
     pick,
     button,
+    context: () => find(tree, node => node.type === 'ContextStep').props,
+    publish: (context) => find(tree, node => node.type === 'ContextStep').props.onPublish(context),
     chooseType: (value) =>
       find(
         tree,
@@ -190,13 +193,16 @@ function fixture(appLocation = null) {
   };
 }
 
-test('a fresh app location skips the GPS screen and opens the first report question', async () => {
+test('a fresh app location waits for publication confirmation before saving', async () => {
   const f = fixture({
     coordinates: { latitude: 18.54, longitude: -72.31, accuracy: 9 },
     location: 'Pétion-Ville, Ouest',
     capturedAt: Date.now(),
   });
   f.pick();
+  assert.equal(f.calls.save.length, 0);
+  assert.equal(f.calls.locate, 0);
+  f.publish();
   await flush();
   f.render();
   assert.equal(f.calls.locate, 0);
@@ -208,15 +214,20 @@ test('a fresh app location skips the GPS screen and opens the first report quest
     longitude: -72.31,
     accuracy: 9,
   });
-  assert.ok(f.text('Quel type d’accident ?'));
-  assert.ok(f.text('Pétion-Ville, Ouest'));
+  assert.equal(f.text('Quel type d’accident ?'), null);
   f.firstSave.resolve('stable-report-id');
   await flush();
+  f.render();
+  assert.ok(f.text('Quel type d’accident ?'));
+  assert.ok(f.text('Pétion-Ville, Ouest'));
 });
 
-test('Accident automatically locates and saves before showing the subtype and optional landmark', async () => {
+test('Accident locates only after confirmation, then saves before showing subtype', async () => {
   const f = fixture();
   f.pick();
+  assert.equal(f.calls.save.length, 0);
+  assert.equal(f.calls.locate, 0);
+  f.publish();
   assert.equal(f.calls.locate, 1);
   assert.equal(
     f.button('Suivant'),
@@ -257,14 +268,18 @@ test('Accident automatically locates and saves before showing the subtype and op
 test('an unconfirmed save stays on recovery; retry saves the same position without asking for GPS again', async () => {
   const f = fixture();
   f.pick();
+  assert.equal(f.calls.save.length, 0);
+  assert.equal(f.calls.locate, 0);
+  f.publish();
   f.gps.resolve({ latitude: 18.5, longitude: -72.3, accuracy: 8 });
   await flush();
   f.firstSave.reject(new Error('Envoi non confirmé'));
   await flush();
   f.render();
   assert.equal(f.text('Quel type d’accident ?'), null);
-  assert.ok(f.text('Envoi non confirmé'));
-  await f.button('Réessayer').props.onPress();
+  assert.equal(f.context().error, 'Envoi non confirmé');
+  f.publish();
+  await flush();
   f.render();
   assert.ok(f.text('Quel type d’accident ?'));
   assert.equal(f.calls.locate, 1);
@@ -273,9 +288,30 @@ test('an unconfirmed save stays on recovery; retry saves the same position witho
 test('closing during acquisition prevents a late position from creating a report', async () => {
   const f = fixture();
   f.pick();
-  f.button('Fermer le formulaire').props.onPress();
+  assert.equal(f.calls.save.length, 0);
+  assert.equal(f.calls.locate, 0);
+  f.publish();
+  f.context().onCancel();
   f.gps.resolve({ latitude: 18.5, longitude: -72.3, accuracy: 8 });
   await flush();
   assert.equal(f.calls.closed, 1);
   assert.equal(f.calls.save.length, 0);
 });
+
+ test('manual location and time reach the first save without using GPS or app location', async () => {
+  const f = fixture({ coordinates: { latitude: 19, longitude: -73, accuracy: 9 }, location: 'GPS' });
+  f.pick();
+  const context = { locationSource: 'manual', occurredAt: '2026-01-01T12:00:00Z', location: 'Lieu choisi', coordinates: { latitude: 18.55, longitude: -72.3, accuracy: null } };
+  f.publish(context);
+  await flush();
+  assert.equal(f.calls.locate, 0);
+  assert.equal(f.calls.reverseGeocode, 0);
+  assert.deepEqual(f.calls.save[0].draft.coordinates, context.coordinates);
+  assert.equal(f.calls.save[0].draft.occurredAt, context.occurredAt);
+  f.firstSave.resolve('stable-report-id');
+  await flush();
+ });
+ test('cancelling the confirmation creates no report', async () => {
+   const f = fixture(); f.pick(); f.context().onCancel(); await flush();
+   assert.equal(f.calls.closed, 1); assert.equal(f.calls.locate, 0); assert.equal(f.calls.save.length, 0);
+ });

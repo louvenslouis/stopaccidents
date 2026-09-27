@@ -7,7 +7,10 @@ const source = await readFile(
   new URL('../src/features/kidnapping-report/model.ts', import.meta.url),
   'utf8',
 );
-const { outputText } = ts.transpileModule(source, {
+const contextSource = await readFile(new URL('../src/features/report-events/context.ts', import.meta.url), 'utf8');
+const contextJs = ts.transpileModule(contextSource, { compilerOptions: { module: ts.ModuleKind.ES2022 } }).outputText;
+const contextUrl = `data:text/javascript;base64,${Buffer.from(contextJs).toString('base64')}`;
+const { outputText } = ts.transpileModule(source.replace('@/features/report-events/context', contextUrl), {
   compilerOptions: { module: ts.ModuleKind.ES2022 },
 });
 const { kidnappingLocationDescription, validateKidnappingStep } = await import(

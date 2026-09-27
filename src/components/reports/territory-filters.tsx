@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
@@ -251,6 +252,7 @@ const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   controls: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   control: {
+    ...surfaceDepth(themeColor, 'control'),
     flex: 1,
     minWidth: 140,
     flexDirection: "row",
@@ -268,6 +270,7 @@ const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
   context: { fontSize: 10, lineHeight: 16, color: themeColor("#8D8797", 'muted') },
   sheet: { maxHeight: "85%", paddingBottom: 16 },
   search: {
+    ...surfaceDepth(themeColor, 'inset'),
     flexDirection: "row",
     alignItems: "center",
     gap: 9,
@@ -293,7 +296,7 @@ const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 10,
     marginBottom: 3,
   },
-  selected: { backgroundColor: themeColor("#F0EFFA", 'infoSoft') },
+  selected: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: themeColor("#F0EFFA", 'infoSoft') },
   optionName: { fontSize: 13, color: themeColor("#494352", 'secondary'), fontWeight: "500" },
   optionDetail: { fontSize: 11, color: themeColor("#958D9E", 'muted'), marginTop: 4 },
 }));

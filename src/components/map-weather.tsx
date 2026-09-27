@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useMapWeather } from "@/features/map/use-map-weather";
@@ -159,6 +160,7 @@ export function MapWeather({ center }: { center: WeatherPoint }) {
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   card: {
+    ...surfaceDepth(themeColor, 'card'),
     width: 240,
     maxWidth: 260,
     borderRadius: 16,
@@ -168,11 +170,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor("rgba(255,255,255,0.94)", 'surface'),
     borderWidth: 1,
     borderColor: "rgba(218,225,228,0.8)",
-    shadowColor: "#263846",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   row: { flexDirection: "row", alignItems: "center", gap: 8 },
   temperature: {
@@ -187,6 +184,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   forecastTitle: { color: themeColor("#64727D", 'muted'), fontSize: 10, lineHeight: 15 },
   forecastHours: { flexDirection: "row", gap: 6 },
   forecastHour: {
+    ...surfaceDepth(themeColor, 'inset'),
     flex: 1,
     alignItems: "center",
     borderRadius: 7,

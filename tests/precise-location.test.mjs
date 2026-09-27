@@ -19,6 +19,7 @@ function compile(source, globals = {}) {
 }
 const model = compile(
   await readFile('src/features/accident-report/model.ts', 'utf8'),
+  { require: () => ({}) },
 );
 const source = await readFile(
   'src/features/accident-report/precise-location.ts',

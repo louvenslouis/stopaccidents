@@ -1,3 +1,4 @@
+import { validManualContext, type ReportContext } from '@/features/report-events/context';
 export const MAX_PHOTOS = 4;
 export const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
 export const MAX_LOCATION_ACCURACY = 30;
@@ -27,7 +28,7 @@ export type CapturedPhoto = {
   base64: string;
   capturedAt: string;
 };
-export type ReportDraft = {
+export type ReportDraft = ReportContext & {
   eventId?: string | null;
   eventChoiceMade?: boolean;
   id: string;
@@ -75,7 +76,7 @@ export function splitIdentifiers(value: string) {
 
 export function validateStep(draft: ReportDraft, step: number): string | null {
   if (step === 0) {
-    if (!isPreciseLocation(draft.coordinates))
+    if (!isPreciseLocation(draft.coordinates) && !(draft.locationSource === 'manual' && validManualContext(draft)))
       return "Une position GPS précise à 30 mètres ou mieux est nécessaire.";
   }
   if (locationDescription(draft).length > 500)

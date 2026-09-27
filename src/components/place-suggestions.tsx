@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
@@ -95,17 +96,13 @@ export function PlaceSuggestions({
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   panel: {
+    ...surfaceDepth(themeColor, 'card'),
     flexShrink: 1,
     width: '100%',
     maxHeight: 354,
     marginBottom: 10,
     borderRadius: 22,
     backgroundColor: themeColor('#FFFFFF', 'surface'),
-    shadowColor: '#101828',
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 12,
     overflow: 'hidden',
   },
   heading: {
@@ -134,6 +131,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderTopColor: themeColor('#EEF1F5', 'border'),
   },
   pin: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 36,
     height: 36,
     borderRadius: 12,
@@ -153,6 +151,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   error: { padding: 18, alignItems: 'flex-start', gap: 10 },
   retry: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: 16,

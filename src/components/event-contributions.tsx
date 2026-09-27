@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles } from '@/features/appearance/theme-provider';
 import { useCallback, useEffect, useState } from "react";
@@ -201,13 +202,14 @@ export function EventContributions({
   );
 }
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
-  card: { backgroundColor: themeColor("#F0F7F5", 'elevated'), padding: 16, borderRadius: 16, gap: 8 },
+  card: { ...surfaceDepth(themeColor, 'card'), backgroundColor: themeColor("#F0F7F5", 'elevated'), padding: 16, borderRadius: 16, gap: 8 },
   title: { fontSize: 15, fontWeight: "700", color: themeColor("#245F54", 'text') },
   body: { color: themeColor("#63766F", 'secondary'), fontSize: 13, lineHeight: 20 },
   link: { fontWeight: "600", color: themeColor("#267E70", 'success'), fontSize: 14 },
   button: { minHeight: 44, paddingVertical: 12 },
   row: { borderTopWidth: 1, borderColor: themeColor("#D3E4DD", 'border'), paddingTop: 12, gap: 8 },
   input: {
+    ...surfaceDepth(themeColor, 'inset'),
     backgroundColor: themeColor("#fff", 'surface'),
     borderWidth: 1,
     borderColor: themeColor("#CEDDD6", 'border'),

@@ -15,6 +15,8 @@ type ReportLocation = {
   location_description: string;
   latitude: number | null;
   longitude: number | null;
+  occurred_at?: string | null;
+  location_source?: 'device' | 'manual';
   created_at: string;
   completed_step: number;
 };

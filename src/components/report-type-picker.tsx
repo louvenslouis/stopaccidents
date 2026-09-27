@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportIllustration } from "@/components/report-illustration";
@@ -232,6 +233,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     letterSpacing: -0.6,
   },
   close: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -254,6 +256,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 20,
   },
   circle: {
+    ...surfaceDepth(themeColor, 'raised'),
     width: 88,
     height: 88,
     borderRadius: 44,

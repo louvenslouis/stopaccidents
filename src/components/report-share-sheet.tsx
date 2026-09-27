@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { useLanguage } from '@/features/language/language-provider';
 import { localizeReportShare } from '@/features/language/documents';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
@@ -185,12 +186,12 @@ export function ReportShareSheet({ report: originalReport, onClose }: { report: 
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: themeColor('rgba(17,24,39,0.42)', 'overlay'), paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
-  sheet: { width: '100%', maxWidth: 480, maxHeight: '100%', backgroundColor: themeColor('#FFFFFF', 'surface'), borderRadius: 26, overflow: 'hidden' },
+  sheet: { ...surfaceDepth(themeColor, 'card'), width: '100%', maxWidth: 480, maxHeight: '100%', backgroundColor: themeColor('#FFFFFF', 'surface'), borderRadius: 26, overflow: 'hidden' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 20, paddingRight: 10, paddingVertical: 10 },
   title: { fontSize: 18, fontWeight: '700', color: themeColor('#24262C', 'text'), flexShrink: 1 },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingTop: 0, gap: 12 },
-  preview: { borderWidth: 1, borderColor: themeColor('#E9ECF0', 'border'), borderRadius: 20, overflow: 'hidden' },
+  preview: { ...surfaceDepth(themeColor, 'card'), borderWidth: 1, borderColor: themeColor('#E9ECF0', 'border'), borderRadius: 20, overflow: 'hidden' },
   generatedImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#FFFFFF' },
   imageCard: { padding: 20, backgroundColor: '#FFFFFF' },
   brandRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 22 },
@@ -209,9 +210,9 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   imageFooter: { marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#E9ECF0', alignItems: 'center' },
   loading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12 },
   help: { fontSize: 12, lineHeight: 18, color: themeColor('#667080', 'muted') },
-  primary: { minHeight: 48, borderRadius: 14, backgroundColor: '#C43F32', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, gap: 9 },
+  primary: { ...surfaceDepth(themeColor, 'raised'), minHeight: 48, borderRadius: 14, backgroundColor: '#C43F32', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, gap: 9 },
   primaryText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14, flexShrink: 1 },
-  secondary: { minHeight: 44, borderRadius: 12, backgroundColor: themeColor('#F4F5F7', 'elevated'), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12 },
+  secondary: { ...surfaceDepth(themeColor, 'control'), minHeight: 44, borderRadius: 12, backgroundColor: themeColor('#F4F5F7', 'elevated'), flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 12 },
   secondaryText: { color: themeColor('#3E4551', 'secondary'), fontSize: 13, fontWeight: '600', flexShrink: 1 },
   message: { fontSize: 12, lineHeight: 19, color: themeColor('#737C89', 'muted'), paddingTop: 4 },
   error: { color: themeColor('#B94025', 'accent'), fontSize: 12, lineHeight: 18 },

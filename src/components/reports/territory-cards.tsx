@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
@@ -269,6 +270,7 @@ const useLocalStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   moreText: { fontSize: 11, fontWeight: "600" },
   unlocated: {
+    ...surfaceDepth(themeColor, 'control'),
     backgroundColor: themeColor("#F1EFF5", 'elevated'),
     borderRadius: 13,
     padding: 13,

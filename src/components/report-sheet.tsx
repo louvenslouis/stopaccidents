@@ -1,3 +1,6 @@
+import { ReportContextStep } from '@/components/report-context-step';
+import type { ManualReportContext } from '@/features/report-events/context';
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
@@ -15,7 +18,6 @@ import Check from 'lucide-react-native/icons/check';
 import CheckCheck from 'lucide-react-native/icons/check-check';
 import CircleHelp from 'lucide-react-native/icons/circle-question-mark';
 import HeartPulse from 'lucide-react-native/icons/heart-pulse';
-import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import Plus from 'lucide-react-native/icons/plus';
 import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
@@ -283,8 +285,10 @@ export function ReportSheet({
   const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
   useEffect(() => {
-    if (visible && reportType === 'accident' && ready && savedSteps === 0) void locate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (!visible || reportType !== 'accident') {
+      locationRequest.current++;
+      locationController.current?.abort();
+    }
   }, [visible, reportType, ready]);
   useEffect(() => {
     const tracker = locationRequest;
@@ -319,9 +323,11 @@ export function ReportSheet({
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
   }
-  async function locate() {
+  async function locate(context?: ManualReportContext) {
     if (!ready || locating || submitting.current) return;
-    const defaultLocation = isPreciseLocation(draft.coordinates)
+    const sourceDraft = context ? { ...draft, ...context, locationHint: '', eventChoiceMade: false, eventId: null } : draft;
+    const manual = sourceDraft.locationSource === 'manual';
+    const defaultLocation = manual || isPreciseLocation(sourceDraft.coordinates)
       ? null
       : reusableAppLocation(appLocation);
     const request = ++locationRequest.current;
@@ -331,11 +337,11 @@ export function ReportSheet({
     setLocating(true);
     setError(null);
     setLocationError(null);
-    changeStep(defaultLocation ? 1 : 0);
+    changeStep(0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const coordinates = isPreciseLocation(draft.coordinates)
-        ? draft.coordinates!
+      const coordinates = manual || isPreciseLocation(sourceDraft.coordinates)
+        ? sourceDraft.coordinates!
         : defaultLocation?.coordinates ??
           (await acquirePreciseLocation(
             controller.signal,
@@ -348,7 +354,7 @@ export function ReportSheet({
           : 'Recherche du nom du lieu…',
       );
       const location =
-        draft.location ||
+        sourceDraft.location ||
         defaultLocation?.location ||
         (!defaultLocation
           ? await Promise.race([
@@ -361,7 +367,9 @@ export function ReportSheet({
         '';
       if (locationRequest.current !== request) return;
       let locatedDraft = {
-        ...draft,
+        ...sourceDraft,
+        locationSource: manual ? 'manual' as const : 'device' as const,
+        occurredAt: sourceDraft.occurredAt ?? new Date().toISOString(),
         coordinates,
         location: location.slice(0, 240),
       };
@@ -389,7 +397,7 @@ export function ReportSheet({
       }
     } finally {
       clearTimeout(geocodingTimeout);
-      if (locationRequest.current === request) {
+      if (locationController.current === controller) {
         submitting.current = false;
         setSending(false);
         setLocating(false);
@@ -477,16 +485,30 @@ export function ReportSheet({
             <ReportTypePicker
               onSelect={(type) => {
                 onSelectType(type);
-                if (type === 'accident') {
-                  if (ready && savedSteps === 0) void locate();
-                  else changeStep(Math.max(step, 1));
-                }
+                if (type === 'accident' && savedSteps === 0) changeStep(0);
               }}
               onClose={close}
             />
           ) : !ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
-          ) : eventChoice.panel ? eventChoice.panel : cameraOpen ? (
+          ) : eventChoice.panel ? eventChoice.panel : step === 0 && !receipt ? (
+            <ReportContextStep
+              key={draft.id}
+              initialContext={draft}
+              active={visible && reportType === 'accident'}
+              busy={locating || sending}
+              cancelDisabled={sending}
+              error={locationError || storageError}
+              progressLabel={sending ? progress : locationProgress}
+              onPublish={(context) => void locate(context)}
+              onCancel={() => {
+                locationRequest.current++;
+                locationController.current?.abort();
+                setLocating(false);
+                done();
+              }}
+            />
+          ) : cameraOpen ? (
             <ReportCamera
               onClose={() => setCameraOpen(false)}
               onCapture={(photo) => {
@@ -574,51 +596,6 @@ export function ReportSheet({
                 showsVerticalScrollIndicator={false}
               >
                 {storageError && <Text accessibilityRole="alert" style={{ color: themeColor("#BD2E40", 'accent') }}>{storageError}</Text>}
-                {step === 0 && (
-                  <View style={styles.locationSearch}>
-                    {locationError ? (
-                      <>
-                        <Text
-                          accessibilityRole="alert"
-                          style={styles.inlineError}
-                        >
-                          {locationError}
-                        </Text>
-                        <Action
-                          label="Réessayer"
-                          icon={LocateFixed}
-                          onPress={locate}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <View style={styles.locationArt}>
-                          <AppIcon icon={LocateFixed} size={46} color={themeColor("#267E70", 'success')} />
-                        </View>
-                        <Text accessibilityRole="header" style={styles.sectionTitle}>
-                          Localisation automatique
-                        </Text>
-                        <Text style={styles.locationExplanation}>
-                          Restez en sécurité sur le lieu de l’accident. Autorisez la
-                          position exacte : le signalement sera enregistré dès que
-                          le GPS sera suffisamment précis.
-                        </Text>
-                        {(locating || sending) && (
-                          <>
-                            <ActivityIndicator color={themeColor("#267E70", 'success')} size="large" />
-                            <Text accessibilityLiveRegion="polite" style={styles.gpsText}>
-                              {sending ? progress : locationProgress}
-                            </Text>
-                          </>
-                        )}
-                        <Text style={styles.small}>
-                          Précision requise : 30 m ou mieux. Vous passerez ensuite
-                          automatiquement au type d’accident.
-                        </Text>
-                      </>
-                    )}
-                  </View>
-                )}
                 {step === 1 && (
                   <>
                     <View style={styles.locationSummary}>
@@ -929,13 +906,13 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 620,
     backgroundColor: themeColor('#fff', 'surface'),
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     overflow: 'hidden',
-    boxShadow: '0 -8px 50px rgba(17, 24, 39, 0.16)',
   },
   handleArea: { height: 22, alignItems: 'center', justifyContent: 'center' },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
@@ -947,6 +924,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     gap: 12,
   },
   headerIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 44,
     height: 44,
     borderRadius: 15,
@@ -969,6 +947,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     letterSpacing: -0.6,
   },
   iconButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -1019,6 +998,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   small: { color: themeColor('#768091', 'muted'), fontSize: 12, lineHeight: 18 },
   body: { color: themeColor('#768091', 'muted'), fontSize: 14, lineHeight: 21 },
   input: {
+    ...surfaceDepth(themeColor, 'inset'),
     borderColor: themeColor('#DFE3EA', 'border'),
     borderWidth: 1,
     borderRadius: 14,
@@ -1031,6 +1011,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   locationInput: { minHeight: 74, textAlignVertical: 'top' },
   gpsButton: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 46,
     flexDirection: 'row',
     gap: 9,
@@ -1046,6 +1027,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     lineHeight: 19,
   },
   gpsResult: {
+    ...surfaceDepth(themeColor, 'card'),
     flexDirection: 'row',
     gap: 10,
     padding: 12,
@@ -1070,6 +1052,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     marginTop: 3,
   },
   severityCard: {
+    ...surfaceDepth(themeColor, 'control'),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 13,
@@ -1107,6 +1090,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     gap: 10,
   },
   addIdentifier: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -1128,6 +1112,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   photoWrap: { width: 100, height: 105 },
   photo: { width: '100%', height: '100%', borderRadius: 15 },
   removePhoto: {
+    ...surfaceDepth(themeColor, 'control'),
     position: 'absolute',
     right: 3,
     top: 3,
@@ -1139,6 +1124,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'center',
   },
   addPhoto: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 100,
     height: 105,
     borderWidth: 1.5,
@@ -1167,6 +1153,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   action: {
+    ...surfaceDepth(themeColor, 'control'),
     borderRadius: 15,
     minHeight: 52,
     flexDirection: 'row',
@@ -1176,8 +1163,8 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     paddingVertical: 13,
     gap: 8,
   },
-  primaryAction: { backgroundColor: '#DF493B' },
-  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
+  primaryAction: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: '#DF493B' },
+  secondaryAction: { ...surfaceDepth(themeColor, 'control'), backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: {
     color: '#fff',
     fontWeight: '700',
@@ -1202,6 +1189,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   successBody: { color: themeColor('#768091', 'muted'), fontSize: 16, lineHeight: 25 },
   receipt: {
+    ...surfaceDepth(themeColor, 'card'),
     padding: 16,
     borderRadius: 16,
     backgroundColor: themeColor('#F5F7FA', 'surface'),

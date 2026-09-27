@@ -1,3 +1,4 @@
+import { validManualContext, type ReportContext } from '@/features/report-events/context';
 export const MAX_VEHICLE_CLUES_LENGTH = 1500;
 export const MAX_DIRECTION_LENGTH = 1000;
 export const MAX_PERSON_CLUES_LENGTH = 2000;
@@ -22,7 +23,7 @@ function isPreciseLocation(coordinates: Coordinates | null) {
   );
 }
 
-export type KidnappingReportDraft = {
+export type KidnappingReportDraft = ReportContext & {
   eventId?: string | null;
   eventChoiceMade?: boolean;
   id: string;
@@ -44,7 +45,7 @@ export function validateKidnappingStep(
   draft: KidnappingReportDraft,
   step: number,
 ): string | null {
-  if (step === 0 && !isPreciseLocation(draft.coordinates)) {
+  if (step === 0 && !isPreciseLocation(draft.coordinates) && !(draft.locationSource === 'manual' && validManualContext(draft))) {
     return 'Une position GPS précise à 30 mètres ou mieux est nécessaire.';
   }
   if (kidnappingLocationDescription(draft).length > 500) {

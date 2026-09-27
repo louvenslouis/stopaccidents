@@ -768,6 +768,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     minWidth: 0,
     height: '100%',
     paddingVertical: 0,
+    outlineWidth: 0,
     color: themeColor('#171719', 'text'),
     fontSize: 16,
     lineHeight: 22,

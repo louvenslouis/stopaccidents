@@ -1,3 +1,6 @@
+import { ReportContextStep } from '@/components/report-context-step';
+import type { ManualReportContext } from '@/features/report-events/context';
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
@@ -9,7 +12,6 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import UsersRound from 'lucide-react-native/icons/users-round';
 import CheckCheck from 'lucide-react-native/icons/check-check';
-import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import Route from 'lucide-react-native/icons/route';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
@@ -135,11 +137,7 @@ export function ArmedPresenceReportSheet({
       locationController.current?.abort();
       return;
     }
-    if (ready && savedSteps === 0) {
-      void locate();
-    }
-    // The report is intentionally resumed, rather than restarted, when reopened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [visible, ready]);
 
   useEffect(() => {
@@ -183,9 +181,11 @@ export function ArmedPresenceReportSheet({
     onClose();
   }
 
-  async function locate() {
+  async function locate(context?: ManualReportContext) {
     if (!ready || locating || submitting.current) return;
-    const defaultLocation = isPreciseLocation(draft.coordinates)
+    const sourceDraft = context ? { ...draft, ...context, locationHint: '', eventChoiceMade: false, eventId: null } : draft;
+    const manual = sourceDraft.locationSource === 'manual';
+    const defaultLocation = manual || isPreciseLocation(sourceDraft.coordinates)
       ? null
       : reusableAppLocation(appLocation);
     const request = ++locationRequest.current;
@@ -195,11 +195,11 @@ export function ArmedPresenceReportSheet({
     setLocating(true);
     setError(null);
     setLocationError(null);
-    changeStep(defaultLocation ? 1 : 0);
+    changeStep(0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const coordinates = isPreciseLocation(draft.coordinates)
-        ? draft.coordinates!
+      const coordinates = manual || isPreciseLocation(sourceDraft.coordinates)
+        ? sourceDraft.coordinates!
         : defaultLocation?.coordinates ??
           (await acquirePreciseLocation(
             controller.signal,
@@ -212,7 +212,7 @@ export function ArmedPresenceReportSheet({
           : 'Recherche du nom du lieu…',
       );
       const location =
-        draft.location ||
+        sourceDraft.location ||
         defaultLocation?.location ||
         (!defaultLocation
           ? await Promise.race([
@@ -225,7 +225,9 @@ export function ArmedPresenceReportSheet({
         '';
       if (locationRequest.current !== request) return;
       let locatedDraft = {
-        ...draft,
+        ...sourceDraft,
+        locationSource: manual ? 'manual' as const : 'device' as const,
+        occurredAt: sourceDraft.occurredAt ?? new Date().toISOString(),
         coordinates,
         location: location.slice(0, 240),
       };
@@ -253,7 +255,7 @@ export function ArmedPresenceReportSheet({
       }
     } finally {
       clearTimeout(geocodingTimeout);
-      if (locationRequest.current === request) {
+      if (locationController.current === controller) {
         submitting.current = false;
         setSending(false);
         setLocating(false);
@@ -346,7 +348,24 @@ export function ArmedPresenceReportSheet({
         >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
-          ) : eventChoice.panel ? eventChoice.panel : receipt ? (
+          ) : eventChoice.panel ? eventChoice.panel : step === 0 && !receipt ? (
+            <ReportContextStep
+              key={draft.id}
+              initialContext={draft}
+              active={visible}
+              busy={locating || sending}
+              cancelDisabled={sending}
+              error={locationError || storageError}
+              progressLabel={sending ? progress : locationProgress}
+              onPublish={(context) => void locate(context)}
+              onCancel={() => {
+                locationRequest.current++;
+                locationController.current?.abort();
+                setLocating(false);
+                done();
+              }}
+            />
+          ) : receipt ? (
             <ReportReward reportId={receipt} reportKind="armed_presence" onDone={done} visible={visible} />
           ) : (
             <>
@@ -437,58 +456,6 @@ export function ArmedPresenceReportSheet({
                         Chaque étape ajoute ses observations à la même référence.
                       </Text>
                     </View>
-                  </View>
-                )}
-                {step === 0 && (
-                  <View style={styles.locationSearch}>
-                    {!locationError && (
-                      <>
-                    <View style={styles.locationArt}>
-                      <AppIcon icon={LocateFixed} size={46} color={themeColor("#267E70", 'success')} />
-                    </View>
-                    <Text
-                      accessibilityRole="header"
-                      style={styles.sectionTitle}
-                    >
-                      Localisation automatique
-                    </Text>
-                    <Text style={styles.locationExplanation}>
-                      Restez à distance et en sécurité. Autorisez la position
-                      exacte : le signalement sera enregistré dès que le GPS
-                      sera suffisamment précis.
-                    </Text>
-                    {(locating || sending) && (
-                      <>
-                        <ActivityIndicator color={themeColor("#267E70", 'success')} size="large" />
-                        <Text
-                          accessibilityLiveRegion="polite"
-                          style={styles.gpsText}
-                        >
-                          {sending ? progress : locationProgress}
-                        </Text>
-                      </>
-                    )}
-                    <Text style={styles.small}>
-                      Précision requise : 30 m ou mieux. Vous passerez ensuite
-                      automatiquement aux questions sur la présence observée.
-                    </Text>
-                      </>
-                    )}
-                    {locationError && (
-                      <>
-                        <Text
-                          accessibilityRole="alert"
-                          style={styles.inlineError}
-                        >
-                          {locationError}
-                        </Text>
-                        <Action
-                          label="Réessayer"
-                          icon={LocateFixed}
-                          onPress={locate}
-                        />
-                      </>
-                    )}
                   </View>
                 )}
                 {step === 1 && (
@@ -723,6 +690,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 620,
     backgroundColor: themeColor('#fff', 'surface'),
@@ -741,6 +709,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     paddingBottom: 15,
   },
   headerIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 46,
     height: 46,
     borderRadius: 15,
@@ -749,6 +718,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'center',
   },
   iconButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -799,6 +769,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     textAlign: 'center',
   },
   locationCard: {
+    ...surfaceDepth(themeColor, 'card'),
     padding: 16,
     borderRadius: 18,
     backgroundColor: themeColor('#F0F8F5', 'elevated'),
@@ -842,6 +813,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     letterSpacing: 1,
   },
   input: {
+    ...surfaceDepth(themeColor, 'inset'),
     borderWidth: 1.5,
     borderColor: themeColor('#E1E5EB', 'border'),
     borderRadius: 15,
@@ -866,6 +838,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   warningText: { flex: 1, color: themeColor('#884039', 'accent'), fontSize: 12, lineHeight: 18 },
   privacy: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 },
   summary: {
+    ...surfaceDepth(themeColor, 'card'),
     backgroundColor: themeColor('#F5F7FA', 'surface'),
     borderRadius: 17,
     padding: 16,
@@ -888,6 +861,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   action: {
+    ...surfaceDepth(themeColor, 'control'),
     borderRadius: 15,
     minHeight: 52,
     flexDirection: 'row',
@@ -897,8 +871,8 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     paddingVertical: 13,
     gap: 8,
   },
-  primaryAction: { backgroundColor: '#DF493B' },
-  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
+  primaryAction: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: '#DF493B' },
+  secondaryAction: { ...surfaceDepth(themeColor, 'control'), backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: {
     color: '#fff',
     fontWeight: '700',
@@ -929,6 +903,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   successBody: { color: themeColor('#768091', 'muted'), fontSize: 16, lineHeight: 25 },
   receipt: {
+    ...surfaceDepth(themeColor, 'card'),
     padding: 16,
     borderRadius: 16,
     backgroundColor: themeColor('#F5F7FA', 'surface'),

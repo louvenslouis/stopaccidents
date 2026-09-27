@@ -1,3 +1,4 @@
+import { ModerationPanel } from '@/components/moderation-panel';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { LanguageCard } from '@/components/language-card';
 import { Pressable, Text, TextInput, View } from '@/features/language/native';
@@ -231,6 +232,7 @@ export default function ProfileScreen() {
           title="Profil"
           contentContainerStyle={styles.screenContent}>
           <View style={styles.content}>
+            <ModerationPanel />
             {checkingSession ? (
               <View accessibilityLiveRegion="polite" style={styles.loadingCard}>
                 <ActivityIndicator color={themeColor("#E14D3E", 'accent')} />

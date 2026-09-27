@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { GeocodingCredit } from '@/components/geocoding-credit';
@@ -321,6 +322,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '700',
   },
   closeButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -335,6 +337,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   searchBox: {
+    ...surfaceDepth(themeColor, 'inset'),
     minHeight: 52,
     paddingHorizontal: 15,
     flexDirection: 'row',
@@ -347,6 +350,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   searchInput: { flex: 1, minHeight: 50, color: themeColor('#243147', 'text'), fontSize: 15 },
   resultsPanel: {
+    ...surfaceDepth(themeColor, 'card'),
     position: 'absolute',
     top: 72,
     left: 14,
@@ -357,11 +361,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderColor: themeColor('#DDE2E9', 'border'),
     borderRadius: 15,
     backgroundColor: themeColor('#FFFFFF', 'surface'),
-    shadowColor: '#172033',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 10,
   },
   resultsList: { maxHeight: 240 },
   result: {
@@ -392,6 +391,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   mapStatusText: { color: themeColor('#667185', 'muted'), fontSize: 13 },
   retryButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 48,
     paddingHorizontal: 18,
     flexDirection: 'row',
@@ -429,6 +429,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   coordinates: { marginTop: 3, color: themeColor('#758094', 'muted'), fontSize: 11, lineHeight: 15 },
   confirmButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 52,
     paddingHorizontal: 18,
     flexDirection: 'row',

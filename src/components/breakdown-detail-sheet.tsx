@@ -1,3 +1,5 @@
+import { PublicationModeration } from '@/components/publication-moderation';
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { EventContributions } from '@/components/event-contributions';
@@ -157,6 +159,7 @@ export function BreakdownDetailSheet({
               </View>
             ) : (
               <>
+                <PublicationModeration kind="breakdown" reportId={id} onDone={onClose} />
                 {!hideContributions && (
                   <EventContributions kind="breakdown" reportId={id} />
                 )}
@@ -249,7 +252,7 @@ export function BreakdownDetailSheet({
                     <Text style={styles.status}>{statusLabels[report.status]}</Text>
                   </View>
                   <Text style={styles.body}>
-                    Signalé le {formatAccidentDate(report.created_at)}
+                    {report.occurred_at ? 'Événement du' : 'Signalé le'} {formatAccidentDate(report.occurred_at ?? report.created_at)}
                   </Text>
                   {report.updated_at !== report.created_at && (
                     <Text style={styles.muted}>
@@ -296,6 +299,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   wideOverlay: { justifyContent: 'center', padding: 24 },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 640,
     flexShrink: 1,
@@ -327,6 +331,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   eyebrow: { fontSize: 10, fontWeight: '700', letterSpacing: 1.1, color: themeColor('#9A6B3E', 'warning') },
   title: { color: themeColor('#1C2637', 'text'), fontSize: 24, fontWeight: '700', letterSpacing: -0.5 },
   close: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 42,
     height: 42,
     borderRadius: 21,
@@ -337,6 +342,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   content: { padding: 24, gap: 18 },
   state: { minHeight: 220, alignItems: 'center', justifyContent: 'center', gap: 14 },
   summary: {
+    ...surfaceDepth(themeColor, 'card'),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
@@ -345,6 +351,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFF6EC', 'warningSoft'),
   },
   artBox: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 68,
     height: 68,
     borderRadius: 18,
@@ -375,6 +382,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   reference: { color: themeColor('#7B8593', 'muted'), fontSize: 11 },
   error: { color: themeColor('#BD2E40', 'accent'), fontSize: 13, lineHeight: 19 },
   refresh: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 48,
     borderRadius: 14,
     backgroundColor: themeColor('#F1F3F6', 'elevated'),

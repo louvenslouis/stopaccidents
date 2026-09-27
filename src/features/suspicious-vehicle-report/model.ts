@@ -1,3 +1,4 @@
+import { validManualContext, type ReportContext } from '@/features/report-events/context';
 import type { CapturedPhoto } from '@/features/accident-report/model';
 
 export const vehicleTypes = [
@@ -38,7 +39,7 @@ function isPreciseLocation(coordinates: Coordinates | null) {
   );
 }
 
-export type SuspiciousVehicleReportDraft = {
+export type SuspiciousVehicleReportDraft = ReportContext & {
   eventId?: string | null;
   eventChoiceMade?: boolean;
   id: string;
@@ -76,7 +77,7 @@ export function validateSuspiciousVehicleStep(
   draft: SuspiciousVehicleReportDraft,
   step: number,
 ): string | null {
-  if (step === 0 && !isPreciseLocation(draft.coordinates)) {
+  if (step === 0 && !isPreciseLocation(draft.coordinates) && !(draft.locationSource === 'manual' && validManualContext(draft))) {
     return 'Une position GPS précise à 30 mètres ou mieux est nécessaire.';
   }
   if (suspiciousVehicleLocationDescription(draft).length > 500) {

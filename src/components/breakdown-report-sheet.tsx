@@ -1,3 +1,6 @@
+import { ReportContextStep } from '@/components/report-context-step';
+import type { ManualReportContext } from '@/features/report-events/context';
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
@@ -26,7 +29,6 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Check from 'lucide-react-native/icons/check';
 import CheckCheck from 'lucide-react-native/icons/check-check';
-import LocateFixed from 'lucide-react-native/icons/locate-fixed';
 import Wrench from 'lucide-react-native/icons/wrench';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
@@ -215,9 +217,7 @@ export function BreakdownReportSheet({
       locationController.current?.abort();
       return;
     }
-    if (ready && savedSteps === 0) void locate();
-    // A saved draft is intentionally resumed when this sheet is reopened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [visible, ready]);
 
   useEffect(() => {
@@ -261,9 +261,11 @@ export function BreakdownReportSheet({
     onClose();
   }
 
-  async function locate() {
+  async function locate(context?: ManualReportContext) {
     if (!ready || locating || submitting.current) return;
-    const defaultLocation = isPreciseLocation(draft.coordinates)
+    const sourceDraft = context ? { ...draft, ...context, locationHint: '', eventChoiceMade: false, eventId: null } : draft;
+    const manual = sourceDraft.locationSource === 'manual';
+    const defaultLocation = manual || isPreciseLocation(sourceDraft.coordinates)
       ? null
       : reusableAppLocation(appLocation);
     const request = ++locationRequest.current;
@@ -273,11 +275,11 @@ export function BreakdownReportSheet({
     setLocating(true);
     setError(null);
     setLocationError(null);
-    changeStep(defaultLocation ? 1 : 0);
+    changeStep(0);
     let geocodingTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
-      const coordinates = isPreciseLocation(draft.coordinates)
-        ? draft.coordinates!
+      const coordinates = manual || isPreciseLocation(sourceDraft.coordinates)
+        ? sourceDraft.coordinates!
         : defaultLocation?.coordinates ??
           (await acquirePreciseLocation(
             controller.signal,
@@ -290,7 +292,7 @@ export function BreakdownReportSheet({
           : 'Recherche du nom du lieu…',
       );
       const location =
-        draft.location ||
+        sourceDraft.location ||
         defaultLocation?.location ||
         (!defaultLocation
           ? await Promise.race([
@@ -303,7 +305,9 @@ export function BreakdownReportSheet({
         '';
       if (locationRequest.current !== request) return;
       let locatedDraft = {
-        ...draft,
+        ...sourceDraft,
+        locationSource: manual ? 'manual' as const : 'device' as const,
+        occurredAt: sourceDraft.occurredAt ?? new Date().toISOString(),
         coordinates,
         location: location.slice(0, 240),
       };
@@ -331,7 +335,7 @@ export function BreakdownReportSheet({
       }
     } finally {
       clearTimeout(geocodingTimeout);
-      if (locationRequest.current === request) {
+      if (locationController.current === controller) {
         submitting.current = false;
         setSending(false);
         setLocating(false);
@@ -431,6 +435,23 @@ export function BreakdownReportSheet({
             />
           ) : eventChoice.panel ? (
             eventChoice.panel
+          ) : step === 0 && !receipt ? (
+            <ReportContextStep
+              key={draft.id}
+              initialContext={draft}
+              active={visible}
+              busy={locating || sending}
+              cancelDisabled={sending}
+              error={locationError || storageError}
+              progressLabel={sending ? progress : locationProgress}
+              onPublish={(context) => void locate(context)}
+              onCancel={() => {
+                locationRequest.current++;
+                locationController.current?.abort();
+                setLocating(false);
+                done();
+              }}
+            />
           ) : receipt ? (
             <ReportReward
               reportId={receipt}
@@ -519,47 +540,6 @@ export function BreakdownReportSheet({
                   <Text accessibilityRole="alert" style={styles.inlineError}>
                     {storageError}
                   </Text>
-                )}
-                {step === 0 && (
-                  <View style={styles.locationSearch}>
-                    {locationError ? (
-                      <>
-                        <Text
-                          accessibilityRole="alert"
-                          style={styles.inlineError}
-                        >
-                          {locationError}
-                        </Text>
-                        <Action label="Réessayer" icon={LocateFixed} onPress={locate} />
-                      </>
-                    ) : (
-                      <>
-                        <View style={styles.locationArt}>
-                          <AppIcon icon={LocateFixed} size={46} color={themeColor("#B76518", 'warning')} />
-                        </View>
-                        <Text accessibilityRole="header" style={styles.sectionTitle}>
-                          Localisation automatique
-                        </Text>
-                        <Text style={styles.locationExplanation}>
-                          Gardez vos distances et autorisez la position exacte.
-                          Le signalement sera enregistré dès que le GPS sera
-                          suffisamment précis.
-                        </Text>
-                        {(locating || sending) && (
-                          <>
-                            <ActivityIndicator color={themeColor("#B76518", 'warning')} size="large" />
-                            <Text accessibilityLiveRegion="polite" style={styles.gpsText}>
-                              {sending ? progress : locationProgress}
-                            </Text>
-                          </>
-                        )}
-                        <Text style={styles.small}>
-                          Précision requise : 30 m ou mieux. Vous indiquerez
-                          ensuite où se trouve le véhicule.
-                        </Text>
-                      </>
-                    )}
-                  </View>
                 )}
                 {step > 0 && (
                   <View style={styles.locationSummary}>
@@ -774,6 +754,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#11182780', 'overlay'),
   },
   sheet: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 620,
     backgroundColor: themeColor('#fff', 'surface'),
@@ -792,6 +773,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     paddingBottom: 15,
   },
   headerIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 44,
     height: 44,
     borderRadius: 15,
@@ -814,6 +796,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     letterSpacing: -0.45,
   },
   iconButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -851,6 +834,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   gpsText: { color: themeColor('#8C5A2D', 'warning'), fontSize: 13, textAlign: 'center' },
   small: { color: themeColor('#8A94A3', 'muted'), fontSize: 12, lineHeight: 18, textAlign: 'center' },
   locationSummary: {
+    ...surfaceDepth(themeColor, 'card'),
     gap: 5,
     padding: 12,
     borderRadius: 14,
@@ -881,6 +865,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   optionList: { gap: 10 },
   optionCard: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 68,
     borderWidth: 1.5,
     borderColor: themeColor('#E1E5EB', 'border'),
@@ -891,7 +876,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  optionCardSelected: { borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
+  optionCardSelected: { ...surfaceDepth(themeColor, 'raised'), borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
   optionCopy: { flex: 1, gap: 3 },
   optionTitle: { color: themeColor('#354456', 'secondary'), fontSize: 14, fontWeight: '700' },
   optionTitleSelected: { color: themeColor('#9A5515', 'warning') },
@@ -908,6 +893,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   radioSelected: { backgroundColor: '#B76518', borderColor: '#B76518' },
   vehicleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   vehicleOption: {
+    ...surfaceDepth(themeColor, 'control'),
     flexBasis: '46%',
     flexGrow: 1,
     minWidth: 130,
@@ -923,10 +909,11 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
-  vehicleOptionSelected: { borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
+  vehicleOptionSelected: { ...surfaceDepth(themeColor, 'raised'), borderColor: '#C46A1A', backgroundColor: themeColor('#FFF5EA', 'warningSoft') },
   vehicleOptionText: { flex: 1, color: themeColor('#354456', 'secondary'), fontSize: 13, fontWeight: '700' },
   label: { color: themeColor('#3D485A', 'secondary'), fontSize: 14, fontWeight: '700', marginTop: 6 },
   input: {
+    ...surfaceDepth(themeColor, 'inset'),
     borderWidth: 1,
     borderColor: themeColor('#DCE1E7', 'border'),
     borderRadius: 14,
@@ -946,6 +933,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   footerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   action: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 50,
     borderRadius: 15,
     paddingHorizontal: 17,
@@ -954,8 +942,8 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  primaryAction: { backgroundColor: '#B76518' },
-  secondaryAction: { backgroundColor: themeColor('#F1F3F6', 'elevated') },
+  primaryAction: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: '#B76518' },
+  secondaryAction: { ...surfaceDepth(themeColor, 'control'), backgroundColor: themeColor('#F1F3F6', 'elevated') },
   actionText: { color: '#fff', fontSize: 14, fontWeight: '700' },
   secondaryActionText: { color: themeColor('#243147', 'text') },
   inlineError: { color: themeColor('#BD2E40', 'accent'), fontSize: 13, lineHeight: 19, textAlign: 'center' },

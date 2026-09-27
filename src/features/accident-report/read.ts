@@ -8,6 +8,8 @@ export type AccidentSummary = {
   longitude: number | null;
   accident_type: AccidentType | null;
   severity: Severity;
+  occurred_at?: string | null;
+  location_source?: 'device' | 'manual';
   created_at: string;
   completed_step: number;
 };
