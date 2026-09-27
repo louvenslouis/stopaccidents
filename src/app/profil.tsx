@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { LanguageCard } from '@/components/language-card';
 import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
@@ -531,17 +532,13 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   card: {
+    ...surfaceDepth(themeColor, 'card'),
     padding: 22,
     gap: 20,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: themeColor('#E7E8EB', 'border'),
     backgroundColor: themeColor('#FFFFFF', 'surface'),
-    shadowColor: '#172033',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -549,6 +546,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     gap: 13,
   },
   mailIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 48,
     height: 48,
     borderRadius: 16,
@@ -557,6 +555,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFF0EB', 'accentSoft'),
   },
   placeIcon: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 48,
     height: 48,
     borderRadius: 16,
@@ -591,6 +590,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '600',
   },
   inputShell: {
+    ...surfaceDepth(themeColor, 'inset'),
     minHeight: 54,
     paddingHorizontal: 15,
     flexDirection: 'row',
@@ -611,6 +611,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     lineHeight: 21,
   },
   placeField: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 66,
     paddingHorizontal: 15,
     paddingVertical: 11,
@@ -660,6 +661,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     lineHeight: 18,
   },
   primaryButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 54,
     paddingHorizontal: 18,
     flexDirection: 'row',
@@ -676,6 +678,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '700',
   },
   placesButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 54,
     paddingHorizontal: 18,
     flexDirection: 'row',
@@ -726,6 +729,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     textAlign: 'center',
   },
   secondaryButton: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 52,
     paddingHorizontal: 18,
     flexDirection: 'row',

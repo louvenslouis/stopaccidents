@@ -1,3 +1,4 @@
+import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { useLanguage } from '@/features/language/language-provider';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
@@ -319,7 +320,7 @@ export function HomeSections({
           action="La carte"
           onPress={() => router.push("/carte")}
         />
-        <View style={styles.nearbyCard}>
+        <ContrastSurface style={styles.nearbyCard}>
           <View style={styles.nearbyTop}>
             <View style={styles.nearbyCaption}>
               <View style={styles.smallDot} />
@@ -408,11 +409,11 @@ export function HomeSections({
               )}
             </AnimatedPressable>
           </View>
-        </View>
+        </ContrastSurface>
       </View>
       <View style={styles.section}>
         <SectionHeading number="02" title="Mon trajet" />
-        <View style={styles.journeyCard}>
+        <ContrastSurface style={styles.journeyCard}>
           <View style={styles.journeyTop}>
             <View style={styles.journeyTag}>
               <Navigation size={13} color="#D2EAC8" />
@@ -431,7 +432,7 @@ export function HomeSections({
           <View pointerEvents="none" style={styles.journeyArt}>
             <JourneyArt />
           </View>
-          <View style={styles.savedRoutes}>
+          <ContrastSurface style={styles.savedRoutes}>
             <AnimatedPressable
               accessibilityRole="button"
               accessibilityLabel={
@@ -477,7 +478,7 @@ export function HomeSections({
                 </Text>
               </View>
             </AnimatedPressable>
-          </View>
+          </ContrastSurface>
           {places.error && (
             <Text style={styles.journeyError}>
               Vos adresses sont indisponibles. Réessayez depuis votre profil.
@@ -506,7 +507,7 @@ export function HomeSections({
               <ArrowUpRight size={14} color="#D3E0D3" />
             </AnimatedPressable>
           )}
-        </View>
+        </ContrastSurface>
       </View>
       <View style={styles.section}>
         <SectionHeading number="03" title="Rester informé" />

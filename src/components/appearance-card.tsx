@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Text, View } from '@/features/language/native';
 import Monitor from 'lucide-react-native/icons/monitor';
 import Moon from 'lucide-react-native/icons/moon';
@@ -50,14 +51,14 @@ export function AppearanceCard() {
 }
 
 const useStyles = createThemedStyles((color) => StyleSheet.create({
-  card: { backgroundColor: color('#FFFFFF', 'surface'), borderColor: color('#E7E8EB', 'border'), borderWidth: 1, borderRadius: 22, padding: 22, gap: 18 },
+  card: { ...surfaceDepth(color, 'card'), backgroundColor: color('#FFFFFF', 'surface'), borderColor: color('#E7E8EB', 'border'), borderWidth: 1, borderRadius: 22, padding: 22, gap: 18 },
   heading: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   icon: { width: 46, height: 46, borderRadius: 16, backgroundColor: color('#F2ECF8', 'violetSoft'), alignItems: 'center', justifyContent: 'center' },
   grow: { flex: 1 },
   title: { color: color('#243147', 'text'), fontSize: 19, fontWeight: '700', lineHeight: 25 },
   options: { flexDirection: 'row', gap: 9 },
-  option: { flex: 1, minHeight: 92, borderRadius: 16, padding: 12, justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FAFBFC', 'input') },
-  selected: { borderColor: color('#E14D3E', 'accent'), backgroundColor: color('#FFF0EC', 'accentSoft') },
+  option: { ...surfaceDepth(color, 'control'), flex: 1, minHeight: 92, borderRadius: 16, padding: 12, justifyContent: 'space-between', gap: 16, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FAFBFC', 'input') },
+  selected: { ...surfaceDepth(color, 'raised'), borderColor: color('#E14D3E', 'accent'), backgroundColor: color('#FFF0EC', 'accentSoft') },
   optionTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   check: { width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   checkSelected: { backgroundColor: '#D94235' },

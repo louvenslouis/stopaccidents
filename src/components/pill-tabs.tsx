@@ -1,5 +1,6 @@
 import { Text, View } from '@/features/language/native';
 import { BlurTargetView } from 'expo-blur';
+import { usePathname } from 'expo-router';
 import {
   TabList,
   TabSlot,
@@ -12,34 +13,64 @@ import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import House from 'lucide-react-native/icons/house';
 import Map from 'lucide-react-native/icons/map';
 import User from 'lucide-react-native/icons/user';
-import { useEffect, useRef, type Ref, type RefObject } from 'react';
+import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import Animated, {
-  interpolateColor,
   ReduceMotion,
   useAnimatedStyle,
+  withTiming,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FloatingGlass } from './ui/floating-glass';
+import { TabContrastProvider, useTabContrastColor, useTabContrastControls } from '@/features/navigation/tab-contrast-provider';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
+import { FloatingGlass } from './ui/floating-glass';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
+  contrastIndex: number;
   icon: AppIconComponent;
   ref?: Ref<View>;
 };
 
-function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
+function FadingTabIcon({ icon, color, focused }: { icon: AppIconComponent; color: string; focused?: boolean }) {
+  const [transition, setTransition] = useState({ from: color, to: color });
+  const progress = useSharedValue(1);
+  if (color !== transition.to) {
+    setTransition({ from: transition.to, to: color });
+  }
+  useEffect(() => {
+    progress.value = 0;
+    progress.value = withTiming(1, { duration: 180, reduceMotion: ReduceMotion.System });
+  }, [color, progress]);
+  const outgoing = useAnimatedStyle(() => ({ opacity: 1 - progress.value }));
+  const incoming = useAnimatedStyle(() => ({ opacity: progress.value }));
+  return <View style={{ width: 23, height: 23 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <Animated.View style={[StyleSheet.absoluteFill, outgoing]}>
+      <AppIcon icon={icon} size={23} color={transition.from} strokeWidth={focused ? 2.5 : 2} />
+    </Animated.View>
+    <Animated.View style={[StyleSheet.absoluteFill, incoming]}>
+      <AppIcon icon={icon} size={23} color={transition.to} strokeWidth={focused ? 2.5 : 2} />
+    </Animated.View>
+  </View>;
+}
+
+const AnimatedLabel = Animated.createAnimatedComponent(Text);
+
+function TabButton({ icon, isFocused, label, contrastIndex, ...props }: TabButtonProps) {
   const styles = useStyles();
   const themeColor = useThemeColor();
-  const color = isFocused ? themeColor('#FF5A45', 'accent') : themeColor('#8A8A8E', 'muted');
-  const activeBackground = themeColor('#FFF0EC', 'accentSoft');
-  const inactiveBackground = 'transparent';
+  const adaptiveColor = useTabContrastColor(contrastIndex);
+  const color = isFocused ? themeColor('#FF5A45', 'accent') : adaptiveColor ?? themeColor('#59616B', 'text');
+  const foreground = useSharedValue(color);
+  useEffect(() => {
+    foreground.value = withTiming(color, { duration: 180, reduceMotion: ReduceMotion.System });
+  }, [color, foreground]);
+  const labelStyle = useAnimatedStyle(() => ({ color: foreground.value }));
   const focusProgress = useSharedValue(isFocused ? 1 : 0);
 
   useEffect(() => {
@@ -50,14 +81,6 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
       stiffness: 260,
     });
   }, [focusProgress, isFocused]);
-
-  const activeStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      focusProgress.value,
-      [0, 1],
-      [inactiveBackground, activeBackground],
-    ),
-  }));
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
@@ -72,11 +95,11 @@ function TabButton({ icon, isFocused, label, ...props }: TabButtonProps) {
       accessibilityLabel={label}
       haptic="selection"
       pressedScale={0.93}
-      style={[styles.tabButton, activeStyle]}>
+      style={styles.tabButton}>
       <Animated.View style={iconStyle}>
-        <AppIcon icon={icon} size={23} color={color} strokeWidth={isFocused ? 2.5 : 2} />
+        <FadingTabIcon icon={icon} color={color} focused={isFocused} />
       </Animated.View>
-      <Text style={[styles.tabLabel, { color }]}>{label}</Text>
+      <AnimatedLabel style={[styles.tabLabel, labelStyle]}>{label}</AnimatedLabel>
     </AnimatedPressable>
   );
 }
@@ -86,14 +109,52 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
 }) {
   const styles = useStyles();
   const insets = useSafeAreaInsets();
+  const contrast = useTabContrastControls();
+  const pathname = usePathname();
+  const selectedIndex = pathname.startsWith('/carte') ? 1
+    : pathname.startsWith('/rapports') ? 2
+      : pathname.startsWith('/profil') ? 3 : 0;
+  const [barSize, setBarSize] = useState({ width: 0, height: 0 });
+  const buttonWidth = Math.max(0, (barSize.width - 16) / 4);
+  const previousWidth = useRef(0);
+  const indicatorX = useSharedValue(0);
+
+  useEffect(() => {
+    const destination = selectedIndex * buttonWidth;
+    // Place the bubble immediately on first layout and when the window resizes.
+    indicatorX.value = previousWidth.current !== buttonWidth
+      ? destination
+      : withSpring(destination, {
+          damping: 24,
+          stiffness: 650,
+          mass: 0.5,
+          reduceMotion: ReduceMotion.System,
+        });
+    previousWidth.current = buttonWidth;
+  }, [buttonWidth, indicatorX, selectedIndex]);
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: indicatorX.value }],
+  }));
 
   return (
     <View
       {...props}
       pointerEvents="box-none"
       style={[styles.tabBarPosition, { paddingBottom: Math.max(insets.bottom, 12) + 8 }]}>
-      <View style={styles.tabBar}>
+      <View ref={contrast?.bar} onLayout={({ nativeEvent: { layout } }) => {
+        setBarSize((current) => current.width === layout.width && current.height === layout.height
+          ? current : { width: layout.width, height: layout.height });
+        contrast?.start();
+        contrast?.stop();
+      }} style={styles.tabBar}>
         <FloatingGlass blurTarget={blurTarget} radius={34} />
+        {buttonWidth > 0 && <Animated.View
+          pointerEvents="none"
+          style={[styles.selectionBubble, {
+            width: buttonWidth,
+            height: Math.max(54, barSize.height - 16),
+          }, indicatorStyle]}
+        />}
         {props.children}
       </View>
     </View>
@@ -104,6 +165,7 @@ export default function PillTabs() {
   const styles = useStyles();
   const blurTarget = useRef<View | null>(null);
   return (
+    <TabContrastProvider>
     <Tabs style={styles.container}>
       <BlurTargetView ref={blurTarget} style={styles.content}>
         <TabSlot style={styles.content} />
@@ -112,23 +174,24 @@ export default function PillTabs() {
       <TabList asChild>
         <FloatingTabList blurTarget={blurTarget}>
           <TabTrigger name="home" href="/" asChild>
-            <TabButton label="Accueil" icon={House} />
+            <TabButton contrastIndex={0} label="Accueil" icon={House} />
           </TabTrigger>
 
           <TabTrigger name="map" href="/carte" asChild>
-            <TabButton label="Carte" icon={Map} />
+            <TabButton contrastIndex={1} label="Carte" icon={Map} />
           </TabTrigger>
 
           <TabTrigger name="reports" href="/rapports" asChild>
-            <TabButton label="Rapports" icon={ClipboardList} />
+            <TabButton contrastIndex={2} label="Rapports" icon={ClipboardList} />
           </TabTrigger>
 
           <TabTrigger name="profile" href="/profil" asChild>
-            <TabButton label="Profil" icon={User} />
+            <TabButton contrastIndex={3} label="Profil" icon={User} />
           </TabTrigger>
         </FloatingTabList>
       </TabList>
     </Tabs>
+    </TabContrastProvider>
   );
 }
 
@@ -173,6 +236,20 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
+  },
+  selectionBubble: {
+    position: 'absolute',
+    top: 7,
+    left: 7,
+    borderRadius: 27,
+    backgroundColor: color('#FFE5DA', 'accentSoft'),
+    borderWidth: 1,
+    borderColor: color('#FFD0BD', 'accent'),
+    boxShadow: [
+      { offsetX: 0, offsetY: 4, blurRadius: 9, spreadDistance: -2, color: 'rgba(174,65,31,0.25)' },
+      { offsetX: 0, offsetY: 1, blurRadius: 1, color: 'rgba(255,255,255,0.72)', inset: true },
+      { offsetX: 0, offsetY: -2, blurRadius: 3, color: 'rgba(210,92,51,0.13)', inset: true },
+    ],
   },
   tabLabel: {
     fontSize: 11,

@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -59,6 +60,7 @@ export function RewardsCard() {
 }
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   card: {
+    ...surfaceDepth(themeColor, 'card'),
     backgroundColor: themeColor('#FDF6E6', 'warningSoft'),
     borderWidth: 1,
     borderColor: themeColor('#F0E2C2', 'border'),
@@ -97,6 +99,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   unit: { fontSize: 16, fontWeight: '500', letterSpacing: 0 },
   body: { color: themeColor('#918063', 'muted'), fontSize: 12, lineHeight: 18 },
   track: {
+    ...surfaceDepth(themeColor, 'inset'),
     height: 7,
     borderRadius: 4,
     backgroundColor: themeColor('#EEE3C6', 'warningSoft'),

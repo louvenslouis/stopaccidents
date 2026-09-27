@@ -1,3 +1,5 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
+import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { Pressable, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import ShieldAlert from 'lucide-react-native/icons/shield-alert';
@@ -87,7 +89,7 @@ export function LatestAccidentCard({
         </Pressable>
       </View>
       {report ? (
-        <View style={[styles.card, !expanded && styles.compactCard]}>
+        <ContrastSurface style={[styles.card, !expanded && styles.compactCard]}>
           <AnimatedPressable
             accessibilityRole="button"
             accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le dernier signalement : ${reportLabel}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}.${severity ? ` Gravité : ${severity.label}.` : ''}`}
@@ -236,7 +238,7 @@ export function LatestAccidentCard({
               </View>
             </AnimatedPressable>
           )}
-        </View>
+        </ContrastSurface>
       ) : (
         <View
           style={[styles.card, styles.empty]}
@@ -307,15 +309,16 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 20,
   },
   card: {
+    ...surfaceDepth(themeColor, 'card'),
     padding: 22,
     borderRadius: 30,
     backgroundColor: themeColor('#FFFFFF', 'surface'),
-    boxShadow: '0 6px 28px rgba(24, 35, 52, 0.055)',
   },
   compactCard: { padding: 16, borderRadius: 22 },
   cardToggle: { width: '100%' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 54,
     height: 54,
     borderRadius: 18,
@@ -344,6 +347,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   compactType: { fontSize: 18, lineHeight: 22, marginTop: 3 },
   chevronBox: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 30,
     height: 30,
     borderRadius: 15,

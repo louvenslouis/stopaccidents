@@ -64,6 +64,7 @@ test('a connected profile exposes home and work address fields with a save actio
     if (name === '@/components/ui/animated-pressable')
       return { AnimatedPressable: 'AnimatedPressable' };
     if (name === '@/components/ui/app-icon') return { AppIcon: 'AppIcon' };
+    if (name === '@/components/ui/surface-depth') return { surfaceDepth: () => ({}) };
     if (name === '@/features/profile/saved-places')
       return {
         readSavedPlaces: async () => ({ home: null, work: null }),

@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { StyleSheet } from "react-native";
 
@@ -46,6 +47,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   textActionLabel: { color: themeColor("#3D574C", 'secondary'), fontSize: 12, fontWeight: "600" },
   nearbyCard: {
+    ...surfaceDepth(themeColor, 'card'),
     backgroundColor: themeColor("#FFFFFF", 'surface'),
     borderRadius: 25,
     borderWidth: 1,
@@ -83,13 +85,14 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   radiusLabel: { fontSize: 11, color: themeColor("#727F73", 'muted') },
   radiusOptions: { flexDirection: "row", gap: 5 },
   radiusOption: {
+    ...surfaceDepth(themeColor, 'control'),
     paddingHorizontal: 13,
     minHeight: 40,
     justifyContent: "center",
     borderRadius: 20,
     backgroundColor: themeColor("#F4F5F0", 'elevated'),
   },
-  radiusSelected: { backgroundColor: "#315342" },
+  radiusSelected: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: "#315342" },
   radiusText: { fontSize: 11, color: themeColor("#697768", 'muted'), fontWeight: "600" },
   radiusTextSelected: { color: "#FFFFFF" },
   locationPrompt: {
@@ -214,6 +217,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   linkLabel: { color: themeColor("#355447", 'secondary'), fontWeight: "700", fontSize: 12 },
   journeyCard: {
+    ...surfaceDepth(themeColor, 'card'),
     borderRadius: 27,
     backgroundColor: "#203F35",
     overflow: "hidden",
@@ -263,6 +267,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     overflow: "hidden",
   },
   savedRoutes: {
+    ...surfaceDepth(themeColor, 'inset'),
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#2C4A3F",
@@ -289,6 +294,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     marginTop: 10,
   },
   journeyCta: {
+    ...surfaceDepth(themeColor, 'raised'),
     marginTop: 15,
     flexDirection: "row",
     alignItems: "center",
@@ -324,6 +330,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   otherRouteText: { fontSize: 11, color: "#D3E0D3" },
   zonesCard: {
+    ...surfaceDepth(themeColor, 'card'),
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 24,
@@ -357,6 +364,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   radar: { marginRight: -5, flexShrink: 0 },
   tipCard: {
+    ...surfaceDepth(themeColor, 'card'),
     flexDirection: "row",
     alignItems: "center",
     gap: 13,

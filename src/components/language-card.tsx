@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { StyleSheet } from 'react-native';
 import Languages from 'lucide-react-native/icons/languages';
 import Check from 'lucide-react-native/icons/check';
@@ -26,12 +27,12 @@ export function LanguageCard() {
   </View>;
 }
 const useStyles = createThemedStyles((color) => StyleSheet.create({
-  card: { padding: 22, gap: 18, borderRadius: 22, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FFFFFF', 'surface') },
+  card: { ...surfaceDepth(color, 'card'), padding: 22, gap: 18, borderRadius: 22, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FFFFFF', 'surface') },
   heading: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   title: { fontSize: 19, fontWeight: '700', color: color('#243147', 'text') },
   options: { gap: 9 },
-  option: { minHeight: 52, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderRadius: 14, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FAFBFC', 'input') },
-  selected: { borderColor: color('#E14D3E', 'accent'), backgroundColor: color('#FFF0EC', 'accentSoft') },
+  option: { ...surfaceDepth(color, 'control'), minHeight: 52, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, borderRadius: 14, borderWidth: 1, borderColor: color('#E7E8EB', 'border'), backgroundColor: color('#FAFBFC', 'input') },
+  selected: { ...surfaceDepth(color, 'raised'), borderColor: color('#E14D3E', 'accent'), backgroundColor: color('#FFF0EC', 'accentSoft') },
   label: { fontSize: 15, fontWeight: '600', color: color('#243147', 'text') },
   error: { fontSize: 12, color: color('#BA3540', 'accent') },
 }));

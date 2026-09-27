@@ -1,3 +1,4 @@
+import { useTabContrastControls } from '@/features/navigation/tab-contrast-provider';
 import { useLanguage } from '@/features/language/language-provider';
 import { Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
@@ -33,6 +34,7 @@ export function AppScreen({
 }: AppScreenProps) {
   const { t } = useLanguage();
   const styles = useStyles();
+  const contrast = useTabContrastControls();
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -43,6 +45,11 @@ export function AppScreen({
       <Animated.ScrollView
         contentContainerStyle={[styles.content, contentContainerStyle]}
         onScroll={onScroll}
+        onScrollBeginDrag={contrast?.start}
+        onScrollEndDrag={contrast?.stop}
+        onMomentumScrollBegin={contrast?.start}
+        onMomentumScrollEnd={contrast?.stop}
+        onContentSizeChange={() => { contrast?.start(); contrast?.stop(); }}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}>
         <Animated.View

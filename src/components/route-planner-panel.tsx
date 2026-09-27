@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { useState } from "react";
@@ -460,15 +461,11 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     zIndex: 15,
   },
   panel: {
+    ...surfaceDepth(themeColor, 'card'),
     width: "100%",
     maxWidth: 460,
     borderRadius: 22,
     backgroundColor: themeColor("#FFFFFF", 'surface'),
-    shadowColor: "#182B49",
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 10,
     overflow: "hidden",
   },
   header: {
@@ -517,6 +514,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     flexWrap: "wrap",
   },
   action: {
+    ...surfaceDepth(themeColor, 'control'),
     minHeight: 42,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -525,7 +523,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: "center",
     backgroundColor: themeColor("#EEF5FB", 'infoSoft'),
   },
-  primary: { backgroundColor: "#1767A6" },
+  primary: { ...surfaceDepth(themeColor, 'raised'), backgroundColor: "#1767A6" },
   actionText: { color: themeColor("#1767A6", 'info'), fontSize: 13, fontWeight: "700" },
   white: { color: "#FFFFFF" },
   disabled: { opacity: 0.45 },
@@ -557,7 +555,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderWidth: 1,
     borderColor: themeColor("#DEE5EE", 'border'),
   },
-  optionSelected: { borderColor: "#1767A6", backgroundColor: themeColor("#EEF6FE", 'infoSoft') },
+  optionSelected: { ...surfaceDepth(themeColor, 'raised'), borderColor: "#1767A6", backgroundColor: themeColor("#EEF6FE", 'infoSoft') },
   optionTitle: { color: themeColor("#1767A6", 'info'), fontWeight: "700" },
   report: {
     flexDirection: "row",

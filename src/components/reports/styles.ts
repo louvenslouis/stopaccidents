@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { StyleSheet } from "react-native";
 
@@ -42,6 +43,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   subtitle: { fontSize: 14, color: themeColor("#8C8B95", 'muted'), marginTop: 3 },
   iconButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -56,6 +58,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: "space-between",
   },
   periods: {
+    ...surfaceDepth(themeColor, 'inset'),
     flexDirection: "row",
     backgroundColor: themeColor("#EDEDF0", 'elevated'),
     padding: 4,
@@ -73,8 +76,8 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 10,
   },
   periodActive: {
+    ...surfaceDepth(themeColor, 'raised'),
     backgroundColor: themeColor("#FFFFFF", 'surface'),
-    boxShadow: "0 2px 5px #2323300D",
   },
   periodText: { fontSize: 12, fontWeight: "600", color: themeColor("#888793", 'muted') },
   periodTextActive: { color: themeColor("#303038", 'text') },
@@ -100,6 +103,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   categoryFilters: { gap: 8, paddingTop: 19, paddingBottom: 20 },
   categoryPill: {
+    ...surfaceDepth(themeColor, 'control'),
     flexDirection: "row",
     gap: 7,
     alignItems: "center",
@@ -113,11 +117,12 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   categoryPillText: { color: themeColor("#81808C", 'muted'), fontSize: 12, fontWeight: "600" },
   subcategoryFilters: { gap: 8, paddingBottom: 20 },
   subcategory: { paddingHorizontal: 13, paddingVertical: 11, borderRadius: 12 },
-  subcategoryActive: { backgroundColor: themeColor("#EAE9F1", 'elevated') },
+  subcategoryActive: { ...surfaceDepth(themeColor, 'control'), backgroundColor: themeColor("#EAE9F1", 'elevated') },
   subcategoryText: { fontSize: 12, color: themeColor("#8C8796", 'muted') },
   subcategoryTextActive: { color: themeColor("#5E536F", 'secondary'), fontWeight: "600" },
   dashboard: { gap: 17 },
   card: {
+    ...surfaceDepth(themeColor, 'card'),
     backgroundColor: themeColor("#FFFFFF", 'surface'),
     borderRadius: 25,
     padding: 23,
@@ -368,6 +373,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   feedCard: { paddingVertical: 4, paddingHorizontal: 20 },
   eventsLink: {
+    ...surfaceDepth(themeColor, 'card'),
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
@@ -553,6 +559,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     marginBottom: 8,
   },
   input: {
+    ...surfaceDepth(themeColor, 'inset'),
     borderWidth: 1,
     borderColor: themeColor("#E8E0EE", 'border'),
     borderRadius: 12,
@@ -563,6 +570,7 @@ export const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     marginBottom: 6,
   },
   applyButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     backgroundColor: themeColor("#F06C7B", 'accentSoft'),
     paddingVertical: 16,
     alignItems: "center",

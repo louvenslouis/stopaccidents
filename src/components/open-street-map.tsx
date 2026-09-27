@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { BlurTargetView } from 'expo-blur';
 import { FloatingGlass } from './ui/floating-glass';
 import { Text, TextInput, View } from '@/features/language/native';
@@ -536,6 +537,7 @@ export function OpenStreetMap({
               />
               <Animated.View style={[styles.searchPill, searchWidthStyle]}>
                 <FloatingGlass blurTarget={mapBlurTarget} radius={SEARCH_HEIGHT / 2} />
+                <View style={styles.searchContents}>
                 {suggestions.status === 'loading' ? (
                   <ActivityIndicator size="small" color={themeColor("#1767A6", 'info')} />
                 ) : (
@@ -591,6 +593,7 @@ export function OpenStreetMap({
                     <X color="#FFFFFF" size={15} strokeWidth={2.8} />
                   </AnimatedPressable>
                 )}
+                </View>
               </Animated.View>
             </View>
           </View>
@@ -609,6 +612,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     zIndex: 9,
   },
   destinationCard: {
+    ...surfaceDepth(themeColor, 'card'),
     width: '100%',
     maxWidth: 430,
     borderRadius: 18,
@@ -617,11 +621,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    shadowColor: '#101828',
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
   },
   destinationLabel: {
     flex: 1,
@@ -631,6 +630,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     lineHeight: 20,
   },
   routeButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     minHeight: 44,
     paddingHorizontal: 14,
     borderRadius: 14,
@@ -662,17 +662,13 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#EEF2F3', 'elevated'),
   },
   retryButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     width: 54,
     height: 54,
     borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FF5A45',
-    shadowColor: '#A32618',
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
   },
   locationControls: {
     position: 'absolute',
@@ -682,17 +678,13 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     pointerEvents: 'box-none',
   },
   iconButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     width: 52,
     height: 52,
     borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    elevation: 8,
   },
   locateButton: {
     borderColor: themeColor('rgba(255,255,255,0.9)', 'border'),
@@ -739,6 +731,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     top: (SEARCH_HEIGHT - SHORTCUT_SIZE) / 2,
   },
   placeBubble: {
+    ...surfaceDepth(themeColor, 'raised'),
     width: SHORTCUT_SIZE,
     height: SHORTCUT_SIZE,
     borderRadius: SHORTCUT_SIZE / 2,
@@ -746,15 +739,11 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: themeColor('rgba(255,255,255,0.94)', 'border'),
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 12,
-    elevation: 8,
   },
   workBubble: { backgroundColor: themeColor('#EFF7FF', 'infoSoft') },
   homeBubble: { backgroundColor: themeColor('#FFF3ED', 'accentSoft') },
   searchPill: {
+    ...surfaceDepth(themeColor, 'raised'),
     height: SEARCH_HEIGHT,
     borderRadius: SEARCH_HEIGHT / 2,
     borderWidth: 1,
@@ -765,11 +754,14 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     backgroundColor: 'transparent',
-    shadowColor: '#101828',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 10,
+  },
+  searchContents: {
+    flex: 1,
+    height: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    zIndex: 1,
   },
   searchInput: {
     flex: 1,
@@ -782,6 +774,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '500',
   },
   clearButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 28,
     height: 28,
     borderRadius: 14,

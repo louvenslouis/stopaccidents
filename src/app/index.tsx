@@ -1,3 +1,4 @@
+import { surfaceDepth } from '@/components/ui/surface-depth';
 import { useLanguage } from '@/features/language/language-provider';
 import { Text, View } from '@/features/language/native';
 import { useAppLocation } from '@/features/location/app-location';
@@ -257,6 +258,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '600',
   },
   notificationButton: {
+    ...surfaceDepth(themeColor, 'control'),
     width: 46,
     height: 46,
     borderRadius: 23,
@@ -283,15 +285,11 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
   },
   reportButton: {
+    ...surfaceDepth(themeColor, 'raised'),
     height: REPORT_FAB_SIZE,
     borderRadius: REPORT_FAB_SIZE / 2,
     overflow: 'hidden',
     backgroundColor: '#E72D2D',
-    shadowColor: '#8A1111',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 10,
   },
   reportButtonPressable: {
     width: '100%',
