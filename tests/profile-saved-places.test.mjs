@@ -14,7 +14,7 @@ function find(node, predicate) {
 }
 
 test('a connected profile exposes home and work address fields with a save action', async () => {
-  const source = await readFile('src/app/profil.tsx', 'utf8');
+  const source = await readFile('src/app/profil/index.tsx', 'utf8');
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
