@@ -110,20 +110,11 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
 export default function PillTabs() {
   const styles = useStyles();
   const blurTarget = useRef<View | null>(null);
-  const tabSlot = (
-    <TabSlot
-      detachInactiveScreens={Platform.OS !== 'web'}
-      style={styles.content}
-    />
-  );
-
   return (
     <Tabs style={styles.container}>
-      {Platform.OS === 'web' ? tabSlot : (
-        <BlurTargetView ref={blurTarget} style={styles.content}>
-          {tabSlot}
-        </BlurTargetView>
-      )}
+      <BlurTargetView ref={blurTarget} style={styles.content}>
+        <TabSlot style={styles.content} />
+      </BlurTargetView>
 
       <TabList asChild>
         <FloatingTabList blurTarget={blurTarget}>

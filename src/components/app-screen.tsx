@@ -47,7 +47,7 @@ export function AppScreen({
         showsVerticalScrollIndicator={false}>
         <Animated.View
           entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
-          style={[styles.header, hideIntro && styles.compactHeader, headerLeft && styles.headerWithLeft]}>
+          style={[styles.header, hideIntro && styles.compactHeader, !!headerLeft && styles.headerWithLeft]}>
           {headerLeft}
           {!hideIntro && <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>
