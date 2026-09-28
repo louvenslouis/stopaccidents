@@ -107,7 +107,7 @@ export function EventContributions({
         event.contributions.map((report, index) => (
           <View key={reportSelection(report)} style={styles.row}>
             <Text style={styles.body}>
-              Témoignage {index + 1} · {formatAccidentDate(report.created_at)}
+              {report.author_alias ? <Text translate={false}>{report.author_alias}</Text> : <>Témoignage {index + 1}</>} · {formatAccidentDate(report.created_at)}
             </Text>
             <Text style={styles.body}>
               {report.location_description ? <Text translate={false}>{report.location_description}</Text> : "Lieu à préciser"}

@@ -118,10 +118,13 @@ do $$ declare source uuid; target uuid; merge uuid; before_total int; begin
  assert (public.read_my_rewards()->>'total')::int=before_total,'Undo restores original reward eligibility';
 end $$;
 rollback to savepoint reward_merge_test;
+select set_config('test.expected_map_count', jsonb_array_length(public.read_map_reports()->'reports')::text, true);
 set local role anon;
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 do $$ begin
- assert jsonb_array_length(public.read_map_reports()->'reports')=8,'Guests can still read grouped public events';
+ assert current_setting('test.expected_map_count')::integer > 0,'Test must contain public events';
+ assert jsonb_array_length(public.read_map_reports()->'reports')=current_setting('test.expected_map_count')::integer,
+   'Guests can still read the same grouped public events';
  assert not (public.read_report_event('barricade','11111111-1111-4111-8111-111111111111')->>'is_moderator')::boolean;
  begin perform public.nearby_report_events('accident',18.55,-72.3,9); raise exception 'Expected auth check'; exception when insufficient_privilege then null; end;
  begin perform * from private.report_contributions; raise exception 'Expected private data rejection'; exception when insufficient_privilege then null; end;

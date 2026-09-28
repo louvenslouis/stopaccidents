@@ -9,6 +9,7 @@ import { AppScreen } from '@/components/app-screen';
 import { SavedPlacePicker } from '@/components/saved-place-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
+import { readUserAlias } from '@/features/profile/alias';
 import {
   readSavedPlaces,
   saveSavedPlaces,
@@ -17,6 +18,7 @@ import {
 } from '@/features/profile/saved-places';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import BriefcaseBusiness from 'lucide-react-native/icons/briefcase-business';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
@@ -30,6 +32,7 @@ import MapPinHouse from 'lucide-react-native/icons/map-pin-house';
 import Save from 'lucide-react-native/icons/save';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import UserRound from 'lucide-react-native/icons/user-round';
+import UserRoundPlus from 'lucide-react-native/icons/user-round-plus';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
 
@@ -46,6 +49,8 @@ export default function ProfileScreen() {
   const { scheme } = useAppTheme();
   const styles = useStyles();
   const themeColor = useThemeColor();
+  const { auth } = useLocalSearchParams<{ auth?: string }>();
+  const router = useRouter();
 
   const [session, setSession] = useState<Session | null>(null);
   const [checkingSession, setCheckingSession] = useState(true);
@@ -60,6 +65,24 @@ export default function ProfileScreen() {
   const [placesLoading, setPlacesLoading] = useState(false);
   const [placesSaving, setPlacesSaving] = useState(false);
   const [placesFeedback, setPlacesFeedback] = useState<Feedback | null>(null);
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>(auth === 'signUp' ? 'signUp' : 'signIn');
+  const [aliasState, setAliasState] = useState<{ userId: string; value: string | null; failed: boolean } | null>(null);
+  const [aliasAttempt, setAliasAttempt] = useState(0);
+  const creatingAccount = authMode === 'signUp';
+
+  useEffect(() => {
+    if (auth !== 'signUp') return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setAuthMode('signUp');
+      setPassword('');
+      setPasswordVisible(false);
+      setFeedback(null);
+      router.setParams({ auth: undefined });
+    });
+    return () => { active = false; };
+  }, [auth, router]);
 
   useEffect(() => {
     let active = true;
@@ -90,7 +113,39 @@ export default function ProfileScreen() {
     };
   }, []);
 
-  const accountEmail = session?.user.email;
+  const accountEmail = session?.user.is_anonymous ? undefined : session?.user.email;
+  const userId = session?.user.id;
+  const currentAlias = aliasState?.userId === userId ? aliasState : null;
+
+  useEffect(() => {
+    if (!userId) return;
+    const controller = new AbortController();
+    void (async () => {
+      await Promise.resolve();
+      if (controller.signal.aborted) return;
+      setAliasState({ userId, value: null, failed: false });
+      try {
+        const value = await readUserAlias(userId, controller.signal);
+        if (!controller.signal.aborted) setAliasState({ userId, value, failed: false });
+      } catch {
+        if (!controller.signal.aborted) setAliasState({ userId, value: null, failed: true });
+      }
+    })();
+    return () => controller.abort();
+  }, [userId, aliasAttempt]);
+
+  const aliasContent = currentAlias?.failed ? (
+    <Pressable
+      accessibilityLabel="Réessayer de charger mon alias"
+      accessibilityRole="button"
+      onPress={() => setAliasAttempt((attempt) => attempt + 1)}>
+      <Text style={styles.aliasError}>Alias indisponible. Réessayer.</Text>
+    </Pressable>
+  ) : currentAlias?.value ? (
+    <Text selectable translate={false} style={styles.accountAlias}>{currentAlias.value}</Text>
+  ) : (
+    <ActivityIndicator color={themeColor('#267E70', 'success')} style={styles.aliasLoading} />
+  );
 
   useEffect(() => {
     if (!accountEmail) return;
@@ -150,7 +205,9 @@ export default function ProfileScreen() {
     }
   }
 
-  async function signIn() {
+  async function submitCredentials() {
+    if (submitting || accountEmail) return;
+
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!isValidEmail(normalizedEmail)) {
@@ -166,26 +223,52 @@ export default function ProfileScreen() {
       return;
     }
 
-    setFeedback(null);
-    setSubmitting(true);
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-
-    setSubmitting(false);
-
-    if (error) {
-      setFeedback({
-        message: 'E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.',
-        tone: 'error',
-      });
+    if (creatingAccount && password.length < 6) {
+      setFeedback({ message: 'Choisissez un mot de passe d’au moins 6 caractères.', tone: 'error' });
       return;
     }
 
-    setPassword('');
-    setFeedback({ message: 'Connexion réussie.', tone: 'success' });
+    setFeedback(null);
+    setSubmitting(true);
+
+    try {
+      const credentials = { email: normalizedEmail, password };
+      const { data, error } = creatingAccount
+        ? await supabase.auth.signUp(credentials)
+        : await supabase.auth.signInWithPassword(credentials);
+
+      if (error) {
+        setFeedback({
+          message: creatingAccount
+            ? error.code === 'weak_password'
+              ? 'Choisissez un mot de passe plus long et plus complexe.'
+              : 'Impossible de créer votre compte. Vérifiez vos informations et réessayez.'
+            : 'E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.',
+          tone: 'error',
+        });
+        return;
+      }
+
+      setPassword('');
+      setPasswordVisible(false);
+      if (data.session) setSession(data.session);
+      if (creatingAccount) setAuthMode('signIn');
+      setFeedback({
+        message: creatingAccount
+          ? data.session
+            ? 'Compte créé.'
+            : 'Vérifiez vos e-mails pour confirmer votre compte, puis connectez-vous.'
+          : 'Connexion réussie.',
+        tone: 'success',
+      });
+    } catch {
+      setFeedback({
+        message: 'Connexion impossible. Vérifiez votre connexion Internet et réessayez.',
+        tone: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function signOut() {
@@ -206,6 +289,7 @@ export default function ProfileScreen() {
 
     setEmail('');
     setPassword('');
+    setAuthMode('signIn');
   }
 
   return (
@@ -250,9 +334,7 @@ export default function ProfileScreen() {
                       <Text style={styles.connectedLabel}>CONNECTÉ</Text>
                     </View>
                     <Text style={styles.cardTitle}>Votre compte</Text>
-                    <Text selectable style={styles.accountEmail}>
-                      {<Text translate={false}>{accountEmail}</Text>}
-                    </Text>
+                    {aliasContent}
                   </View>
 
                   {feedback && (
@@ -396,10 +478,14 @@ export default function ProfileScreen() {
                     <AppIcon icon={Mail} color={themeColor("#D94235", 'accent')} size={24} strokeWidth={2.1} />
                   </View>
                   <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>Connexion par e-mail</Text>
-                    <Text style={styles.supportingText}>
-                      Utilisez l’adresse et le mot de passe associés à votre compte.
+                    <Text style={styles.cardTitle}>
+                      {creatingAccount ? 'Création de compte par e-mail' : 'Connexion par e-mail'}
                     </Text>
+                    {!creatingAccount && (
+                      <Text style={styles.supportingText}>
+                        Utilisez l’adresse et le mot de passe associés à votre compte.
+                      </Text>
+                    )}
                   </View>
                 </View>
 
@@ -434,17 +520,17 @@ export default function ProfileScreen() {
                     <TextInput keyboardAppearance={scheme}
                       accessibilityLabel="Mot de passe"
                       autoCapitalize="none"
-                      autoComplete="current-password"
+                      autoComplete={creatingAccount ? 'new-password' : 'current-password'}
                       autoCorrect={false}
                       editable={!submitting}
                       onChangeText={setPassword}
-                      onSubmitEditing={() => void signIn()}
+                      onSubmitEditing={() => void submitCredentials()}
                       placeholder="Votre mot de passe"
                       placeholderTextColor={themeColor("#9AA1AC", 'muted')}
                       returnKeyType="go"
                       secureTextEntry={!passwordVisible}
                       style={styles.input}
-                      textContentType="password"
+                      textContentType={creatingAccount ? 'newPassword' : 'password'}
                       value={password}
                     />
                     <Pressable
@@ -461,9 +547,10 @@ export default function ProfileScreen() {
                 </View>
 
                 {session?.user.is_anonymous && (
-                  <Text style={styles.guestText}>
-                    Vous utilisez actuellement l’app en mode invité.
-                  </Text>
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Alias</Text>
+                    {aliasContent}
+                  </View>
                 )}
 
                 {feedback && (
@@ -476,20 +563,40 @@ export default function ProfileScreen() {
                 )}
 
                 <AnimatedPressable
-                  accessibilityLabel="Se connecter par e-mail"
+                  accessibilityLabel={creatingAccount ? 'Créer un compte par e-mail' : 'Se connecter par e-mail'}
                   accessibilityRole="button"
                   disabled={submitting}
                   haptic="light"
-                  onPress={() => void signIn()}
+                  onPress={() => void submitCredentials()}
                   style={[styles.primaryButton, submitting && styles.disabled]}>
                   {submitting ? (
                     <ActivityIndicator color="#FFFFFF" />
                   ) : (
                     <>
-                      <Text style={styles.primaryButtonText}>Se connecter</Text>
-                      <AppIcon icon={LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
+                      <Text style={styles.primaryButtonText}>
+                        {creatingAccount ? 'Créer un compte' : 'Se connecter'}
+                      </Text>
+                      <AppIcon icon={creatingAccount ? UserRoundPlus : LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
                     </>
                   )}
+                </AnimatedPressable>
+
+                <AnimatedPressable
+                  accessibilityLabel={creatingAccount ? 'Se connecter par e-mail' : 'Créer un compte par e-mail'}
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  haptic="light"
+                  onPress={() => {
+                    setAuthMode(creatingAccount ? 'signIn' : 'signUp');
+                    setPassword('');
+                    setPasswordVisible(false);
+                    setFeedback(null);
+                  }}
+                  style={[styles.secondaryButton, submitting && styles.disabled]}>
+                  <AppIcon icon={creatingAccount ? LogIn : UserRoundPlus} color={themeColor("#485469", 'secondary')} size={19} />
+                  <Text style={styles.secondaryButtonText}>
+                    {creatingAccount ? 'Se connecter' : 'Créer un compte par e-mail'}
+                  </Text>
                 </AnimatedPressable>
 
                 <View style={styles.securityNote}>
@@ -501,7 +608,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
             )}
-            <RewardsCard />
+            {accountEmail && <RewardsCard />}
             <LanguageCard />
             <AppearanceCard />
           </View>
@@ -644,12 +751,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guestText: {
-    marginTop: -6,
-    color: themeColor('#7B674B', 'secondary'),
-    fontSize: 12,
-    lineHeight: 18,
-  },
   errorText: {
     marginTop: -5,
     color: themeColor('#BA3540', 'accent'),
@@ -723,12 +824,20 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
-  accountEmail: {
+  accountAlias: {
     marginTop: 5,
-    color: themeColor('#697487', 'muted'),
-    fontSize: 14,
-    lineHeight: 20,
+    color: themeColor('#267E70', 'success'),
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 25,
     textAlign: 'center',
+  },
+  aliasLoading: { marginTop: 8 },
+  aliasError: {
+    marginTop: 5,
+    color: themeColor('#BA3540', 'accent'),
+    fontSize: 12,
+    lineHeight: 18,
   },
   secondaryButton: {
     ...surfaceDepth(themeColor, 'control'),

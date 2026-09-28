@@ -2,8 +2,11 @@ import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
+import { AppIcon } from '@/components/ui/app-icon';
 import { useRewards, type RewardSummary } from '@/features/rewards/use-rewards';
 import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import UserRoundPlus from 'lucide-react-native/icons/user-round-plus';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, ActivityIndicator, Animated, Easing, Platform, StyleSheet } from 'react-native';
 
@@ -18,7 +21,18 @@ export function ReportReward({
   onDone: () => void;
   visible?: boolean;
 }) {
-  const { summary, error, refresh } = useRewards(reportId, reportKind);
+  const { summary, error, refresh, eligibility } = useRewards(reportId, reportKind);
+  if (eligibility !== 'registered') {
+    return (
+      <ReportCompletion
+        checking={eligibility === 'loading'}
+        error={error}
+        refresh={refresh}
+        reportId={reportId}
+        onDone={onDone}
+      />
+    );
+  }
   return (
     <RewardCelebration
       summary={summary}
@@ -28,6 +42,61 @@ export function ReportReward({
       onDone={onDone}
       visible={visible}
     />
+  );
+}
+
+function ReportCompletion({ checking, error, refresh, reportId, onDone }: {
+  checking: boolean;
+  error: boolean;
+  refresh: () => Promise<void>;
+  reportId: string;
+  onDone: () => void;
+}) {
+  const styles = useStyles();
+  const themeColor = useThemeColor();
+  const router = useRouter();
+  return (
+    <ScrollView contentContainerStyle={styles.screen} bounces={false}>
+      <View style={styles.topline}>
+        <Text style={styles.eyebrow}>CONTRIBUTION ENREGISTRÉE</Text>
+        <Text style={styles.check}>✓</Text>
+      </View>
+      <View style={styles.accountHero}>
+        <View style={styles.accountIcon}>
+          <AppIcon icon={UserRoundPlus} size={42} color={themeColor('#28644E', 'success')} />
+        </View>
+        <Text accessibilityRole="header" style={styles.title}>Votre vigilance compte.</Text>
+      </View>
+      {checking ? (
+        error ? (
+          <AnimatedPressable accessibilityRole="button" onPress={() => void refresh()} style={styles.retry}>
+            <Text style={styles.body}>Impossible de vérifier votre session. Réessayer.</Text>
+          </AnimatedPressable>
+        ) : <ActivityIndicator color={themeColor('#28644E', 'success')} />
+      ) : (
+        <Text style={styles.body}>Créez un compte pour être récompensé lors de vos prochains signalements.</Text>
+      )}
+      <Text selectable style={styles.reference}>Réf. {reportId.toUpperCase()}</Text>
+      <Text style={styles.notice}>
+        Cet envoi ne contacte pas automatiquement la police ou les secours. En
+        cas d’urgence, alertez les autorités compétentes.
+      </Text>
+      {!checking && (
+        <AnimatedPressable
+          accessibilityRole="button"
+          onPress={() => {
+            onDone();
+            router.push({ pathname: '/profil', params: { auth: 'signUp' } });
+          }}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Créer un compte</Text>
+        </AnimatedPressable>
+      )}
+      <AnimatedPressable accessibilityRole="button" onPress={onDone} style={styles.later}>
+        <Text style={styles.laterText}>{checking ? 'Terminer' : 'Plus tard'}</Text>
+      </AnimatedPressable>
+    </ScrollView>
   );
 }
 
@@ -304,6 +373,16 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     color: themeColor('#387D6B', 'success'),
   },
   check: { color: themeColor('#387D6B', 'success'), fontWeight: '800' },
+  accountHero: { alignItems: 'center', gap: 24, paddingVertical: 16 },
+  accountIcon: {
+    ...surfaceDepth(themeColor, 'raised'),
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: themeColor('#EDF5EF', 'successSoft'),
+  },
   hero: {
     height: 222,
     alignItems: 'center',

@@ -21,7 +21,7 @@ export type ReportEvent = {
   event_id: string;
   is_moderator: boolean;
   summary: NearbyEvent;
-  contributions: SafetyReportSummary[];
+  contributions: (SafetyReportSummary & { author_alias?: string | null })[];
   merges: { id: string; reason: string; created_at: string }[];
 };
 let signingIn: Promise<string> | null = null;

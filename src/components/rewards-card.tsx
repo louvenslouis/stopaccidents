@@ -3,12 +3,13 @@ import { Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { useRewards } from '@/features/rewards/use-rewards';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet } from 'react-native';
 
 export function RewardsCard() {
   const styles = useStyles();
+  const router = useRouter();
 
   const { summary, error, refresh } = useRewards();
   useFocusEffect(
@@ -47,6 +48,9 @@ export function RewardsCard() {
       <Text style={styles.body}>
         Encore {remaining} points avant le niveau {level + 1}
       </Text>
+      <AnimatedPressable accessibilityRole="button" onPress={() => router.push('/profil/classement')} style={styles.leaderboardLink}>
+        <Text style={styles.leaderboardLabel}>Voir le classement →</Text>
+      </AnimatedPressable>
       {error && (
         <AnimatedPressable
           accessibilityRole="button"
@@ -106,5 +110,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     overflow: 'hidden',
   },
   fill: { height: '100%', backgroundColor: '#CAA14C', borderRadius: 4 },
+  leaderboardLink: { minHeight: 44, justifyContent: 'center' },
+  leaderboardLabel: { color: themeColor('#72521F', 'warning'), fontWeight: '700', fontSize: 13 },
   error: { fontSize: 13, color: themeColor('#A24436', 'accent'), paddingVertical: 6 },
 }));
