@@ -1,3 +1,4 @@
+import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -22,8 +23,7 @@ import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import Info from 'lucide-react-native/icons/info';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { GeocodingCredit } from '@/components/geocoding-credit';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import {
@@ -123,8 +123,6 @@ export function SuspiciousVehicleReportSheet({
   const styles = useStyles();
   const themeColor = useThemeColor();
 
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
   const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('suspicious_vehicle', makeDraft, visible);
   const eventChoice = useEventChoice('suspicious_vehicle');
@@ -139,7 +137,6 @@ export function SuspiciousVehicleReportSheet({
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
   const submitting = useRef(false);
-  const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -328,37 +325,11 @@ export function SuspiciousVehicleReportSheet({
   }
 
   return (
-    <Modal
+    <ReportModalSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
       onRequestClose={close}
+      dismissDisabled={sending}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer le formulaire, les étapes enregistrées sont conservées"
-          disabled={sending}
-          onPress={close}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            {
-              height: Math.min(
-                height - insets.top - 18,
-                step === 0 && !receipt ? 580 : 850,
-              ),
-              paddingBottom: Math.max(insets.bottom, 12),
-            },
-          ]}
-        >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
           ) : eventChoice.panel ? eventChoice.panel : step === 0 && !receipt ? (
@@ -384,19 +355,6 @@ export function SuspiciousVehicleReportSheet({
             <ReportReward reportId={receipt} reportKind="suspicious_vehicle" onDone={done} visible={visible} />
           ) : (
             <>
-              <View
-                style={styles.handleArea}
-                onStartShouldSetResponder={() => true}
-                onResponderGrant={(event) => {
-                  dragStartY.current = event.nativeEvent.pageY;
-                }}
-                onResponderRelease={(event) => {
-                  if (event.nativeEvent.pageY - dragStartY.current > 60)
-                    close();
-                }}
-              >
-                <View style={styles.handle} />
-              </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
                   <AppIcon icon={ShieldAlert} size={23} color={themeColor("#DA3D32", 'accent')} />
@@ -722,9 +680,7 @@ export function SuspiciousVehicleReportSheet({
               )}
             </>
           )}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </ReportModalSheet>
   );
 }
 
@@ -733,23 +689,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   choice: { ...surfaceDepth(themeColor, 'control'), minHeight: 44, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1.5, borderColor: themeColor('#DFE4EB', 'border'), backgroundColor: themeColor('#F8F9FB', 'surface') },
   choiceSelected: { ...surfaceDepth(themeColor, 'raised'), borderColor: '#B96B16', backgroundColor: themeColor('#FFF1DD', 'warningSoft') },
   choiceText: { color: themeColor('#39465A', 'secondary'), fontSize: 13, fontWeight: '600' },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    backgroundColor: themeColor('#11182780', 'overlay'),
-  },
-  sheet: {
-    ...surfaceDepth(themeColor, 'card'),
-    width: '100%',
-    maxWidth: 620,
-    backgroundColor: themeColor('#fff', 'surface'),
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: 'hidden',
-  },
-  handleArea: { height: 28, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

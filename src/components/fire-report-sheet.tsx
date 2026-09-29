@@ -1,3 +1,4 @@
+import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -33,8 +34,7 @@ import CheckCheck from 'lucide-react-native/icons/check-check';
 import Flame from 'lucide-react-native/icons/flame';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 
 const stepLabels = ['Bien touché', 'État du feu', 'Personnes'];
 const stepIllustrations = {
@@ -174,8 +174,6 @@ export function FireReportSheet({
   const styles = useStyles();
   const themeColor = useThemeColor();
 
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
   const {
     draft,
@@ -203,7 +201,6 @@ export function FireReportSheet({
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
   const submitting = useRef(false);
-  const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -391,37 +388,11 @@ export function FireReportSheet({
 
   if (!draft) return null;
   return (
-    <Modal
+    <ReportModalSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
       onRequestClose={close}
+      dismissDisabled={sending}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer le formulaire, les informations sont conservées"
-          disabled={sending}
-          onPress={close}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            {
-              height: Math.min(
-                height - insets.top - 18,
-                step === 0 && !receipt ? 580 : 850,
-              ),
-              paddingBottom: Math.max(insets.bottom, 12),
-            },
-          ]}
-        >
           {!ready ? (
             <ReportDraftLoading
               error={storageError}
@@ -456,18 +427,6 @@ export function FireReportSheet({
             />
           ) : (
             <>
-              <View
-                style={styles.handleArea}
-                onStartShouldSetResponder={() => true}
-                onResponderGrant={(event) => {
-                  dragStartY.current = event.nativeEvent.pageY;
-                }}
-                onResponderRelease={(event) => {
-                  if (event.nativeEvent.pageY - dragStartY.current > 60) close();
-                }}
-              >
-                <View style={styles.handle} />
-              </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
                   <AppIcon icon={Flame} size={23} color={themeColor("#B76518", 'warning')} />
@@ -729,30 +688,11 @@ export function FireReportSheet({
               )}
             </>
           )}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </ReportModalSheet>
   );
 }
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    backgroundColor: themeColor('#11182780', 'overlay'),
-  },
-  sheet: {
-    ...surfaceDepth(themeColor, 'card'),
-    width: '100%',
-    maxWidth: 620,
-    backgroundColor: themeColor('#fff', 'surface'),
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: 'hidden',
-  },
-  handleArea: { height: 28, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

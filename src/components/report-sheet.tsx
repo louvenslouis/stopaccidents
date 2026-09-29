@@ -1,3 +1,4 @@
+import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { FireReportSheet } from '@/components/fire-report-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -24,8 +25,7 @@ import Siren from 'lucide-react-native/icons/siren';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
 import { ReportCamera } from '@/components/report-camera';
 import { SuspiciousVehicleReportSheet } from '@/components/suspicious-vehicle-report-sheet';
@@ -266,8 +266,6 @@ export function ReportSheet({
   const styles = useStyles();
   const themeColor = useThemeColor();
 
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
   const { location: appLocation } = useAppLocation();
   const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
   const eventChoice = useEventChoice('accident');
@@ -283,7 +281,6 @@ export function ReportSheet({
   const savedLocation = useRef<string | null>(null);
   const submitting = useRef(false);
   const locationRequest = useRef(0);
-  const dragStartY = useRef(0);
   const scroll = useRef<ScrollView>(null);
   useEffect(() => {
     if (!visible || reportType !== 'accident') {
@@ -451,37 +448,11 @@ export function ReportSheet({
   if (!draft) return null;
   return (
     <>
-    <Modal
+    <ReportModalSheet
       visible={visible && (reportType === null || reportType === 'accident')}
-      transparent
-      animationType="slide"
-      statusBarTranslucent
       onRequestClose={close}
+      dismissDisabled={sending}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer le formulaire, les informations sont conservées"
-          disabled={sending}
-          onPress={close}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            {
-              height: Math.min(
-                height - insets.top - 18,
-                reportType === null ? 560 : step === 0 && !receipt ? 580 : 850,
-              ),
-              paddingBottom: Math.max(insets.bottom, 12),
-            },
-          ]}
-        >
           {reportType === null ? (
             <ReportTypePicker
               onSelect={(type) => {
@@ -521,19 +492,6 @@ export function ReportSheet({
             <ReportReward reportId={receipt} reportKind="accident" onDone={done} visible={visible} />
           ) : (
             <>
-              <View
-                style={styles.handleArea}
-                onStartShouldSetResponder={() => true}
-                onResponderGrant={(event) => {
-                  dragStartY.current = event.nativeEvent.pageY;
-                }}
-                onResponderRelease={(event) => {
-                  if (event.nativeEvent.pageY - dragStartY.current > 60)
-                    close();
-                }}
-              >
-                <View style={styles.handle} />
-              </View>
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
                   <AppIcon icon={TriangleAlert} size={23} color={themeColor("#DA3D32", 'accent')} />
@@ -841,9 +799,7 @@ export function ReportSheet({
               )}
             </>
           )}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+    </ReportModalSheet>
     <SuspiciousVehicleReportSheet visible={visible && reportType === 'suspicious_vehicle'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <GunfireReportSheet visible={visible && reportType === 'gunfire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <ArmedPresenceReportSheet visible={visible && reportType === 'armed_presence'} onBackToTypes={onBackToTypes} onClose={onClose} />
@@ -901,23 +857,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    backgroundColor: themeColor('#11182780', 'overlay'),
-  },
-  sheet: {
-    ...surfaceDepth(themeColor, 'card'),
-    width: '100%',
-    maxWidth: 620,
-    backgroundColor: themeColor('#fff', 'surface'),
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    overflow: 'hidden',
-  },
-  handleArea: { height: 22, alignItems: 'center', justifyContent: 'center' },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDE5', 'elevated') },
   header: {
     paddingHorizontal: 22,
     paddingBottom: 20,

@@ -4,7 +4,7 @@ import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-p
 import { ReportIllustration } from "@/components/report-illustration";
 import ShieldCheck from "lucide-react-native/icons/shield-check";
 import X from "lucide-react-native/icons/x";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -20,8 +20,6 @@ import { AnimatedPressable } from "@/components/ui/animated-pressable";
 
 // Add future report categories here; each choice routes to its own form.
 const reportTypes = [
-  { id: "fire", title: "Incendies", tint: "#FFF0E5", border: "#F6CFB2", description: "Incendie" },
-  { id: "gunfire", title: "Tirs entendus", tint: "#FFF0EE", border: "#F3D1CB", description: "Proximité perçue, quantité approximative et rythme des tirs." },
   {
     id: "accident",
     title: "Accident",
@@ -30,25 +28,27 @@ const reportTypes = [
     description: "Collision, sortie de route ou personne renversée.",
   },
   {
+    id: "barricade",
+    tint: "#FFF5DF",
+    border: "#F2E3BC",
+    title: "Route barricadée",
+    description: "Route bloquée, obstacles et possibilités de passage.",
+  },
+  {
     id: "breakdown",
     title: "Véhicule en panne",
     tint: "#FFF4E8",
     border: "#F0D9BD",
     description: "Emplacement, type de véhicule et impact sur la circulation.",
   },
+  { id: "fire", title: "Incendie", tint: "#FFF0E5", border: "#F6CFB2", description: "Incendie" },
+  { id: "gunfire", title: "Tirs entendus", tint: "#FFF0EE", border: "#F3D1CB", description: "Proximité perçue, quantité approximative et rythme des tirs." },
   {
     id: "kidnapping",
     title: "Enlèvement",
     tint: "#F0EDFF",
     border: "#E0D9F8",
     description: "Véhicules, direction prise et indices sur la personne.",
-  },
-  {
-    id: "barricade",
-    tint: "#FFF5DF",
-    border: "#F2E3BC",
-    title: "Route barricadée",
-    description: "Route bloquée, obstacles et possibilités de passage.",
   },
   {
     id: "armed_presence",
@@ -143,7 +143,6 @@ export function ReportTypePicker({
   const styles = useStyles();
   const themeColor = useThemeColor();
 
-  const dragStartY = useRef(0);
   const { width: windowWidth, fontScale } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(0);
   const availableWidth = gridWidth || Math.max(0, windowWidth - 48);
@@ -160,18 +159,6 @@ export function ReportTypePicker({
   );
   return (
     <>
-      <View
-        style={styles.handleArea}
-        onStartShouldSetResponder={() => true}
-        onResponderGrant={(event) => {
-          dragStartY.current = event.nativeEvent.pageY;
-        }}
-        onResponderRelease={(event) => {
-          if (event.nativeEvent.pageY - dragStartY.current > 60) onClose();
-        }}
-      >
-        <View style={styles.handle} />
-      </View>
       <View style={styles.header}>
         <Text accessibilityRole="header" style={styles.title}>
           Nouveau signalement
@@ -215,8 +202,6 @@ export function ReportTypePicker({
 }
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
-  handleArea: { height: 28, alignItems: "center", justifyContent: "center" },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor("#D8DDE5", 'elevated') },
   header: {
     flexDirection: "row",
     alignItems: "center",
