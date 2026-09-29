@@ -1,3 +1,4 @@
+import { normalizeIdentifier } from '@/features/safety-profile/model';
 import { validManualContext, type ReportContext } from '@/features/report-events/context';
 import type { CapturedPhoto } from '@/features/accident-report/model';
 
@@ -84,6 +85,10 @@ export function validateSuspiciousVehicleStep(
     return 'Le lieu et son repère doivent contenir au maximum 500 caractères.';
   }
   if (step === 1) {
+    if (draft.registration.trim()) {
+      const registration = normalizeIdentifier(draft.registration);
+      if (!registration || registration.length < 3 || registration.length > 32) return 'Saisissez une immatriculation complète et lisible.';
+    }
     if (draft.color.trim().length < 2 || draft.color.trim().length > 80) return 'Indiquez la couleur (2 à 80 caractères), ou « inconnue ».';
     if (!vehicleTypes.some((type) => type.id === draft.vehicleType)) return 'Choisissez le type de véhicule.';
     if (!windowTintOptions.some((option) => option.id === draft.windowTint)) return 'Précisez si les vitres sont teintées.';

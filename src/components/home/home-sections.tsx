@@ -1,3 +1,4 @@
+import Flame from 'lucide-react-native/icons/flame';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { useLanguage } from '@/features/language/language-provider';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
@@ -49,6 +50,7 @@ const reportAppearance = {
     color: "#9B681D",
     background: "#F8F0DB",
   },
+  fire: { label: "Incendies", icon: Flame, color: "#D96025", background: "#FFF0E5", light: "#FFA553" },
   breakdown: {
     label: "Véhicule en panne",
     icon: Wrench,
@@ -74,7 +76,7 @@ const reportAppearance = {
     background: "#F4EBF7",
   },
   suspicious_vehicle: {
-    label: "Voiture suspecte",
+    label: "Vehicule Suspect",
     icon: CarFront,
     color: "#98601D",
     background: "#FBF0DF",

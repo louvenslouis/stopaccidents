@@ -1,0 +1,23 @@
+{
+  "generator": "Built-in image_gen",
+  "transparent_background": true,
+  "images": [
+    {
+      "file": "fire.png",
+      "prompt": "Use case: stylized-concept. Asset type: mobile safety-report application illustration, square isolated transparent PNG. Primary request: A single strong orange-red flame rising behind a small cream-colored domestic house with terracotta roof. Main category icon for reporting fires. Simple silhouette readable at 76 pixels. Style: polished friendly semi-realistic cartoon clipart, crisp dark navy contours, smooth dimensional shading, slightly three-quarter view, vivid colors, matching a set of illustrated cars in a road-safety application. Composition: centered, entire subject visible, generous transparent margins, compact readable forms. No background scenery, no floor rectangle, no framing circle, no text, no letters, no logos, no watermark. Genuine transparent background."
+    },
+    {
+      "file": "targets.png",
+      "prompt": "Use case: stylized-concept. Asset type: mobile safety-report application illustration, square isolated transparent PNG. Primary request: A compact balanced group of three clearly separate objects: red compact car, cream domestic house with terracotta roof, small teal shop with striped awning. Small orange flames on each identify fire-affected property. All three equally prominent, no overlap obscuring their identity. Style: polished friendly semi-realistic cartoon clipart, crisp dark navy contours, smooth dimensional shading, slightly three-quarter view, vivid colors, matching a set of illustrated cars in a road-safety application. Composition: centered, entire subject visible, generous transparent margins, compact readable forms. No background scenery, no floor rectangle, no framing circle, no text, no letters, no logos, no watermark. Genuine transparent background."
+    },
+    {
+      "file": "state.png",
+      "prompt": "Use case: stylized-concept. Asset type: mobile safety-report application illustration, square isolated transparent PNG. Primary request: A compact coherent group illustrating visible fire and smoke: bright orange flames emerging from a small piece of wood, with a soft grey smoke plume curling above. Very clear large shapes. Style: polished friendly semi-realistic cartoon clipart, crisp dark navy contours, smooth dimensional shading, slightly three-quarter view, vivid colors, matching a set of illustrated cars in a road-safety application. Composition: centered, entire subject visible, generous transparent margins, compact readable forms. No background scenery, no floor rectangle, no framing circle, no text, no letters, no logos, no watermark. Genuine transparent background."
+    },
+    {
+      "file": "people.png",
+      "prompt": "Use case: stylized-concept. Asset type: mobile safety-report application illustration, square isolated transparent PNG. Primary request: Two unharmed dark-skinned adults in everyday blue and teal clothing walking away from a small burning house behind them. Full bodies, clear poses, calm but purposeful evacuation. No injuries, no trapped people, no distress closeups. Style: polished friendly semi-realistic cartoon clipart, crisp dark navy contours, smooth dimensional shading, slightly three-quarter view, vivid colors, matching a set of illustrated cars in a road-safety application. Composition: centered, entire subject visible, generous transparent margins, compact readable forms. No background scenery, no floor rectangle, no framing circle, no text, no letters, no logos, no watermark. Genuine transparent background.",
+      "edit_prompt": "Remove both people completely. Keep the same burning house, flames and smoke; reconstruct obscured portions, center the remaining illustration and preserve genuine transparency. No people, text or annotations."
+    }
+  ]
+}

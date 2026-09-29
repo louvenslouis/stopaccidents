@@ -69,7 +69,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
       <View style={[styles.overlay, width >= 700 && styles.wideOverlay]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Fermer la fiche de la voiture suspecte"
+          accessibilityLabel="Fermer la fiche du Vehicule Suspect"
           onPress={onClose}
           style={StyleSheet.absoluteFill}
         />
@@ -88,7 +88,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>SIGNALEMENT</Text>
               <Text accessibilityRole="header" style={styles.title}>
-                Voiture suspecte
+                Vehicule Suspect
               </Text>
             </View>
             <Pressable
@@ -124,7 +124,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
                   </View>
                   <View style={styles.heading}>
                     <Text style={styles.label}>Type de signalement</Text>
-                    <Text style={styles.reportTitle}>Voiture suspecte</Text>
+                    <Text style={styles.reportTitle}>Vehicule Suspect</Text>
                   </View>
                 </View>
                 {report.completed_step < 3 && (
@@ -133,7 +133,7 @@ export function SuspiciousVehicleDetailSheet({ id, onClose, hideContributions = 
                     renseignées.
                   </Text>
                 )}
-                <Section title="Lieu de la voiture suspecte">
+                <Section title="Lieu du Vehicule Suspect">
                   <View style={styles.locationRow}>
                     <AppIcon icon={MapPin} size={19} color={themeColor("#737D8D", 'muted')} />
                     <Text selectable style={[styles.body, styles.heading]}>

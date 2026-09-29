@@ -20,6 +20,7 @@ import { AnimatedPressable } from "@/components/ui/animated-pressable";
 
 // Add future report categories here; each choice routes to its own form.
 const reportTypes = [
+  { id: "fire", title: "Incendies", tint: "#FFF0E5", border: "#F6CFB2", description: "Incendie" },
   { id: "gunfire", title: "Tirs entendus", tint: "#FFF0EE", border: "#F3D1CB", description: "Proximité perçue, quantité approximative et rythme des tirs." },
   {
     id: "accident",
@@ -60,7 +61,7 @@ const reportTypes = [
     id: "suspicious_vehicle",
     tint: "#EAF6F0",
     border: "#D1E9DC",
-    title: "Voiture suspecte",
+    title: "Vehicule Suspect",
     description: "Description du véhicule et faits observés.",
   },
 ] as const;

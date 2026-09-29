@@ -1,3 +1,4 @@
+import Flame from 'lucide-react-native/icons/flame';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { Pressable, Text, View } from '@/features/language/native';
@@ -62,7 +63,7 @@ export function LatestAccidentCard({
   const isBreakdown = report?.report_kind === 'breakdown';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
-  const reportLabel = isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Voiture suspecte' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
+  const reportLabel = report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
     ? 'Enlèvement'
     : report?.report_kind === 'accident'
       ? accidentTypeLabel(report)
@@ -102,7 +103,7 @@ export function LatestAccidentCard({
             <View style={styles.cardHeader}>
               <View style={[styles.iconBox, !expanded && styles.compactIconBox, isKidnapping && styles.kidnappingIconBox]}>
                 <AppIcon
-                  icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
+                  icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
                   size={expanded ? 26 : 22}
                   color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#D94235', 'accent')}
                 />
@@ -177,9 +178,9 @@ export function LatestAccidentCard({
               {report.testimony_count && <Text style={{ color: themeColor('#267E70', 'success'), fontSize: 13, paddingHorizontal: 18, paddingBottom: 12 }}>{report.testimony_count} témoignage{report.testimony_count > 1 ? 's' : ''} · dernier témoignage {formatAccidentDate(report.last_observed_at ?? report.created_at)}</Text>}
               <View style={styles.badges}>
                 <View style={[styles.badge, { backgroundColor: isKidnapping ? themeColor('#F4ECF8', 'violetSoft') : themeColor('#EEF2FF', 'infoSoft') }]}>
-                  <AppIcon icon={isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
+                  <AppIcon icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
                   <Text style={[styles.badgeText, { color: isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info') }]}>
-                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Voiture suspecte' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : 'Accident'}
+                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : 'Accident'}
                   </Text>
                 </View>
                 {severity && (

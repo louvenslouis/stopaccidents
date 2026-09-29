@@ -12,7 +12,8 @@ async function compile(path, dependencies = {}) {
   new Function('require', 'exports', outputText)((name) => dependencies[name], exports);
   return exports;
 }
-const model = await compile('features/suspicious-vehicle-report/model');
+const identifiers = await compile('features/safety-profile/model');
+const model = await compile('features/suspicious-vehicle-report/model', { '@/features/safety-profile/model': identifiers });
 const draft = {
   id: 'vehicle-id', location: 'Delmas', locationHint: 'Près du carrefour',
   coordinates: { latitude: 18.55, longitude: -72.3, accuracy: 9 },
@@ -60,7 +61,8 @@ test('suspicious vehicle saves each stage under the same ID and safely retries f
   fail = false;
   await saveSuspiciousVehicleReportStep(draft, 1, () => {});
   assert.deepEqual(calls[1], calls[2]);
-  assert.deepEqual(calls[2].payload, { p_id: draft.id, p_step: 2, p_vehicle_description: 'Couleur : Bleu\nType : Berline\nVitres teintées : Oui\nBerline bleue', p_observed_behavior: 'Passages répétés' });
+  assert.equal(calls[2].name, 'save_suspicious_vehicle_identity');
+  assert.deepEqual(calls[2].payload, { p_id: draft.id, p_registration: '', p_vehicle_description: 'Couleur : Bleu\nType : Berline\nVitres teintées : Oui\nBerline bleue', p_observed_behavior: 'Passages répétés' });
   await saveSuspiciousVehicleReportStep(draft, 2, () => {});
   assert.deepEqual(calls[3].payload, { p_id: draft.id, p_details: '', p_photos: [] });
 });
@@ -79,7 +81,7 @@ test('suspicious vehicle markers select the matching detail RPC and respect map 
   const markers = safetyReportMarkers([report, { ...report, latitude: null }, { ...report, latitude: 90 }]);
   assert.equal(markers.length, 1);
   assert.equal(markers[0].illustration, 'suspicious_vehicle');
-  assert.match(markers[0].title, /^Voiture suspecte/);
+  assert.match(markers[0].title, /^Vehicule Suspect/);
   assert.deepEqual(read.parseReportSelection(markers[0].id), { reportKind: 'suspicious_vehicle', id: draft.id });
   assert.equal(await read.readSuspiciousVehicleReport(draft.id, new AbortController().signal), report);
   assert.deepEqual(calls, [{ name: 'read_suspicious_vehicle_report', params: { p_id: draft.id } }]);

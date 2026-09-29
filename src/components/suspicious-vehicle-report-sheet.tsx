@@ -404,7 +404,7 @@ export function SuspiciousVehicleReportSheet({
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>SITUATION OBSERVÉE</Text>
                   <Text accessibilityRole="header" style={styles.title}>
-                    Signaler une voiture suspecte
+                    Signaler un Vehicule Suspect
                   </Text>
                 </View>
                 <Pressable
@@ -503,7 +503,7 @@ export function SuspiciousVehicleReportSheet({
                       </View>
                       <TextInput keyboardAppearance={scheme}
                         editable={!sending}
-                        accessibilityLabel="Repère précis du lieu de la voiture suspecte, facultatif"
+                        accessibilityLabel="Repère précis du lieu du Vehicule Suspect, facultatif"
                         placeholder="Ex. : devant la pharmacie, près du carrefour"
                         placeholderTextColor={themeColor("#89919E", 'muted')}
                         value={draft.locationHint}

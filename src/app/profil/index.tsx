@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import BriefcaseBusiness from 'lucide-react-native/icons/briefcase-business';
+import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
 import Eye from 'lucide-react-native/icons/eye';
@@ -31,7 +32,7 @@ import Mail from 'lucide-react-native/icons/mail';
 import MapPinHouse from 'lucide-react-native/icons/map-pin-house';
 import Save from 'lucide-react-native/icons/save';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
-import UserRound from 'lucide-react-native/icons/user-round';
+import { ProfileAvatar } from '@/components/profile-avatar';
 import UserRoundPlus from 'lucide-react-native/icons/user-round-plus';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
@@ -314,6 +315,20 @@ export default function ProfileScreen() {
         <AppScreen
           eyebrow="VOTRE ESPACE"
           title="Profil"
+          headerRight={
+            <AnimatedPressable
+              accessibilityLabel="Retour"
+              accessibilityRole="button"
+              haptic="light"
+              hitSlop={8}
+              onPress={() => {
+                if (router.canGoBack()) router.back();
+                else router.replace('/');
+              }}
+              style={styles.backButton}>
+              <AppIcon icon={ChevronLeft} size={22} color={themeColor('#485469', 'secondary')} />
+            </AnimatedPressable>
+          }
           contentContainerStyle={styles.screenContent}>
           <View style={styles.content}>
             <ModerationPanel />
@@ -325,9 +340,7 @@ export default function ProfileScreen() {
             ) : accountEmail ? (
               <View style={styles.personalGroup}>
                 <View style={styles.card}>
-                  <View style={styles.accountIcon}>
-                    <AppIcon icon={UserRound} color={themeColor("#267E70", 'success')} size={29} strokeWidth={2.1} />
-                  </View>
+                  {session && <ProfileAvatar key={session.user.id} user={session.user} />}
                   <View style={styles.accountHeading}>
                     <View style={styles.connectedRow}>
                       <AppIcon icon={CircleCheck} color={themeColor("#267E70", 'success')} size={17} />
@@ -363,6 +376,15 @@ export default function ProfileScreen() {
                     )}
                   </AnimatedPressable>
                 </View>
+
+                <AnimatedPressable accessibilityRole="button" accessibilityLabel="Véhicules et identité" haptic="light"
+                  onPress={() => router.push('/profil/vehicules-identite')} style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <AppIcon icon={LockKeyhole} color={themeColor('#267E70', 'success')} size={24} />
+                    <Text style={[styles.cardTitle, styles.flex]}>Véhicules et identité</Text>
+                    <AppIcon icon={ChevronRight} color={themeColor('#89919E', 'muted')} size={20} />
+                  </View>
+                </AnimatedPressable>
 
                 <View style={styles.card}>
                   <View style={styles.cardHeader}>
@@ -619,6 +641,15 @@ export default function ProfileScreen() {
 }
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  backButton: {
+    ...surfaceDepth(themeColor, 'control'),
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   flex: { flex: 1 },
   screenContent: { paddingBottom: 132 },
   content: {
@@ -800,15 +831,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     color: themeColor('#7B8492', 'muted'),
     fontSize: 11,
     lineHeight: 17,
-  },
-  accountIcon: {
-    width: 68,
-    height: 68,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    backgroundColor: themeColor('#EAF6F2', 'successSoft'),
   },
   accountHeading: { alignItems: 'center' },
   connectedRow: {

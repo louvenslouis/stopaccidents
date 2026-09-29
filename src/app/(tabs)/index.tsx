@@ -18,6 +18,7 @@ import { AppIcon } from '@/components/ui/app-icon';
 import Bell from 'lucide-react-native/icons/bell';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
+import { CurrentUserAvatar } from '@/components/current-user-avatar';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
@@ -148,16 +149,28 @@ export default function HomeScreen() {
           </View>
         }
         headerRight={
-          <AnimatedPressable
-            accessibilityLabel="Consulter mes alertes locales"
-            accessibilityRole="button"
-            onPress={() => setZonesOpen(true)}
-            haptic="light"
-            hitSlop={8}
-            pressedScale={0.9}
-            style={styles.notificationButton}>
-            <AppIcon icon={Bell} size={21} color={themeColor("#49614D", 'secondary')} />
-          </AnimatedPressable>
+          <View style={styles.headerActions}>
+            <AnimatedPressable
+              accessibilityLabel="Consulter mes alertes locales"
+              accessibilityRole="button"
+              onPress={() => setZonesOpen(true)}
+              haptic="light"
+              hitSlop={4}
+              pressedScale={0.9}
+              style={styles.headerButton}>
+              <AppIcon icon={Bell} size={21} color={themeColor('#49614D', 'secondary')} />
+            </AnimatedPressable>
+            <AnimatedPressable
+              accessibilityLabel="Ouvrir mon profil"
+              accessibilityRole="button"
+              onPress={() => router.push('/profil')}
+              haptic="light"
+              hitSlop={4}
+              pressedScale={0.9}
+              style={styles.headerButton}>
+              <CurrentUserAvatar />
+            </AnimatedPressable>
+          </View>
         }
       >
         <LatestAccidentCard
@@ -257,7 +270,12 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  notificationButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerButton: {
     ...surfaceDepth(themeColor, 'control'),
     width: 46,
     height: 46,

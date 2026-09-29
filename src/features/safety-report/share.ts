@@ -23,8 +23,9 @@ export function reportShareUrl(report: SafetyReportSummary, siteUrl = process.en
 export function reportLabel(report: SafetyReportSummary) {
   switch (report.report_kind) {
     case 'accident': return accidentTypeLabel(report);
+    case 'fire': return 'Incendie';
     case 'gunfire': return 'Tirs entendus';
-    case 'suspicious_vehicle': return 'Voiture suspecte';
+    case 'suspicious_vehicle': return 'Vehicule Suspect';
     case 'armed_presence': return 'Présence d’hommes armés';
     case 'barricade': return 'Route barricadée';
     case 'breakdown': return 'Véhicule en panne';

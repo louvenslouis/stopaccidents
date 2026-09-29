@@ -51,11 +51,18 @@ export type BreakdownReportDetail = BreakdownReportSummary & {
   traffic_impact: TrafficImpact;
   details: string;
 };
-export type SafetyReportSummary = GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary | BreakdownReportSummary;
+export type FireReportSummary = ReportLocation & { report_kind: 'fire'; accident_type: null; severity: null };
+export type FireReportDetail = FireReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; fire_target: string; fire_state: string; people_danger: string; details: string };
+export async function readFireReport(id: string, signal: AbortSignal): Promise<FireReportDetail | null> {
+  const { data, error } = await supabase.rpc('read_fire_report', { p_id: id }).abortSignal(signal);
+  if (error) throw new Error('Impossible de charger cet incendie. Réessayez.');
+  return data as FireReportDetail | null;
+}
+export type SafetyReportSummary = FireReportSummary | GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary | BreakdownReportSummary;
 
 export async function readSuspiciousVehicleReport(id: string, signal: AbortSignal): Promise<SuspiciousVehicleReportDetail | null> {
   const { data, error } = await supabase.rpc('read_suspicious_vehicle_report', { p_id: id }).abortSignal(signal);
-  if (error) throw new Error('Impossible de charger ce signalement de voiture suspecte. Réessayez.');
+  if (error) throw new Error('Impossible de charger ce signalement de Vehicule Suspect. Réessayez.');
   if (!data) return null;
   const report = data as SuspiciousVehicleReportDetail;
   if (!report.photos?.length || signal.aborted) return report;
@@ -144,7 +151,7 @@ export function parseReportSelection(value: string) {
   if (separator < 1) return null;
   const reportKind = value.slice(0, separator);
   const id = value.slice(separator + 1);
-  if ((reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle' && reportKind !== 'breakdown') || !id) {
+  if ((reportKind !== 'fire' && reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle' && reportKind !== 'breakdown') || !id) {
     return null;
   }
   return { reportKind, id } as const;

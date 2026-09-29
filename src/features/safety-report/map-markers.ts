@@ -27,7 +27,7 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
     }
 
     if (report.report_kind === 'suspicious_vehicle') {
-      return [{ id: reportSelection(report), latitude, longitude, color: '#95621C', priority: 3, illustration: 'suspicious_vehicle', title: `Voiture suspecte · ${activity}` }];
+      return [{ id: reportSelection(report), latitude, longitude, color: '#95621C', priority: 3, illustration: 'suspicious_vehicle', title: `Vehicule Suspect · ${activity}` }];
     }
     if (report.report_kind === 'gunfire') {
       return [{ id: reportSelection(report), latitude, longitude, color: '#AF3848', priority: 5, illustration: 'gunfire', title: `Tirs entendus · lieu d’écoute · ${activity}` }];
@@ -37,6 +37,9 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
     }
     if (report.report_kind === 'barricade') {
       return [{ id: reportSelection(report), latitude, longitude, color: '#B96B16', priority: 4, illustration: 'barricade', title: `Route barricadée · ${activity}` }];
+    }
+    if (report.report_kind === 'fire') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#D96025', priority: 5, illustration: 'fire', title: `Incendie · ${activity}` }];
     }
     if (report.report_kind === 'breakdown') {
       return [{ id: reportSelection(report), latitude, longitude, color: '#B76518', priority: 2, illustration: 'breakdown', title: `Véhicule en panne · ${activity}` }];

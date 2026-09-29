@@ -72,7 +72,8 @@ test("charts fill gaps, include both boundaries, and retain every count in long 
   );
   assert.equal(year.at(-1).end, "2026-12-31");
   assert.equal(subcategories("traffic").length, 2);
-  assert.equal(subcategories("security").length, 4);
+  assert.equal(subcategories("security").length, 5);
+  assert.ok(subcategories("security").some((category) => category.id === "fire"));
 });
 
 test('event dates match the chart calendar day in Haiti', () => {

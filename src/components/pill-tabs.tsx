@@ -12,7 +12,7 @@ import {
 import ClipboardList from 'lucide-react-native/icons/clipboard-list';
 import House from 'lucide-react-native/icons/house';
 import Map from 'lucide-react-native/icons/map';
-import User from 'lucide-react-native/icons/user';
+import UsersRound from 'lucide-react-native/icons/users-round';
 import { useEffect, useRef, useState, type Ref, type RefObject } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import Animated, {
@@ -113,7 +113,7 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
   const pathname = usePathname();
   const selectedIndex = pathname.startsWith('/carte') ? 1
     : pathname.startsWith('/rapports') ? 2
-      : pathname.startsWith('/profil') ? 3 : 0;
+      : pathname.startsWith('/mes-proches') ? 3 : 0;
   const [barSize, setBarSize] = useState({ width: 0, height: 0 });
   const buttonWidth = Math.max(0, (barSize.width - 16) / 4);
   const previousWidth = useRef(0);
@@ -185,8 +185,8 @@ export default function PillTabs() {
             <TabButton contrastIndex={2} label="Rapports" icon={ClipboardList} />
           </TabTrigger>
 
-          <TabTrigger name="profile" href="/profil" asChild>
-            <TabButton contrastIndex={3} label="Profil" icon={User} />
+          <TabTrigger name="relatives" href="/mes-proches" asChild>
+            <TabButton contrastIndex={3} label="Mes proches" icon={UsersRound} />
           </TabTrigger>
         </FloatingTabList>
       </TabList>

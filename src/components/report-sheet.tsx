@@ -1,3 +1,4 @@
+import { FireReportSheet } from '@/components/fire-report-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -847,6 +848,7 @@ export function ReportSheet({
     <GunfireReportSheet visible={visible && reportType === 'gunfire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <ArmedPresenceReportSheet visible={visible && reportType === 'armed_presence'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <BarricadeReportSheet visible={visible && reportType === 'barricade'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <FireReportSheet visible={visible && reportType === 'fire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <BreakdownReportSheet visible={visible && reportType === 'breakdown'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <KidnappingReportSheet
       visible={visible && reportType === 'kidnapping'}

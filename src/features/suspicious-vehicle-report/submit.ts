@@ -68,8 +68,9 @@ export async function saveSuspiciousVehicleReportStep(
       : 'Enregistrement des informations…',
   );
   const { data, error } = await supabase.rpc(
-    'save_suspicious_vehicle_report_step',
-    payload,
+    step === 1 ? 'save_suspicious_vehicle_identity' : 'save_suspicious_vehicle_report_step',
+    step === 1 ? { p_id: draft.id, p_vehicle_description: payload.p_vehicle_description,
+      p_observed_behavior: payload.p_observed_behavior, p_registration: draft.registration.trim() } : payload,
   );
   if (error || !data) {
     throw new Error(

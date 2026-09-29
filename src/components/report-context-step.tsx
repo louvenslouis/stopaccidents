@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import { SavedPlacePicker } from '@/components/saved-place-picker';
 import type { SavedPlace } from '@/features/profile/saved-places';
+import { ReportPlaceCard } from '@/components/report-place-card';
 import { ReportTimeRuler } from '@/components/report-time-ruler';
 import { reportTimeAt, validMinutesAgo, publicationCountdown, type ManualReportContext } from '@/features/report-events/context';
 
@@ -73,15 +74,12 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
   const canPublish = !busy && (!editing || (place !== null && validMinutesAgo(minutesAgo)));
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, editing && styles.editingContent]} keyboardShouldPersistTaps="handled">
         <View style={styles.handle} />
         <Text accessibilityRole="header" style={styles.title}>{editing ? 'Où et quand ?' : 'Votre signalement'}</Text>
         {editing ? (
           <>
-            <Pressable accessibilityRole="button" onPress={() => setPicker(true)} disabled={busy} style={styles.place}>
-              <Text style={styles.optionText}>{place?.address || 'Choisir le lieu'}</Text>
-              <Text style={styles.arrow}>↗</Text>
-            </Pressable>
+            <ReportPlaceCard place={place} disabled={busy} onPress={() => setPicker(true)} />
             <ReportTimeRuler minutesAgo={minutesAgo} disabled={busy} active={active && editing}
               onChange={(value) => { setMinutesAgo(value); setLocalError(null); }} />
           </>
@@ -122,14 +120,13 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
 const useStyles = createThemedStyles((color) => StyleSheet.create({
   container: { flex: 1 }, content: { padding: 24, gap: 24 },
   handle: { alignSelf: 'center', width: 38, height: 5, borderRadius: 3, backgroundColor: color('#D6DBE1', 'border') },
+  editingContent: { gap: 18, paddingBottom: 12 },
   title: { fontSize: 28, fontWeight: '800', color: color('#243147', 'text') },
   options: { gap: 14 }, option: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, minHeight: 100, borderRadius: 22, borderWidth: 1, borderColor: color('#DFE4E9', 'border'), backgroundColor: color('#F8F9FB', 'surface') },
   selected: { borderColor: color('#267E70', 'success'), backgroundColor: color('#ECF6F2', 'elevated') },
   optionText: { flex: 1, fontSize: 17, lineHeight: 25, fontWeight: '600', color: color('#243147', 'text') },
   radio: { width: 25, height: 25, borderRadius: 13, borderWidth: 2, borderColor: color('#A4ADBA', 'muted'), alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: color('#267E70', 'success') }, dot: { width: 13, height: 13, borderRadius: 7, backgroundColor: color('#267E70', 'success') },
-  place: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 18, backgroundColor: color('#EEF3F4', 'elevated') },
-  arrow: { fontSize: 24, color: color('#267E70', 'success') },
   footer: { paddingHorizontal: 24, paddingTop: 12, gap: 4 }, publish: { height: 58, borderRadius: 18, overflow: 'hidden', backgroundColor: '#235D55', alignItems: 'center', justifyContent: 'center' },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#329B85' }, publishText: { color: '#fff', fontSize: 17, fontWeight: '800' },
   cancel: { minHeight: 48, justifyContent: 'center', alignItems: 'center' }, cancelText: { fontSize: 15, color: color('#697687', 'muted') },

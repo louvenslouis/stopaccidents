@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 
 const illustrations = {
+  fire: require('../../assets/images/fire-report/fire.png'),
   gunfire: require('../../assets/images/report-illustrations/gunfire.png'),
   suspicious_vehicle: require('../../assets/images/report-illustrations/suspicious-vehicle.png'),
   armed_presence: require('../../assets/images/report-illustrations/armed-presence.png'),

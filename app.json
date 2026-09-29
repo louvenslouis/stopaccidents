@@ -25,14 +25,19 @@
     },
     "plugins": [
       "expo-router",
-      ["react-native-share", {}],
+      [
+        "react-native-share",
+        {}
+      ],
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76,
-          "dark": { "backgroundColor": "#10151D" }
+          "dark": {
+            "backgroundColor": "#10151D"
+          }
         }
       ],
       [
@@ -53,7 +58,20 @@
       [
         "expo-location",
         {
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true,
+          "locationAlwaysAndWhenInUsePermission": "Autorisez Stop Accidents à partager votre position avec les proches choisis, même en arrière-plan.",
           "locationWhenInUsePermission": "Autorisez Stop Accidents à utiliser votre position dès l’ouverture afin de préremplir les signalements et d’afficher votre emplacement sur la carte."
+        }
+      ],
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autorisez Stop Accidents à enregistrer une photo de votre carte d’identité.",
+          "cameraPermission": "Autorisez Stop Accidents à photographier votre carte d’identité.",
+          "microphonePermission": false
         }
       ]
     ],

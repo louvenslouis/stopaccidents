@@ -12,7 +12,7 @@ const STORAGE_PREFIX = 'stopaccidents.supabase';
 const SECURE_STORE_CHUNK_LENGTH = 450;
 const MAX_SECURE_STORE_CHUNKS = 256;
 const secureStoreOptions: SecureStore.SecureStoreOptions = {
-  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
 };
 
 type StoredValueMetadata = {
