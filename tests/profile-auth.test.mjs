@@ -51,6 +51,12 @@ function profile(session = null, response = { data: { session: null }, error: nu
     };
     if (name === 'expo-router') return { useLocalSearchParams: () => params, useRouter: () => ({ setParams() {} }) };
     if (name === '@/components/rewards-card') return { RewardsCard: 'RewardsCard' };
+    if (name === '@/features/profile/google-auth') return {
+      signInWithGoogle: async () => {
+        requests.push({ method: 'google' });
+        return { status: 'connected', session: { user: { email: 'personne@example.com', is_anonymous: false } } };
+      },
+    };
     if (name === '@/features/language/native') return native;
     if (name === '@/features/appearance/theme-provider') return {
       createThemedStyles: (factory) => () => factory((light) => light),
@@ -98,6 +104,19 @@ test('email account creation is offered to visitors and guests, and hidden for c
     assert.ok(profile(session).button(createLabel));
   }
   assert.equal(profile({ user: { email: 'personne@example.com', is_anonymous: false } }).button(createLabel), null);
+});
+
+test('Google login stays disabled until the provider is configured', async () => {
+  for (const session of [null, { user: { is_anonymous: true } }]) {
+    const screen = profile(session);
+    const google = screen.button('Continuer avec Google');
+    assert.equal(google.props.disabled, true);
+    google.props.onPress();
+    await new Promise(setImmediate);
+    assert.deepEqual(screen.requests, []);
+  }
+  assert.equal(profile({ user: { email: 'personne@example.com', is_anonymous: false } })
+    .button('Continuer avec Google'), null);
 });
 
 test('completion signup link opens the account creation form directly', () => {

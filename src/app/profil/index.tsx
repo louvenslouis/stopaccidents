@@ -10,6 +10,7 @@ import { SavedPlacePicker } from '@/components/saved-place-picker';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { readUserAlias } from '@/features/profile/alias';
+import { completeGoogleSignIn, signInWithGoogle } from '@/features/profile/google-auth';
 import {
   readSavedPlaces,
   saveSavedPlaces,
@@ -41,6 +42,8 @@ type Feedback = {
   message: string;
   tone: 'error' | 'success';
 };
+
+const GOOGLE_AUTH_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -75,7 +78,7 @@ export default function ProfileScreen() {
   const { scheme } = useAppTheme();
   const styles = useStyles();
   const themeColor = useThemeColor();
-  const { auth } = useLocalSearchParams<{ auth?: string }>();
+  const { auth, code } = useLocalSearchParams<{ auth?: string; code?: string }>();
   const router = useRouter();
 
   const [session, setSession] = useState<Session | null>(null);
@@ -109,6 +112,21 @@ export default function ProfileScreen() {
     });
     return () => { active = false; };
   }, [auth, router]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !code) return;
+    let active = true;
+    void completeGoogleSignIn(window.location.href).then((nextSession) => {
+      if (!active) return;
+      setSession(nextSession);
+      setFeedback({ message: 'Connexion réussie.', tone: 'success' });
+    }).catch(() => {
+      if (active) setFeedback({ message: 'Connexion Google impossible. Réessayez.', tone: 'error' });
+    }).finally(() => {
+      if (active) router.setParams({ code: undefined });
+    });
+    return () => { active = false; };
+  }, [code, router]);
 
   useEffect(() => {
     let active = true;
@@ -288,6 +306,28 @@ export default function ProfileScreen() {
     } catch {
       setFeedback({
         message: 'Connexion impossible. Vérifiez votre connexion Internet et réessayez.',
+        tone: 'error',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function submitGoogle() {
+    if (!GOOGLE_AUTH_ENABLED || submitting || accountEmail) return;
+    setFeedback(null);
+    setSubmitting(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result.status === 'connected') {
+        setSession(result.session);
+        setFeedback({ message: 'Connexion réussie.', tone: 'success' });
+      }
+    } catch (error) {
+      setFeedback({
+        message: error instanceof Error && error.message.startsWith('Connexion Google')
+          ? error.message
+          : 'Connexion Google impossible. Réessayez.',
         tone: 'error',
       });
     } finally {
@@ -644,6 +684,17 @@ export default function ProfileScreen() {
                   </Text>
                 </AnimatedPressable>
 
+                <AnimatedPressable
+                  accessibilityLabel="Continuer avec Google"
+                  accessibilityRole="button"
+                  disabled={submitting || !GOOGLE_AUTH_ENABLED}
+                  haptic="light"
+                  onPress={() => void submitGoogle()}
+                  style={[styles.googleButton, (submitting || !GOOGLE_AUTH_ENABLED) && styles.disabled]}>
+                  <Text style={styles.googleMark} translate={false}>G</Text>
+                  <Text style={styles.googleButtonText}>Continuer avec Google</Text>
+                </AnimatedPressable>
+
                 <View style={styles.securityNote}>
                   <AppIcon icon={ShieldCheck} color={themeColor("#6C7789", 'muted')} size={18} />
                   <Text style={[styles.securityText, styles.flex]}>
@@ -897,6 +948,26 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   secondaryButtonText: {
     color: themeColor('#485469', 'secondary'),
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '700',
+  },
+  googleButton: {
+    ...surfaceDepth(themeColor, 'control'),
+    minHeight: 52,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: themeColor('#DFE3EA', 'border'),
+    backgroundColor: themeColor('#FFFFFF', 'surface'),
+  },
+  googleMark: { color: '#4285F4', fontSize: 20, lineHeight: 24, fontWeight: '800' },
+  googleButtonText: {
+    color: themeColor('#243147', 'text'),
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '700',

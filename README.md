@@ -36,6 +36,13 @@ app. Set the Auth Site URL and allowed redirect URLs to the deployed app before
 testing confirmation links. See the [Supabase SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp)
 and [redirect URL guide](https://supabase.com/docs/guides/auth/redirect-urls).
 
+Google login uses Supabase OAuth. To activate it for this project:
+
+1. In [Google Auth Platform](https://console.cloud.google.com/auth/overview), create a Web OAuth client. Add `https://louvenslouis.github.io` as an authorized JavaScript origin and `https://vqzmzblwmbhmfoikpbhy.supabase.co/auth/v1/callback` as an authorized redirect URI.
+2. Add that client ID and secret to [Supabase Authentication > Google](https://supabase.com/dashboard/project/vqzmzblwmbhmfoikpbhy/auth/providers?provider=Google), then enable the provider. Store the secret there, never in Expo.
+3. Add `https://louvenslouis.github.io/stopaccidents/profil/` and `stopaccidents://profil` to [Supabase's allowed redirect URLs](https://supabase.com/dashboard/project/vqzmzblwmbhmfoikpbhy/auth/url-configuration). Add the current local Web URL when testing locally. Native OAuth callbacks need a development or production build with the `stopaccidents` scheme; Expo Go's redirect URL is not stable.
+4. Once Google OAuth works, set `EXPO_PUBLIC_GOOGLE_AUTH_ENABLED=true` in the build environment to enable the button.
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
