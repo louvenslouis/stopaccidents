@@ -168,6 +168,41 @@ test('signup errors restore the form so the user can retry', async () => {
   }
 });
 
+test('signup explains when confirmation email delivery blocks account creation', async () => {
+  const screen = profile(null, {
+    data: { session: null },
+    error: { code: 'email_address_not_authorized', status: 422 },
+  });
+  screen.button(createLabel).props.onPress();
+  screen.fill();
+  await screen.submit(createLabel);
+  assert.ok(screen.hasText('L’envoi des e-mails de confirmation n’est pas configuré pour cette adresse.'));
+  assert.equal(screen.button(createLabel).props.disabled, false);
+  assert.equal(screen.input('Mot de passe').props.value, 'password123');
+});
+
+test('signup explains when confirmation emails are rate limited', async () => {
+  const screen = profile(null, {
+    data: { session: null },
+    error: { code: 'over_email_send_rate_limit', status: 429 },
+  });
+  screen.button(createLabel).props.onPress();
+  screen.fill();
+  await screen.submit(createLabel);
+  assert.ok(screen.hasText('Limite d’envoi des e-mails de confirmation atteinte. Réessayez plus tard.'));
+});
+
+test('signup surfaces an unknown Auth error code for diagnosis', async () => {
+  const screen = profile(null, {
+    data: { session: null },
+    error: { code: 'unexpected_failure', status: 422 },
+  });
+  screen.button(createLabel).props.onPress();
+  screen.fill();
+  await screen.submit(createLabel);
+  assert.ok(screen.hasText('Impossible de créer votre compte (unexpected_failure). Réessayez.'));
+});
+
 test('the existing login form still uses password sign-in', async () => {
   const screen = profile();
   screen.fill('personne@example.com', 'old');

@@ -27,6 +27,15 @@ variable, source file, build profile, or client bundle. Privileged operations mu
 run in a server or Supabase Edge Function and every exposed table must use Row Level
 Security (RLS) with least-privilege policies.
 
+For email account creation, configure a custom SMTP provider in the Supabase project's
+Authentication settings. Supabase's default mail service only delivers confirmation
+messages to addresses belonging to the project organization, so other users receive
+`email_address_not_authorized`. It also has a low shared send limit that can return
+`over_email_send_rate_limit` during signup. Keep SMTP credentials in Supabase, never in the Expo
+app. Set the Auth Site URL and allowed redirect URLs to the deployed app before
+testing confirmation links. See the [Supabase SMTP guide](https://supabase.com/docs/guides/auth/auth-smtp)
+and [redirect URL guide](https://supabase.com/docs/guides/auth/redirect-urls).
+
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)

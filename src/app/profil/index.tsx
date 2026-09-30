@@ -46,6 +46,31 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function signupErrorMessage(error: { code?: string; status?: number }) {
+  switch (error.code) {
+    case 'weak_password':
+      return 'Choisissez un mot de passe plus long et plus complexe.';
+    case 'email_address_not_authorized':
+      return 'L’envoi des e-mails de confirmation n’est pas configuré pour cette adresse.';
+    case 'email_address_invalid':
+      return 'Cette adresse e-mail ne peut pas être utilisée. Vérifiez-la et réessayez.';
+    case 'over_email_send_rate_limit':
+      return 'Limite d’envoi des e-mails de confirmation atteinte. Réessayez plus tard.';
+    case 'over_request_rate_limit':
+      return 'Trop de tentatives. Attendez quelques minutes avant de réessayer.';
+    case 'user_already_exists':
+    case 'email_exists':
+      return 'Cette adresse possède déjà un compte. Connectez-vous.';
+    case 'signup_disabled':
+    case 'email_provider_disabled':
+      return 'La création de compte par e-mail est désactivée pour le moment.';
+    default:
+      return error.status === 500
+        ? `La création du compte a échoué côté serveur${error.code ? ` (${error.code})` : ''}. Réessayez plus tard.`
+        : `Impossible de créer votre compte${error.code ? ` (${error.code})` : ''}. Réessayez.`;
+  }
+}
+
 export default function ProfileScreen() {
   const { scheme } = useAppTheme();
   const styles = useStyles();
@@ -241,9 +266,7 @@ export default function ProfileScreen() {
       if (error) {
         setFeedback({
           message: creatingAccount
-            ? error.code === 'weak_password'
-              ? 'Choisissez un mot de passe plus long et plus complexe.'
-              : 'Impossible de créer votre compte. Vérifiez vos informations et réessayez.'
+            ? signupErrorMessage(error)
             : 'E-mail ou mot de passe incorrect. Vérifiez vos informations et réessayez.',
           tone: 'error',
         });
