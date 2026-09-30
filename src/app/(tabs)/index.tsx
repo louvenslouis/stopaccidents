@@ -6,6 +6,7 @@ import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-p
 import { AppScreen } from '@/components/app-screen';
 import { LatestAccidentCard } from '@/components/latest-accident-card';
 import { HomeSections } from '@/components/home/home-sections';
+import { HomeMenu } from '@/components/home/home-menu';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { sharedReportSelection } from '@/features/safety-report/share';
 import { SafetyReportDetailSheet } from '@/components/safety-report-detail-sheet';
@@ -18,7 +19,6 @@ import { AppIcon } from '@/components/ui/app-icon';
 import Bell from 'lucide-react-native/icons/bell';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
-import { CurrentUserAvatar } from '@/components/current-user-avatar';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
@@ -160,16 +160,7 @@ export default function HomeScreen() {
               style={styles.headerButton}>
               <AppIcon icon={Bell} size={21} color={themeColor('#49614D', 'secondary')} />
             </AnimatedPressable>
-            <AnimatedPressable
-              accessibilityLabel="Ouvrir mon profil"
-              accessibilityRole="button"
-              onPress={() => router.push('/profil')}
-              haptic="light"
-              hitSlop={4}
-              pressedScale={0.9}
-              style={styles.headerButton}>
-              <CurrentUserAvatar />
-            </AnimatedPressable>
+            <HomeMenu />
           </View>
         }
       >

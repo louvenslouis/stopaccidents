@@ -1,5 +1,11 @@
 // French source messages are stable keys; never use this catalog for stored user content.
 export const haitianCreole: Record<string, string> = {
+  "Mon profil": "Pwofil mwen",
+  "Paramètres": "Paramèt",
+  "Le Site": "Sit la",
+  "Ouvrir le menu": "Ouvri meni an",
+  "Fermer le menu": "Fèmen meni an",
+  "Impossible d’ouvrir le site. Réessayez.": "Pa kapab ouvri sit la. Eseye ankò.",
   "Incendies": "Dife",
   "Incendie": "Dife",
   "INCENDIE": "DIFE",
