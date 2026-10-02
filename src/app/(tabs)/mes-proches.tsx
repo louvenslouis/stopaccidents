@@ -58,7 +58,7 @@ export default function RelativesScreen() {
         : !session || session.user.is_anonymous ? <View style={[styles.card, styles.empty, styles.content]}>
           <UsersRound size={32} color={color('#77777C', 'muted')} />
           <Text style={styles.emptyText}>Connectez-vous pour ajouter vos proches.</Text>
-          <Pressable accessibilityRole="button" onPress={() => router.push('/profil')} style={styles.primary}>
+          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/profil', params: { auth: 'signIn' } })} style={styles.primary}>
             <Text style={styles.primaryText}>Se connecter</Text>
           </Pressable>
         </View>

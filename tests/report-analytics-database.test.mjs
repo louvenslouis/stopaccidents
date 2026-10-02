@@ -11,7 +11,7 @@ test("Report analytics: public projection, periods, deduplication, pagination an
       create role authenticated nologin;
       create schema auth;
       create schema storage;
-      create table auth.users (id uuid primary key);
+      create table auth.users (id uuid primary key, is_anonymous boolean not null default false);
       create function auth.uid() returns uuid language sql stable as $$
         select (nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'sub')::uuid
       $$;

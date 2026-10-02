@@ -1,7 +1,11 @@
+import { ProfileJourneyArt, ProfileJourneyProgress } from '@/components/profile-journey-art';
+import { AccountSetup } from '@/components/account-setup';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import X from 'lucide-react-native/icons/x';
 import { ModerationPanel } from '@/components/moderation-panel';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { LanguageCard } from '@/components/language-card';
-import { Pressable, Text, TextInput, View } from '@/features/language/native';
+import { Pressable, ScrollView, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { RewardsCard } from '@/components/rewards-card';
 import { AppearanceCard } from '@/components/appearance-card';
@@ -32,11 +36,10 @@ import LogOut from 'lucide-react-native/icons/log-out';
 import Mail from 'lucide-react-native/icons/mail';
 import MapPinHouse from 'lucide-react-native/icons/map-pin-house';
 import Save from 'lucide-react-native/icons/save';
-import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import UserRoundPlus from 'lucide-react-native/icons/user-round-plus';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, StyleSheet } from 'react-native';
 
 type Feedback = {
   message: string;
@@ -54,11 +57,10 @@ function signupErrorMessage(error: { code?: string; status?: number }) {
     case 'weak_password':
       return 'Choisissez un mot de passe plus long et plus complexe.';
     case 'email_address_not_authorized':
-      return 'L’envoi des e-mails de confirmation n’est pas configuré pour cette adresse.';
+    case 'over_email_send_rate_limit':
+      return 'Impossible de créer votre compte. Réessayez.';
     case 'email_address_invalid':
       return 'Cette adresse e-mail ne peut pas être utilisée. Vérifiez-la et réessayez.';
-    case 'over_email_send_rate_limit':
-      return 'Limite d’envoi des e-mails de confirmation atteinte. Réessayez plus tard.';
     case 'over_request_rate_limit':
       return 'Trop de tentatives. Attendez quelques minutes avant de réessayer.';
     case 'user_already_exists':
@@ -97,14 +99,17 @@ export default function ProfileScreen() {
   const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>(auth === 'signUp' ? 'signUp' : 'signIn');
   const [aliasState, setAliasState] = useState<{ userId: string; value: string | null; failed: boolean } | null>(null);
   const [aliasAttempt, setAliasAttempt] = useState(0);
+  const [authOpen, setAuthOpen] = useState(auth === 'signUp' || auth === 'signIn');
+  const [authDismissed, setAuthDismissed] = useState(true);
   const creatingAccount = authMode === 'signUp';
 
   useEffect(() => {
-    if (auth !== 'signUp') return;
+    if (auth !== 'signUp' && auth !== 'signIn') return;
     let active = true;
     void Promise.resolve().then(() => {
       if (!active) return;
-      setAuthMode('signUp');
+      setAuthMode(auth);
+      setAuthOpen(true);
       setPassword('');
       setPasswordVisible(false);
       setFeedback(null);
@@ -291,16 +296,18 @@ export default function ProfileScreen() {
         return;
       }
 
+      if (creatingAccount && !data.session) {
+        setFeedback({ message: 'Impossible de créer votre compte. Réessayez.', tone: 'error' });
+        return;
+      }
+
       setPassword('');
       setPasswordVisible(false);
       if (data.session) setSession(data.session);
       if (creatingAccount) setAuthMode('signIn');
+      if (data.session) setAuthOpen(false);
       setFeedback({
-        message: creatingAccount
-          ? data.session
-            ? 'Compte créé.'
-            : 'Vérifiez vos e-mails pour confirmer votre compte, puis connectez-vous.'
-          : 'Connexion réussie.',
+        message: creatingAccount ? 'Compte créé.' : 'Connexion réussie.',
         tone: 'success',
       });
     } catch {
@@ -321,6 +328,7 @@ export default function ProfileScreen() {
       const result = await signInWithGoogle();
       if (result.status === 'connected') {
         setSession(result.session);
+        setAuthOpen(false);
         setFeedback({ message: 'Connexion réussie.', tone: 'success' });
       }
     } catch (error) {
@@ -358,6 +366,159 @@ export default function ProfileScreen() {
 
   return (
     <>
+      <Modal visible={authOpen && !accountEmail} animationType="slide" presentationStyle="fullScreen"
+          onShow={() => setAuthDismissed(false)} onDismiss={() => setAuthDismissed(true)}
+          onRequestClose={() => { if (!submitting) setAuthOpen(false); }}>
+        {authOpen && !accountEmail && (
+          <SafeAreaView style={styles.authSheet}>
+            <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+              <View style={styles.sheetHeader}>
+                <View style={styles.sheetHandle} />
+                <AnimatedPressable accessibilityRole="button" accessibilityLabel="Fermer la connexion"
+                  disabled={submitting} onPress={() => setAuthOpen(false)} style={styles.backButton}>
+                  <AppIcon icon={X} size={22} color={themeColor('#485469', 'secondary')} />
+                </AnimatedPressable>
+              </View>
+              <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.authContent}>
+                {creatingAccount && <ProfileJourneyProgress step={0} />}
+                <ProfileJourneyArt kind="connection" />
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.mailIcon}>
+                    <AppIcon icon={Mail} color={themeColor("#D94235", 'accent')} size={24} strokeWidth={2.1} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Text style={styles.cardTitle}>
+                      {creatingAccount ? 'Création de compte par e-mail' : 'Connexion par e-mail'}
+                    </Text>
+                    {!creatingAccount && (
+                      <Text style={styles.supportingText}>
+                        Utilisez l’adresse et le mot de passe associés à votre compte.
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Adresse e-mail</Text>
+                  <View style={styles.inputShell}>
+                    <AppIcon icon={Mail} color={themeColor("#89919E", 'muted')} size={19} />
+                    <TextInput keyboardAppearance={scheme}
+                      accessibilityLabel="Adresse e-mail"
+                      autoCapitalize="none"
+                      autoComplete="email"
+                      autoCorrect={false}
+                      editable={!submitting}
+                      enterKeyHint="next"
+                      inputMode="email"
+                      keyboardType="email-address"
+                      onChangeText={setEmail}
+                      placeholder="vous@exemple.com"
+                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
+                      returnKeyType="next"
+                      style={styles.input}
+                      textContentType="emailAddress"
+                      value={email}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Mot de passe</Text>
+                  <View style={styles.inputShell}>
+                    <AppIcon icon={LockKeyhole} color={themeColor("#89919E", 'muted')} size={19} />
+                    <TextInput keyboardAppearance={scheme}
+                      accessibilityLabel="Mot de passe"
+                      autoCapitalize="none"
+                      autoComplete={creatingAccount ? 'new-password' : 'current-password'}
+                      autoCorrect={false}
+                      editable={!submitting}
+                      onChangeText={setPassword}
+                      onSubmitEditing={() => void submitCredentials()}
+                      placeholder="Votre mot de passe"
+                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
+                      returnKeyType="go"
+                      secureTextEntry={!passwordVisible}
+                      style={styles.input}
+                      textContentType={creatingAccount ? 'newPassword' : 'password'}
+                      value={password}
+                    />
+                    <Pressable
+                      accessibilityLabel={
+                        passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
+                      }
+                      accessibilityRole="button"
+                      hitSlop={8}
+                      onPress={() => setPasswordVisible((visible) => !visible)}
+                      style={styles.visibilityButton}>
+                      <AppIcon icon={passwordVisible ? EyeOff : Eye} color={themeColor("#6F7887", 'muted')} size={20} />
+                    </Pressable>
+                  </View>
+                </View>
+
+                {feedback && (
+                  <Text
+                    accessibilityLiveRegion="polite"
+                    accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
+                    style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
+                    {feedback.message}
+                  </Text>
+                )}
+
+                <AnimatedPressable
+                  accessibilityLabel={creatingAccount ? 'Créer un compte par e-mail' : 'Se connecter par e-mail'}
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  haptic="light"
+                  onPress={() => void submitCredentials()}
+                  style={[styles.primaryButton, submitting && styles.disabled]}>
+                  {submitting ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Text style={styles.primaryButtonText}>
+                        {creatingAccount ? 'Créer un compte' : 'Se connecter'}
+                      </Text>
+                      <AppIcon icon={creatingAccount ? UserRoundPlus : LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
+                    </>
+                  )}
+                </AnimatedPressable>
+
+                <AnimatedPressable
+                  accessibilityLabel={creatingAccount ? 'Se connecter par e-mail' : 'Créer un compte par e-mail'}
+                  accessibilityRole="button"
+                  disabled={submitting}
+                  haptic="light"
+                  onPress={() => {
+                    setAuthMode(creatingAccount ? 'signIn' : 'signUp');
+                    setPassword('');
+                    setPasswordVisible(false);
+                    setFeedback(null);
+                  }}
+                  style={[styles.secondaryButton, submitting && styles.disabled]}>
+                  <AppIcon icon={creatingAccount ? LogIn : UserRoundPlus} color={themeColor("#485469", 'secondary')} size={19} />
+                  <Text style={styles.secondaryButtonText}>
+                    {creatingAccount ? 'Se connecter' : 'Créer un compte par e-mail'}
+                  </Text>
+                </AnimatedPressable>
+
+                <AnimatedPressable
+                  accessibilityLabel="Continuer avec Google"
+                  accessibilityRole="button"
+                  disabled={submitting || !GOOGLE_AUTH_ENABLED}
+                  haptic="light"
+                  onPress={() => void submitGoogle()}
+                  style={[styles.googleButton, (submitting || !GOOGLE_AUTH_ENABLED) && styles.disabled]}>
+                  <Text style={styles.googleMark} translate={false}>G</Text>
+                  <Text style={styles.googleButtonText}>Continuer avec Google</Text>
+                </AnimatedPressable>
+
+              </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        )}
+      </Modal>
       {placeTarget && (
         <SavedPlacePicker
           visible
@@ -402,6 +563,9 @@ export default function ProfileScreen() {
               </View>
             ) : accountEmail ? (
               <View style={styles.personalGroup}>
+                {session && <AccountSetup key={session.user.id} user={session.user}
+                  presentationReady={Platform.OS !== 'ios' || authDismissed}
+                  onUpdated={() => setAliasAttempt((attempt) => attempt + 1)} />}
                 <View style={styles.card}>
                   {session && <ProfileAvatar key={session.user.id} user={session.user} />}
                   <View style={styles.accountHeading}>
@@ -558,150 +722,12 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.mailIcon}>
-                    <AppIcon icon={Mail} color={themeColor("#D94235", 'accent')} size={24} strokeWidth={2.1} />
-                  </View>
-                  <View style={styles.flex}>
-                    <Text style={styles.cardTitle}>
-                      {creatingAccount ? 'Création de compte par e-mail' : 'Connexion par e-mail'}
-                    </Text>
-                    {!creatingAccount && (
-                      <Text style={styles.supportingText}>
-                        Utilisez l’adresse et le mot de passe associés à votre compte.
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Adresse e-mail</Text>
-                  <View style={styles.inputShell}>
-                    <AppIcon icon={Mail} color={themeColor("#89919E", 'muted')} size={19} />
-                    <TextInput keyboardAppearance={scheme}
-                      accessibilityLabel="Adresse e-mail"
-                      autoCapitalize="none"
-                      autoComplete="email"
-                      autoCorrect={false}
-                      editable={!submitting}
-                      enterKeyHint="next"
-                      inputMode="email"
-                      keyboardType="email-address"
-                      onChangeText={setEmail}
-                      placeholder="vous@exemple.com"
-                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
-                      returnKeyType="next"
-                      style={styles.input}
-                      textContentType="emailAddress"
-                      value={email}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.field}>
-                  <Text style={styles.label}>Mot de passe</Text>
-                  <View style={styles.inputShell}>
-                    <AppIcon icon={LockKeyhole} color={themeColor("#89919E", 'muted')} size={19} />
-                    <TextInput keyboardAppearance={scheme}
-                      accessibilityLabel="Mot de passe"
-                      autoCapitalize="none"
-                      autoComplete={creatingAccount ? 'new-password' : 'current-password'}
-                      autoCorrect={false}
-                      editable={!submitting}
-                      onChangeText={setPassword}
-                      onSubmitEditing={() => void submitCredentials()}
-                      placeholder="Votre mot de passe"
-                      placeholderTextColor={themeColor("#9AA1AC", 'muted')}
-                      returnKeyType="go"
-                      secureTextEntry={!passwordVisible}
-                      style={styles.input}
-                      textContentType={creatingAccount ? 'newPassword' : 'password'}
-                      value={password}
-                    />
-                    <Pressable
-                      accessibilityLabel={
-                        passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
-                      }
-                      accessibilityRole="button"
-                      hitSlop={8}
-                      onPress={() => setPasswordVisible((visible) => !visible)}
-                      style={styles.visibilityButton}>
-                      <AppIcon icon={passwordVisible ? EyeOff : Eye} color={themeColor("#6F7887", 'muted')} size={20} />
-                    </Pressable>
-                  </View>
-                </View>
-
-                {session?.user.is_anonymous && (
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Alias</Text>
-                    {aliasContent}
-                  </View>
-                )}
-
-                {feedback && (
-                  <Text
-                    accessibilityLiveRegion="polite"
-                    accessibilityRole={feedback.tone === 'error' ? 'alert' : undefined}
-                    style={feedback.tone === 'error' ? styles.errorText : styles.successText}>
-                    {feedback.message}
-                  </Text>
-                )}
-
-                <AnimatedPressable
-                  accessibilityLabel={creatingAccount ? 'Créer un compte par e-mail' : 'Se connecter par e-mail'}
-                  accessibilityRole="button"
-                  disabled={submitting}
-                  haptic="light"
-                  onPress={() => void submitCredentials()}
-                  style={[styles.primaryButton, submitting && styles.disabled]}>
-                  {submitting ? (
-                    <ActivityIndicator color="#FFFFFF" />
-                  ) : (
-                    <>
-                      <Text style={styles.primaryButtonText}>
-                        {creatingAccount ? 'Créer un compte' : 'Se connecter'}
-                      </Text>
-                      <AppIcon icon={creatingAccount ? UserRoundPlus : LogIn} color="#FFFFFF" size={19} strokeWidth={2.3} />
-                    </>
-                  )}
+                {session?.user.is_anonymous && aliasContent}
+                <AnimatedPressable accessibilityLabel="Se connecter" accessibilityRole="button" haptic="light"
+                  onPress={() => { setAuthMode('signIn'); setFeedback(null); setAuthOpen(true); }} style={styles.primaryButton}>
+                  <AppIcon icon={LogIn} size={20} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Se connecter</Text>
                 </AnimatedPressable>
-
-                <AnimatedPressable
-                  accessibilityLabel={creatingAccount ? 'Se connecter par e-mail' : 'Créer un compte par e-mail'}
-                  accessibilityRole="button"
-                  disabled={submitting}
-                  haptic="light"
-                  onPress={() => {
-                    setAuthMode(creatingAccount ? 'signIn' : 'signUp');
-                    setPassword('');
-                    setPasswordVisible(false);
-                    setFeedback(null);
-                  }}
-                  style={[styles.secondaryButton, submitting && styles.disabled]}>
-                  <AppIcon icon={creatingAccount ? LogIn : UserRoundPlus} color={themeColor("#485469", 'secondary')} size={19} />
-                  <Text style={styles.secondaryButtonText}>
-                    {creatingAccount ? 'Se connecter' : 'Créer un compte par e-mail'}
-                  </Text>
-                </AnimatedPressable>
-
-                <AnimatedPressable
-                  accessibilityLabel="Continuer avec Google"
-                  accessibilityRole="button"
-                  disabled={submitting || !GOOGLE_AUTH_ENABLED}
-                  haptic="light"
-                  onPress={() => void submitGoogle()}
-                  style={[styles.googleButton, (submitting || !GOOGLE_AUTH_ENABLED) && styles.disabled]}>
-                  <Text style={styles.googleMark} translate={false}>G</Text>
-                  <Text style={styles.googleButtonText}>Continuer avec Google</Text>
-                </AnimatedPressable>
-
-                <View style={styles.securityNote}>
-                  <AppIcon icon={ShieldCheck} color={themeColor("#6C7789", 'muted')} size={18} />
-                  <Text style={[styles.securityText, styles.flex]}>
-                    Votre mot de passe est transmis de manière sécurisée et n’est jamais stocké dans
-                    l’application.
-                  </Text>
-                </View>
               </View>
             )}
             {accountEmail && <RewardsCard />}
@@ -715,6 +741,10 @@ export default function ProfileScreen() {
 }
 
 const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
+  authSheet: { flex: 1, backgroundColor: themeColor('#FAFBF8', 'background') },
+  sheetHeader: { padding: 16, alignItems: 'flex-end' },
+  sheetHandle: { position: 'absolute', top: 12, alignSelf: 'center', width: 40, height: 4, borderRadius: 2, backgroundColor: themeColor('#D8DDD7', 'border') },
+  authContent: { width: '100%', maxWidth: 540, alignSelf: 'center', padding: 20, paddingTop: 0, paddingBottom: 36, gap: 14 },
   backButton: {
     ...surfaceDepth(themeColor, 'control'),
     width: 46,
@@ -895,16 +925,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     gap: 10,
     borderRadius: 16,
     backgroundColor: '#1767A6',
-  },
-  securityNote: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 9,
-  },
-  securityText: {
-    color: themeColor('#7B8492', 'muted'),
-    fontSize: 11,
-    lineHeight: 17,
   },
   accountHeading: { alignItems: 'center' },
   connectedRow: {

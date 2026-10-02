@@ -107,8 +107,8 @@ test('leaderboard: periods, commune, merges, ordering, top 100, personal rank an
     assert.equal((await read('all',null,999)).entries.length,0);
     const lastUser=(await db.query(`select a.user_id, a.alias from public.user_aliases a
       where a.user_id not in ($1,$2,$3) order by a.alias collate "C" desc limit 1`,[owner,other,empty])).rows[0];
-    await db.query("update public.user_aliases set alias='ZzzLastContributor' where user_id=$1",[lastUser.user_id]);
-    lastUser.alias='ZzzLastContributor';
+    await db.query("update public.user_aliases set alias='zzzlastcontributor' where user_id=$1",[lastUser.user_id]);
+    lastUser.alias='zzzlastcontributor';
     await db.exec(`set role authenticated; select set_config('request.jwt.claims','{"sub":"${lastUser.user_id}"}',false)`);
     for (const period of ['all','week','month']) {
       const personal=await read(period);

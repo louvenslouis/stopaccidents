@@ -22,13 +22,16 @@ function find(node, predicate) {
   return null;
 }
 
-function profile(session = null, response = { data: { session: null }, error: null }, params = {}) {
+function profile(session = null, response = {
+  data: { session: { user: { email: 'personne@example.com', is_anonymous: false } } },
+  error: null,
+}, params = { auth: 'signIn' }) {
   const states = [session, false];
   let stateIndex = 0;
   const requests = [];
   const exports = {};
   const native = Object.fromEntries([
-    'ActivityIndicator', 'KeyboardAvoidingView', 'Pressable', 'Text', 'TextInput', 'View',
+    'Modal', 'ActivityIndicator', 'KeyboardAvoidingView', 'Pressable', 'Text', 'TextInput', 'View',
   ].map((name) => [name, name]));
   new Function('exports', 'require', outputText)(exports, (name) => {
     if (name === 'react') return {
@@ -50,6 +53,7 @@ function profile(session = null, response = { data: { session: null }, error: nu
       ...native, Platform: { OS: 'web' }, StyleSheet: { create: (styles) => styles },
     };
     if (name === 'expo-router') return { useLocalSearchParams: () => params, useRouter: () => ({ setParams() {} }) };
+    if (name === '@/components/account-setup') return { AccountSetup: 'AccountSetup' };
     if (name === '@/components/rewards-card') return { RewardsCard: 'RewardsCard' };
     if (name === '@/features/profile/google-auth') return {
       signInWithGoogle: async () => {
@@ -134,7 +138,7 @@ test('only registered accounts see the rewards balance in the profile', () => {
     (node) => node.type === 'RewardsCard'));
 });
 
-test('switching to signup uses new-password autofill and submits normalized email to signup', async () => {
+test('signup submits normalized email and opens the account without email verification', async () => {
   const screen = profile();
   screen.button(createLabel).props.onPress();
   assert.equal(screen.input('Mot de passe').props.autoComplete, 'new-password');
@@ -143,9 +147,10 @@ test('switching to signup uses new-password autofill and submits normalized emai
   assert.deepEqual(screen.requests, [{
     method: 'signUp', credentials: { email: 'personne@example.com', password: 'password123' },
   }]);
-  assert.ok(screen.hasText('Vérifiez vos e-mails pour confirmer votre compte, puis connectez-vous.'));
-  assert.equal(screen.input('Mot de passe').props.value, '');
-  assert.equal(screen.input('Mot de passe').props.autoComplete, 'current-password');
+  assert.ok(find(screen.render(), (node) => node.type === 'AccountSetup'));
+  assert.ok(screen.hasText('Votre compte'));
+  assert.equal(screen.button(createLabel), null);
+  assert.equal(screen.input('Mot de passe'), null);
 });
 
 test('signup rejects malformed email and short passwords before making a request', async () => {
@@ -160,14 +165,31 @@ test('signup rejects malformed email and short passwords before making a request
   assert.equal(screen.requests.length, 0);
 });
 
-test('a signup response with a session opens the connected profile', async () => {
+test('signup signs in guests directly as registered accounts', async () => {
   const session = { user: { email: 'personne@example.com', is_anonymous: false } };
-  const screen = profile(null, { data: { session }, error: null });
+  const screen = profile({ user: { is_anonymous: true } }, { data: { session }, error: null });
   screen.button(createLabel).props.onPress();
   screen.fill();
   await screen.submit(createLabel);
+  assert.ok(find(screen.render(), (node) => node.type === 'AccountSetup'));
   assert.ok(screen.hasText('Votre compte'));
   assert.equal(screen.button(createLabel), null);
+});
+
+test('signup without a session stays on the form without reporting success or requesting verification', async () => {
+  for (const session of [null, { user: { is_anonymous: true } }]) {
+    const screen = profile(session, { data: { session: null }, error: null });
+    screen.button(createLabel).props.onPress();
+    screen.fill();
+    await screen.submit(createLabel);
+    assert.ok(screen.hasText('Impossible de créer votre compte. Réessayez.'));
+    assert.equal(screen.hasText('Compte créé.'), false);
+    assert.equal(screen.hasText('Votre compte'), false);
+    assert.equal(screen.input('Mot de passe').props.value, 'password123');
+    assert.equal(screen.input('Mot de passe').props.autoComplete, 'new-password');
+    assert.equal(screen.button(createLabel).props.disabled, false);
+    assert.deepEqual(screen.requests.map((request) => request.method), ['signUp']);
+  }
 });
 
 test('signup errors restore the form so the user can retry', async () => {
@@ -187,28 +209,16 @@ test('signup errors restore the form so the user can retry', async () => {
   }
 });
 
-test('signup explains when confirmation email delivery blocks account creation', async () => {
-  const screen = profile(null, {
-    data: { session: null },
-    error: { code: 'email_address_not_authorized', status: 422 },
-  });
-  screen.button(createLabel).props.onPress();
-  screen.fill();
-  await screen.submit(createLabel);
-  assert.ok(screen.hasText('L’envoi des e-mails de confirmation n’est pas configuré pour cette adresse.'));
-  assert.equal(screen.button(createLabel).props.disabled, false);
-  assert.equal(screen.input('Mot de passe').props.value, 'password123');
-});
-
-test('signup explains when confirmation emails are rate limited', async () => {
-  const screen = profile(null, {
-    data: { session: null },
-    error: { code: 'over_email_send_rate_limit', status: 429 },
-  });
-  screen.button(createLabel).props.onPress();
-  screen.fill();
-  await screen.submit(createLabel);
-  assert.ok(screen.hasText('Limite d’envoi des e-mails de confirmation atteinte. Réessayez plus tard.'));
+test('signup email delivery errors keep the form available without asking for verification', async () => {
+  for (const code of ['email_address_not_authorized', 'over_email_send_rate_limit']) {
+    const screen = profile(null, { data: { session: null }, error: { code } });
+    screen.button(createLabel).props.onPress();
+    screen.fill();
+    await screen.submit(createLabel);
+    assert.ok(screen.hasText('Impossible de créer votre compte. Réessayez.'));
+    assert.equal(screen.button(createLabel).props.disabled, false);
+    assert.equal(screen.input('Mot de passe').props.value, 'password123');
+  }
 });
 
 test('signup surfaces an unknown Auth error code for diagnosis', async () => {
@@ -228,4 +238,17 @@ test('the existing login form still uses password sign-in', async () => {
   await screen.submit('Se connecter par e-mail');
   assert.equal(screen.requests[0].method, 'signInWithPassword');
   assert.ok(screen.hasText('Connexion réussie.'));
+});
+
+
+test('Se connecter opens a dismissible full-screen sheet from the profile', () => {
+  const screen = profile(null, undefined, {});
+  assert.equal(screen.input('Adresse e-mail'), null);
+  screen.button('Se connecter').props.onPress();
+  assert.ok(screen.input('Adresse e-mail'));
+  const modal = find(screen.render(), (node) => node.type === 'Modal');
+  assert.equal(modal.props.presentationStyle, 'fullScreen');
+  assert.equal(modal.props.animationType, 'slide');
+  screen.button('Fermer la connexion').props.onPress();
+  assert.equal(screen.input('Adresse e-mail'), null);
 });

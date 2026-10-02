@@ -1,6 +1,8 @@
+import { AvatarPortraitStage, ProfileJourneyProgress } from './profile-journey-art';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import Check from 'lucide-react-native/icons/check';
 import Shuffle from 'lucide-react-native/icons/shuffle';
 import X from 'lucide-react-native/icons/x';
@@ -19,8 +21,9 @@ const categories: { id: AvatarFeature; label: string }[] = [
   { id: 'background', label: 'Fond' },
 ];
 
-export function AvatarEditor({ userId, initial, onClose, onSaved }: {
+export function AvatarEditor({ userId, initial, onClose, onSaved, onboarding = false, embedded = false, onSave }: {
   userId: string; initial: AvatarConfig; onClose: () => void; onSaved: (avatar: AvatarConfig) => void;
+  onboarding?: boolean; embedded?: boolean; onSave?: (avatar: AvatarConfig) => Promise<AvatarConfig>;
 }) {
   const styles = useStyles();
   const color = useThemeColor();
@@ -36,8 +39,8 @@ export function AvatarEditor({ userId, initial, onClose, onSaved }: {
     setSaving(true);
     setError(null);
     try {
-      onSaved(await saveAvatar(userId, draft));
-      onClose();
+      onSaved(await (onSave ? onSave(draft) : saveAvatar(userId, draft)));
+      if (!onboarding) onClose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Impossible d’enregistrer votre avatar. Réessayez.');
     } finally {
@@ -46,25 +49,34 @@ export function AvatarEditor({ userId, initial, onClose, onSaved }: {
     }
   }
 
-  return (
-    <Modal visible animationType="slide" onRequestClose={() => { if (!busy.current) onClose(); }}>
+  const content = (
       <SafeAreaView style={styles.screen}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <AnimatedPressable accessibilityRole="button" accessibilityLabel="Annuler" disabled={saving}
+            <AnimatedPressable accessibilityRole="button" accessibilityLabel={onboarding ? 'Revenir à mon alias' : 'Annuler'} disabled={saving}
               onPress={onClose} style={styles.iconButton}>
-              <AppIcon icon={X} size={22} color={color('#243147', 'text')} />
+              <AppIcon icon={onboarding ? ChevronLeft : X} size={22} color={color('#243147', 'text')} />
             </AnimatedPressable>
-            <Text accessibilityRole="header" style={styles.title}>Mon avatar</Text>
+            <Text accessibilityRole="header" style={styles.title}>{onboarding ? 'Créer mon avatar' : 'Mon avatar'}</Text>
             <AnimatedPressable accessibilityRole="button" accessibilityLabel="Avatar aléatoire" disabled={saving}
               onPress={() => { setDraft(randomAvatar()); setError(null); }} haptic="selection" style={styles.iconButton}>
               <AppIcon icon={Shuffle} size={21} color={color('#243147', 'text')} />
             </AnimatedPressable>
           </View>
           <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={styles.preview} accessibilityLabel="Aperçu de mon avatar" accessibilityRole="image">
-              <UserAvatar avatar={draft} size={208} />
-            </View>
+            {onboarding && <ProfileJourneyProgress step={2} />}
+            {onboarding && <Text style={styles.privacy}>Choisissez un avatar qui ne permet pas de vous reconnaître. Il n’a pas besoin de vous ressembler.</Text>}
+            {onboarding ? (
+              <AvatarPortraitStage>
+                <View accessibilityLabel="Aperçu de mon avatar" accessibilityRole="image">
+                  <UserAvatar avatar={draft} size={208} />
+                </View>
+              </AvatarPortraitStage>
+            ) : (
+              <View style={styles.preview} accessibilityLabel="Aperçu de mon avatar" accessibilityRole="image">
+                <UserAvatar avatar={draft} size={208} />
+              </View>
+            )}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
               {categories.map(({ id, label }) => (
                 <AnimatedPressable key={id} accessibilityRole="tab" accessibilityLabel={label}
@@ -95,14 +107,18 @@ export function AvatarEditor({ userId, initial, onClose, onSaved }: {
           </ScrollView>
           <View style={styles.footer}>
             {error && <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.error}>{error}</Text>}
-            <AnimatedPressable accessibilityRole="button" accessibilityLabel="Enregistrer mon avatar"
+            <AnimatedPressable accessibilityRole="button" accessibilityLabel={onboarding ? 'Terminer mon profil' : 'Enregistrer mon avatar'}
               accessibilityState={{ disabled: saving, busy: saving }} disabled={saving} haptic="light"
               onPress={() => void save()} style={[styles.save, saving && styles.disabled]}>
-              {saving ? <ActivityIndicator color="#FFFFFF" /> : <><AppIcon icon={Check} size={20} color="#FFFFFF" /><Text style={styles.saveText}>Enregistrer</Text></>}
+              {saving ? <ActivityIndicator color="#FFFFFF" /> : <><AppIcon icon={Check} size={20} color="#FFFFFF" /><Text style={styles.saveText}>{onboarding ? 'Terminer' : 'Enregistrer'}</Text></>}
             </AnimatedPressable>
           </View>
         </View>
       </SafeAreaView>
+  );
+  return embedded ? content : (
+    <Modal visible animationType="slide" onRequestClose={() => { if (!busy.current) onClose(); }}>
+      {content}
     </Modal>
   );
 }
@@ -113,6 +129,7 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
   header: { padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   iconButton: { width: 46, height: 46, borderRadius: 23, backgroundColor: color('#FFFFFF', 'surface'), alignItems: 'center', justifyContent: 'center' },
   title: { flexShrink: 1, fontSize: 21, fontWeight: '700', color: color('#243147', 'text') },
+  privacy: { paddingHorizontal: 24, fontSize: 15, lineHeight: 23, color: color('#69756C', 'secondary') },
   content: { paddingBottom: 24, gap: 24 },
   preview: { alignSelf: 'center', marginTop: 12, borderRadius: 112, padding: 7, backgroundColor: color('#FFFFFF', 'surface'), borderWidth: 1, borderColor: color('#E5E9E1', 'border') },
   tabs: { gap: 8, paddingHorizontal: 20 },

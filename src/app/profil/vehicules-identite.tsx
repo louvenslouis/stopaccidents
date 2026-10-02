@@ -96,7 +96,7 @@ export default function SafetyProfileScreen() {
         <Pressable
           accessibilityRole="button"
           style={styles.primary}
-          onPress={() => router.replace("/profil")}
+          onPress={() => router.replace({ pathname: "/profil", params: { auth: "signIn" } })}
         >
           <Text style={styles.primaryText}>Se connecter</Text>
         </Pressable>
