@@ -84,7 +84,7 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
       {reports.length > 1 && <View pointerEvents="none" aria-hidden style={styles.backCard} />}
       <Animated.View {...responder.panHandlers} style={{ opacity, transform: [{ translateX: offset }, { rotate: offset.interpolate({ inputRange: [-400, 0, 400], outputRange: ['-5deg', '0deg', '5deg'], extrapolate: 'clamp' }) }] }}>
         <View pointerEvents={moving ? 'none' : 'auto'}>
-          <LatestAccidentCard key={report ? stackReportKey(report) : 'empty'} report={report} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />
+          <LatestAccidentCard key={report ? stackReportKey(report) : 'empty'} report={report} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} stackPosition={index + 1} stackCount={reports.length} hideHeader />
         </View>
       </Animated.View>
     </View>

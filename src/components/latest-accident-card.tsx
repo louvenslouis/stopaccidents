@@ -60,8 +60,12 @@ export function LatestAccidentCard({
   onRefresh,
   onOpen,
   hideHeader = false,
+  stackPosition,
+  stackCount,
 }: {
   hideHeader?: boolean;
+  stackPosition?: number;
+  stackCount?: number;
   report: SafetyReportSummary | null;
   loading: boolean;
   error: string | null;
@@ -81,6 +85,8 @@ export function LatestAccidentCard({
   const isBarricade = report?.report_kind === 'barricade';
   const isKidnapping = report?.report_kind === 'kidnapping';
   const isBreakdown = report?.report_kind === 'breakdown';
+  const ink = '#182C2A';
+  const cardAccent = report?.report_kind === 'fire' ? '#FFAC78' : isGunfire || isArmedPresence ? '#FFADB0' : isKidnapping ? '#CFB9FA' : isBarricade ? '#F5D878' : isBreakdown ? '#C6E58C' : isSuspiciousVehicle ? '#A9CFF5' : '#FFB39A';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
   const reportLabel = report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
@@ -120,28 +126,33 @@ export function LatestAccidentCard({
             hoverScale={1.005}
             style={styles.cardToggle}
           >
+            <View style={[styles.hero, { backgroundColor: cardAccent }]}>
+              <View pointerEvents="none" aria-hidden style={styles.orbitOuter} />
+              <View pointerEvents="none" aria-hidden style={styles.orbitInner} />
+              <View style={styles.heroMeta}>
+                <Text translate={false} style={styles.heroBrand}>STOP / ACCIDENTS</Text>
+                {stackPosition !== undefined && <Text translate={false} style={styles.heroIndex}>{String(stackPosition).padStart(2, '0')}<Text translate={false} style={styles.heroTotal}> / {String(stackCount ?? 1).padStart(2, '0')}</Text></Text>}
+              </View>
             <View style={styles.cardHeader}>
-              <View style={[styles.iconBox, styles.compactIconBox, isKidnapping && styles.kidnappingIconBox]}>
+              <View style={styles.heroIcon}>
                 <AppIcon
                   icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
-                  size={26}
-                  color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#D94235', 'accent')}
+                  size={35}
+                  color={ink}
                 />
               </View>
               <View style={[styles.heading, styles.compactHeading]}>
-                <Text style={styles.eyebrow}>
-                  {report.report_kind !== 'accident' ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
-                </Text>
                 <Text
-                  style={[styles.type, styles.compactType]}
+                  style={styles.heroTitle}
                   numberOfLines={2}
                 >
                   {reportLabel}
                 </Text>
               </View>
-              <Animated.View style={[styles.chevronBox, chevronStyle]}>
-                <AppIcon icon={ChevronDown} size={19} color={themeColor("#737C89", 'muted')} />
+              <Animated.View style={[styles.heroChevron, chevronStyle]}>
+                <AppIcon icon={ChevronDown} size={19} color={ink} />
               </Animated.View>
+            </View>
             </View>
             <CardDisclosure expanded={!expanded}>
               <View style={styles.compactSummary}>
@@ -241,6 +252,11 @@ export function LatestAccidentCard({
               </View>
             </AnimatedPressable>
           </CardDisclosure>
+          <View style={styles.ticketSeam} pointerEvents="none" aria-hidden>
+            <View style={[styles.ticketNotch, styles.ticketNotchLeft]} />
+            <View style={styles.ticketDashes} />
+            <View style={[styles.ticketNotch, styles.ticketNotchRight]} />
+          </View>
           <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} />
         </ContrastSurface>
       ) : (
@@ -316,7 +332,22 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 30,
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
-  compactCard: { padding: 20, borderRadius: 28, borderTopWidth: 4, borderTopColor: themeColor('#E66E4F', 'accent'), backgroundColor: themeColor('#FFFAF5', 'surface') },
+  compactCard: { padding: 20, borderRadius: 26, backgroundColor: themeColor('#FFFEFA', 'surface'), overflow: 'hidden', borderWidth: 1, borderColor: themeColor('#E4E8DF', 'border') },
+  hero: { marginHorizontal: -20, marginTop: -20, padding: 20, paddingBottom: 24, overflow: 'hidden', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, gap: 22 },
+  heroMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  heroBrand: { color: '#31423A', fontSize: 10, letterSpacing: 2, fontWeight: '800' },
+  heroIndex: { color: '#182C2A', fontSize: 29, letterSpacing: -1.5, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  heroTotal: { color: '#435449', fontSize: 12, letterSpacing: 0, fontWeight: '600' },
+  heroTitle: { color: '#182C2A', fontSize: 25, lineHeight: 29, fontWeight: '800', letterSpacing: -0.9 },
+  heroIcon: { width: 52, height: 56, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: '#182C2A30', paddingRight: 12 },
+  heroChevron: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' },
+  orbitOuter: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: '#182C2A14', right: -45, top: -70 },
+  orbitInner: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 25, borderColor: '#FFFFFF20', right: -20, top: -45 },
+  ticketSeam: { height: 18, marginTop: 14, marginBottom: -12, marginHorizontal: -20, justifyContent: 'center' },
+  ticketDashes: { marginHorizontal: 22, borderTopWidth: 1, borderStyle: 'dashed', borderColor: themeColor('#CFD6CD', 'border') },
+  ticketNotch: { position: 'absolute', width: 18, height: 18, borderRadius: 9, backgroundColor: themeColor('#EDF0E7', 'background') },
+  ticketNotchLeft: { left: -9 },
+  ticketNotchRight: { right: -9 },
   cardToggle: { width: '100%' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
@@ -356,11 +387,8 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     justifyContent: 'center',
   },
   compactSummary: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: themeColor('#E9ECF0', 'border'),
-    gap: 8,
-    marginTop: 14,
-    paddingTop: 12,
+    gap: 10,
+    paddingTop: 18,
   },
   compactLine: { flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1, minWidth: 0 },
   compactLocation: { color: themeColor('#3E4551', 'secondary'), fontSize: 13, fontWeight: '500', flexShrink: 1 },
