@@ -1,3 +1,4 @@
+import { ReportTicketHero, ReportTicketSeam } from './report-ticket-design';
 import { ReportCardActions } from '@/components/report-card-actions';
 import Flame from 'lucide-react-native/icons/flame';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -17,7 +18,7 @@ import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import Wrench from 'lucide-react-native/icons/wrench';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -34,13 +35,17 @@ import {
 } from '@/features/safety-report/read';
 import { useReportLocation } from '@/features/safety-report/use-report-location';
 
-const disclosureTiming = { duration: 320, easing: Easing.inOut(Easing.cubic), reduceMotion: ReduceMotion.System };
+const disclosureTiming = { duration: 280, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
 
 function CardDisclosure({ expanded, children }: { expanded: boolean; children: ReactNode }) {
   const contentHeight = useSharedValue(0);
+  const progress = useSharedValue(expanded ? 1 : 0);
+  useEffect(() => {
+    progress.value = withTiming(expanded ? 1 : 0, disclosureTiming);
+  }, [expanded, progress]);
   const animatedStyle = useAnimatedStyle(() => ({
-    height: withTiming(expanded ? contentHeight.value : 0, disclosureTiming),
-    opacity: withTiming(expanded ? 1 : 0, disclosureTiming),
+    height: contentHeight.value * progress.value,
+    opacity: progress.value,
   }));
   return (
     <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]} pointerEvents={expanded ? 'auto' : 'none'} aria-hidden={!expanded}>
@@ -85,8 +90,6 @@ export function LatestAccidentCard({
   const isBarricade = report?.report_kind === 'barricade';
   const isKidnapping = report?.report_kind === 'kidnapping';
   const isBreakdown = report?.report_kind === 'breakdown';
-  const ink = '#182C2A';
-  const cardAccent = report?.report_kind === 'fire' ? '#FFAC78' : isGunfire || isArmedPresence ? '#FFADB0' : isKidnapping ? '#CFB9FA' : isBarricade ? '#F5D878' : isBreakdown ? '#C6E58C' : isSuspiciousVehicle ? '#A9CFF5' : '#FFB39A';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
   const reportLabel = report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
@@ -126,34 +129,11 @@ export function LatestAccidentCard({
             hoverScale={1.005}
             style={styles.cardToggle}
           >
-            <View style={[styles.hero, { backgroundColor: cardAccent }]}>
-              <View pointerEvents="none" aria-hidden style={styles.orbitOuter} />
-              <View pointerEvents="none" aria-hidden style={styles.orbitInner} />
-              <View style={styles.heroMeta}>
-                <Text translate={false} style={styles.heroBrand}>STOP / ACCIDENTS</Text>
-                {stackPosition !== undefined && <Text translate={false} style={styles.heroIndex}>{String(stackPosition).padStart(2, '0')}<Text translate={false} style={styles.heroTotal}> / {String(stackCount ?? 1).padStart(2, '0')}</Text></Text>}
-              </View>
-            <View style={styles.cardHeader}>
-              <View style={styles.heroIcon}>
-                <AppIcon
-                  icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
-                  size={35}
-                  color={ink}
-                />
-              </View>
-              <View style={[styles.heading, styles.compactHeading]}>
-                <Text
-                  style={styles.heroTitle}
-                  numberOfLines={2}
-                >
-                  {reportLabel}
-                </Text>
-              </View>
-              <Animated.View style={[styles.heroChevron, chevronStyle]}>
-                <AppIcon icon={ChevronDown} size={19} color={ink} />
+            <ReportTicketHero kind={report.report_kind} title={reportLabel} position={stackPosition} count={stackCount}>
+              <Animated.View style={[{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' }, chevronStyle]}>
+                <AppIcon icon={ChevronDown} size={19} color="#182C2A" />
               </Animated.View>
-            </View>
-            </View>
+            </ReportTicketHero>
             <CardDisclosure expanded={!expanded}>
               <View style={styles.compactSummary}>
                 <View style={styles.compactLine}>
@@ -252,12 +232,8 @@ export function LatestAccidentCard({
               </View>
             </AnimatedPressable>
           </CardDisclosure>
-          <View style={styles.ticketSeam} pointerEvents="none" aria-hidden>
-            <View style={[styles.ticketNotch, styles.ticketNotchLeft]} />
-            <View style={styles.ticketDashes} />
-            <View style={[styles.ticketNotch, styles.ticketNotchRight]} />
-          </View>
-          <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} />
+          <ReportTicketSeam />
+          <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} stackPosition={stackPosition} stackCount={stackCount} />
         </ContrastSurface>
       ) : (
         <View
@@ -333,21 +309,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   compactCard: { padding: 20, borderRadius: 26, backgroundColor: themeColor('#FFFEFA', 'surface'), overflow: 'hidden', borderWidth: 1, borderColor: themeColor('#E4E8DF', 'border') },
-  hero: { marginHorizontal: -20, marginTop: -20, padding: 20, paddingBottom: 24, overflow: 'hidden', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, gap: 22 },
-  heroMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroBrand: { color: '#31423A', fontSize: 10, letterSpacing: 2, fontWeight: '800' },
-  heroIndex: { color: '#182C2A', fontSize: 29, letterSpacing: -1.5, fontWeight: '900', fontVariant: ['tabular-nums'] },
-  heroTotal: { color: '#435449', fontSize: 12, letterSpacing: 0, fontWeight: '600' },
-  heroTitle: { color: '#182C2A', fontSize: 25, lineHeight: 29, fontWeight: '800', letterSpacing: -0.9 },
-  heroIcon: { width: 52, height: 56, alignItems: 'center', justifyContent: 'center', borderRightWidth: 1, borderRightColor: '#182C2A30', paddingRight: 12 },
-  heroChevron: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' },
-  orbitOuter: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: '#182C2A14', right: -45, top: -70 },
-  orbitInner: { position: 'absolute', width: 170, height: 170, borderRadius: 85, borderWidth: 25, borderColor: '#FFFFFF20', right: -20, top: -45 },
-  ticketSeam: { height: 18, marginTop: 14, marginBottom: -12, marginHorizontal: -20, justifyContent: 'center' },
-  ticketDashes: { marginHorizontal: 22, borderTopWidth: 1, borderStyle: 'dashed', borderColor: themeColor('#CFD6CD', 'border') },
-  ticketNotch: { position: 'absolute', width: 18, height: 18, borderRadius: 9, backgroundColor: themeColor('#EDF0E7', 'background') },
-  ticketNotchLeft: { left: -9 },
-  ticketNotchRight: { right: -9 },
   cardToggle: { width: '100%' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {

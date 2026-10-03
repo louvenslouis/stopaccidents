@@ -5,6 +5,7 @@ import EllipsisVertical from 'lucide-react-native/icons/ellipsis-vertical';
 import Globe from 'lucide-react-native/icons/globe';
 import Settings from 'lucide-react-native/icons/settings';
 import UserRound from 'lucide-react-native/icons/user-round';
+import Route from 'lucide-react-native/icons/route';
 import Animated, {
   ReduceMotion,
   useAnimatedStyle,
@@ -64,6 +65,7 @@ export function HomeMenu() {
 
   const items = [
     { label: 'Mon profil', icon: UserRound, action: () => { close(); router.push('/profil'); } },
+    { label: 'Mes trajets', icon: Route, action: () => { close(); router.push('/trajets'); } },
     { label: 'Paramètres', icon: Settings, action: () => { close(); router.push('/parametres'); } },
     { label: 'Le Site', icon: Globe, action: openSite },
   ];

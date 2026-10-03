@@ -1,10 +1,12 @@
+import * as Haptics from 'expo-haptics';
+import { AnimatedPressable } from './ui/animated-pressable';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, PanResponder, StyleSheet } from 'react-native';
+import { ActivityIndicator, Animated, Easing, PanResponder, Platform, StyleSheet } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
-import { Pressable, Text, View } from '@/features/language/native';
+import { Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import type { SafetyReportSummary } from '@/features/safety-report/read';
 import { stackReportKey } from '@/features/home/report-stack';
@@ -43,15 +45,16 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
     if (!next) { settle(); return; }
     busy.current = true;
     setMoving(true);
+    if (Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {});
     Animated.parallel([
-      Animated.timing(offset, { toValue: -direction * width.current, duration: reducedMotion ? 0 : 180, useNativeDriver: true }),
+      Animated.timing(offset, { toValue: -direction * width.current, duration: reducedMotion ? 0 : 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(opacity, { toValue: 0, duration: reducedMotion ? 0 : 150, useNativeDriver: true }),
     ]).start(({ finished }) => {
       if (!finished) return;
       setSelected(stackReportKey(next));
       offset.setValue(reducedMotion ? 0 : direction * 28);
       Animated.parallel([
-        Animated.timing(offset, { toValue: 0, duration: reducedMotion ? 0 : 220, useNativeDriver: true }),
+        reducedMotion ? Animated.timing(offset, { toValue: 0, duration: 0, useNativeDriver: true }) : Animated.spring(offset, { toValue: 0, stiffness: 260, damping: 26, mass: 0.7, useNativeDriver: true }),
         Animated.timing(opacity, { toValue: 1, duration: reducedMotion ? 0 : 220, useNativeDriver: true }),
       ]).start(() => { busy.current = false; setMoving(false); });
     });
@@ -75,13 +78,13 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
   return <View style={styles.section}>
     <View style={styles.header}>
       <Text accessibilityRole="header" style={styles.title}>Signalements récents</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Actualiser les signalements récents" disabled={loading || moving} onPress={onRefresh} style={styles.button}>
+      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Actualiser les signalements récents" disabled={loading || moving} onPress={onRefresh} style={styles.button}>
         {loading ? <ActivityIndicator size="small" color={color('#737C89', 'muted')} /> : <RefreshCw size={18} color={color('#737C89', 'muted')} />}
-      </Pressable>
+      </AnimatedPressable>
     </View>
     <View style={reports.length > 1 && styles.deck} onLayout={event => { width.current = event.nativeEvent.layout.width; }}>
       {reports.length > 2 && <View pointerEvents="none" aria-hidden style={[styles.backCard, styles.farCard]} />}
-      {reports.length > 1 && <View pointerEvents="none" aria-hidden style={styles.backCard} />}
+      {reports.length > 1 && <Animated.View pointerEvents="none" aria-hidden style={[styles.backCard, { transform: [{ rotate: offset.interpolate({ inputRange: [-360, 0, 360], outputRange: ['0deg', '-3deg', '0deg'], extrapolate: 'clamp' }) }, { scale: offset.interpolate({ inputRange: [-360, 0, 360], outputRange: [1.025, 1, 1.025], extrapolate: 'clamp' }) }] }]} />}
       <Animated.View {...responder.panHandlers} style={{ opacity, transform: [{ translateX: offset }, { rotate: offset.interpolate({ inputRange: [-400, 0, 400], outputRange: ['-5deg', '0deg', '5deg'], extrapolate: 'clamp' }) }] }}>
         <View pointerEvents={moving ? 'none' : 'auto'}>
           <LatestAccidentCard key={report ? stackReportKey(report) : 'empty'} report={report} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} stackPosition={index + 1} stackCount={reports.length} hideHeader />
@@ -89,13 +92,13 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
       </Animated.View>
     </View>
     {reports.length > 1 && <View style={styles.navigation}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Signalement plus récent" disabled={!canNewer || moving} onPress={() => { if (!busy.current) navigate(-1); }} style={[styles.button, !canNewer && styles.disabled]}>
+      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Signalement plus récent" disabled={!canNewer || moving} onPress={() => { if (!busy.current) navigate(-1); }} style={[styles.button, !canNewer && styles.disabled]}>
         <ChevronLeft size={20} color={color('#49614D', 'secondary')} />
-      </Pressable>
+      </AnimatedPressable>
       <Text translate={false} accessibilityLiveRegion="polite" style={styles.counter}>{index + 1} / {reports.length}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Signalement précédent" disabled={!canOlder || moving} onPress={() => { if (!busy.current) navigate(1); }} style={[styles.button, !canOlder && styles.disabled]}>
+      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Signalement précédent" disabled={!canOlder || moving} onPress={() => { if (!busy.current) navigate(1); }} style={[styles.button, !canOlder && styles.disabled]}>
         <ChevronRight size={20} color={color('#49614D', 'secondary')} />
-      </Pressable>
+      </AnimatedPressable>
     </View>}
   </View>;
 }

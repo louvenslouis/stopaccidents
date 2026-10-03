@@ -8,6 +8,7 @@ export async function disableSafetyPush() {}
 export async function listenForSafetyPush(
   _open: () => void,
   _refresh: () => void,
+  _route?: { open: () => void; refresh: () => void },
 ) {
   return () => {};
 }

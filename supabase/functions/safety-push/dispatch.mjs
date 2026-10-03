@@ -1,6 +1,14 @@
 /** All content is generic: no plate, identity number, alias, location or report ID goes to Expo. */
 export async function dispatchSafetyPush({ rpc, fetch: fetcher, accessToken }) {
-  const { data: jobs, error } = await rpc("claim_safety_push_jobs", {});
+  return dispatchPush({ rpc, fetch: fetcher, accessToken, kind: "safety" });
+}
+
+export async function dispatchRoutePush({ rpc, fetch: fetcher, accessToken }) {
+  return dispatchPush({ rpc, fetch: fetcher, accessToken, kind: "route" });
+}
+
+async function dispatchPush({ rpc, fetch: fetcher, accessToken, kind }) {
+  const { data: jobs, error } = await rpc(`claim_${kind}_push_jobs`, {});
   if (error || !Array.isArray(jobs)) throw new Error("claim_failed");
   let processed = 0;
   const headers = {
@@ -10,7 +18,7 @@ export async function dispatchSafetyPush({ rpc, fetch: fetcher, accessToken }) {
   // At most five provider requests run at once. Leases protect concurrent workers.
   async function deliver(job) {
     const { data: eligible, error: eligibilityError } = await rpc(
-      "safety_push_job_eligible",
+      `${kind}_push_job_eligible`,
       { p_id: job.id, p_lease: job.lease },
     );
     if (eligibilityError) throw new Error("eligibility_failed");
@@ -32,12 +40,14 @@ export async function dispatchSafetyPush({ rpc, fetch: fetcher, accessToken }) {
               : {
                   to: job.token,
                   title: "Stop Accidents",
-                  body: "Une alerte concernant un proche est disponible. Ouvrez l’application.",
-                  data: { type: "safety_alert" },
+                  body: kind === "route"
+                    ? "Un problème a été signalé sur votre trajet. Ouvrez l’application."
+                    : "Une alerte concernant un proche est disponible. Ouvrez l’application.",
+                  data: { type: `${kind}_alert` },
                   sound: "default",
-                  channelId: "safety-alerts",
+                  channelId: `${kind}-alerts`,
                   priority: "high",
-                  ttl: 3600,
+                  ttl: kind === "route" ? Math.max(1, Math.min(3600, Number(job.ttl) || 3600)) : 3600,
                 },
           ),
         },
@@ -68,7 +78,7 @@ export async function dispatchSafetyPush({ rpc, fetch: fetcher, accessToken }) {
     } catch {
       reason = "network_error";
     }
-    const { error: finishError } = await rpc("finish_safety_push_job", {
+    const { error: finishError } = await rpc(`finish_${kind}_push_job`, {
       p_id: job.id,
       p_lease: job.lease,
       p_status: status,

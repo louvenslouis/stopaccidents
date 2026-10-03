@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { dispatchSafetyPush } from "../supabase/functions/safety-push/dispatch.mjs";
+import { dispatchSafetyPush, dispatchRoutePush } from "../supabase/functions/safety-push/dispatch.mjs";
 
 const job = {
   id: "job",
@@ -97,4 +97,51 @@ test("revocation between claiming and sending suppresses the push", async () => 
     },
   });
   assert.equal(result.processed, 0);
+});
+
+test("route pushes use their own queue and channel without disclosing the saved journey", async () => {
+  const calls = [], sent = [];
+  const result = await dispatchRoutePush({
+    rpc: async (name, args) => {
+      calls.push({ name, args });
+      return name === "claim_route_push_jobs"
+        ? { data: [{ ...job, ttl: 120 }] }
+        : name === "route_push_job_eligible"
+          ? { data: true }
+          : { error: null };
+    },
+    fetch: async (url, options) => {
+      sent.push(JSON.parse(options.body));
+      return { ok: true, json: async () => ({ data: { status: "ok", id: "route-ticket" } }) };
+    },
+  });
+  assert.equal(result.processed, 1);
+  assert.deepEqual(sent[0].data, { type: "route_alert" });
+  assert.equal(sent[0].channelId, "route-alerts");
+  assert.equal(sent[0].ttl, 120);
+  assert.equal(calls[2].name, "finish_route_push_job");
+  assert.equal(calls[2].args.p_ticket, "route-ticket");
+  assert.equal(calls[2].args.p_status, "receipt");
+  for (const privateField of ["coordinates", "latitude", "longitude", "route_id", "report_id", "departure_at"])
+    assert.ok(!JSON.stringify(sent[0]).includes(privateField));
+});
+
+test("revoked route jobs and temporary provider failures never report delivery", async () => {
+  const cancelled = await dispatchRoutePush({
+    rpc: async name => name === "claim_route_push_jobs" ? { data: [job] } : { data: false },
+    fetch: async () => { assert.fail("cancelled route must not be sent"); },
+  });
+  assert.equal(cancelled.processed, 0);
+  let acknowledgement;
+  await dispatchRoutePush({
+    rpc: async (name, args) => {
+      if (name === "claim_route_push_jobs") return { data: [job] };
+      if (name === "route_push_job_eligible") return { data: true };
+      acknowledgement = args;
+      return {};
+    },
+    fetch: async () => ({ ok: false, status: 429 }),
+  });
+  assert.equal(acknowledgement.p_status, "retry");
+  assert.equal(acknowledgement.p_error, "http_429");
 });

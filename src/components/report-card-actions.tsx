@@ -1,3 +1,5 @@
+import { AnimatedPressable } from './ui/animated-pressable';
+import Animated, { FadeInDown, FadeOutUp, ReduceMotion } from 'react-native-reanimated';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import MessageSquarePlus from 'lucide-react-native/icons/message-square-plus';
@@ -18,7 +20,7 @@ import { ReportShareSheet } from './report-share-sheet';
 
 export const ReportCardActivityContext = createContext<(active: boolean) => void>(() => {});
 
-export function ReportCardActions({ report, onUpdated }: { report: SafetyReportSummary; onUpdated?: () => void }) {
+export function ReportCardActions({ report, onUpdated, stackPosition, stackCount }: { report: SafetyReportSummary; onUpdated?: () => void; stackPosition?: number; stackCount?: number }) {
   const setCardActive = useContext(ReportCardActivityContext);
   const styles = useStyles();
   const color = useThemeColor();
@@ -53,34 +55,34 @@ export function ReportCardActions({ report, onUpdated }: { report: SafetyReportS
   }
   return <>
     <View style={styles.actions}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Mettre à jour l’info" accessibilityState={{ disabled: !canUpdate }} disabled={!canUpdate}
-        onPress={() => { setMenu(false); setUpdating(true); }} style={({ pressed }) => [styles.update, (pressed || !canUpdate) && styles.dimmed]}>
+      <AnimatedPressable haptic="selection" pressedScale={0.97} accessibilityRole="button" accessibilityLabel="Mettre à jour l’info" accessibilityState={{ disabled: !canUpdate }} disabled={!canUpdate}
+        onPress={() => { setMenu(false); setUpdating(true); }} style={[styles.update, !canUpdate && styles.dimmed]}>
         <MessageSquarePlus size={18} color="#FFFFFF" />
         <Text style={styles.updateText}>Mettre à jour l’info</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Partager ce signalement" onPress={() => {
+      </AnimatedPressable>
+      <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Partager ce signalement" onPress={() => {
         setMenu(false); setError(null);
         try { setShare(createReportShare(report, location)); } catch { setError('Impossible de préparer le partage. Réessayez.'); }
-      }} style={({ pressed }) => [styles.icon, pressed && styles.dimmed]}>
+      }} style={styles.icon}>
         <Share2 size={19} color={color('#315AC4', 'info')} />
-      </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded: menu }} onPress={() => setMenu(!menu)} style={styles.icon}>
+      </AnimatedPressable>
+      <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded: menu }} onPress={() => setMenu(!menu)} style={styles.icon}>
         <Ellipsis size={23} color={color('#405066', 'secondary')} />
-      </Pressable>
+      </AnimatedPressable>
     </View>
-    {menu && <View style={styles.menu}>
+    {menu && <Animated.View entering={FadeInDown.duration(180).reduceMotion(ReduceMotion.System)} exiting={FadeOutUp.duration(120).reduceMotion(ReduceMotion.System)} style={styles.menu}>
       <Pressable accessibilityRole="button" onPress={() => { setMenu(false); setFlagging(true); setSent(false); setError(null); setReason(''); }} style={styles.menuItem}>
         <Flag size={18} color={color('#C43F32', 'accent')} /><Text style={styles.menuText}>Signaler</Text>
       </Pressable>
       <View accessibilityState={{ disabled: true }} style={[styles.menuItem, styles.dimmed]}>
         <Ellipsis size={18} color={color('#737C89', 'muted')} /><Text style={styles.soon}>Autres · bientôt</Text>
       </View>
-    </View>}
+    </Animated.View>}
     {error && !flagging && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
     {updating && <TestimonyContext value={report}>
       <ReportSheet visible reportType={report.report_kind} onSelectType={() => {}} onBackToTypes={closeUpdate} onClose={closeUpdate} />
     </TestimonyContext>}
-    {share && <ReportShareSheet report={share} onClose={() => setShare(null)} />}
+    {share && <ReportShareSheet stackPosition={stackPosition} stackCount={stackCount} report={share} onClose={() => setShare(null)} />}
     <Modal visible={flagging} transparent animationType="fade" onRequestClose={() => { if (!busy) setFlagging(false); }}>
       <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" accessibilityRole="button" disabled={busy} onPress={() => setFlagging(false)} style={StyleSheet.absoluteFill} />

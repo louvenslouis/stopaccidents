@@ -5,7 +5,6 @@ export const prepareReportImage: PrepareReportImage = async (view, report) => {
   await document.fonts.ready;
   const element = view as unknown as HTMLElement;
   const blob = await toBlob(element, {
-    backgroundColor: '#FFFFFF',
     pixelRatio: 1080 / element.offsetWidth,
     // The card uses system fonts and no remote assets.
     skipFonts: true,

@@ -36,6 +36,7 @@ import LogOut from 'lucide-react-native/icons/log-out';
 import Mail from 'lucide-react-native/icons/mail';
 import MapPinHouse from 'lucide-react-native/icons/map-pin-house';
 import Save from 'lucide-react-native/icons/save';
+import Route from 'lucide-react-native/icons/route';
 import { ProfileAvatar } from '@/components/profile-avatar';
 import UserRoundPlus from 'lucide-react-native/icons/user-round-plus';
 import { useEffect, useState } from 'react';
@@ -603,6 +604,15 @@ export default function ProfileScreen() {
                     )}
                   </AnimatedPressable>
                 </View>
+
+                <AnimatedPressable accessibilityRole="button" accessibilityLabel="Mes trajets" haptic="light"
+                  onPress={() => router.push('/trajets')} style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <AppIcon icon={Route} color={themeColor('#267E70', 'success')} size={24} />
+                    <Text style={[styles.cardTitle, styles.flex]}>Mes trajets</Text>
+                    <AppIcon icon={ChevronRight} color={themeColor('#89919E', 'muted')} size={20} />
+                  </View>
+                </AnimatedPressable>
 
                 <AnimatedPressable accessibilityRole="button" accessibilityLabel="Véhicules et identité" haptic="light"
                   onPress={() => router.push('/profil/vehicules-identite')} style={styles.card}>

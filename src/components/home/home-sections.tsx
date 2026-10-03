@@ -513,6 +513,11 @@ export function HomeSections({
               <ArrowUpRight size={14} color="#D3E0D3" />
             </AnimatedPressable>
           )}
+          <AnimatedPressable accessibilityRole="button" onPress={() => router.push('/trajets')} style={styles.otherRoute}>
+            <Bell size={17} color="#D3E0D3" />
+            <Text style={styles.otherRouteText}>Mes trajets surveillés</Text>
+            <ArrowUpRight size={14} color="#D3E0D3" />
+          </AnimatedPressable>
         </ContrastSurface>
       </View>
       <View style={styles.section}>

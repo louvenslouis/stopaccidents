@@ -11,6 +11,10 @@ import { AppState, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Pressable, Text } from "@/features/language/native";
 import { supabase } from "@/lib/supabase";
+import {
+  enableRoutePush,
+  notifyRoutePushReceived,
+} from "@/features/saved-routes/push";
 import { readSafetyAlerts } from "./api";
 import { enableSafetyPush, listenForSafetyPush } from "./push";
 import type { SafetyAlert } from "./model";
@@ -93,6 +97,7 @@ export function SafetyAlertsProvider({ children }: { children: ReactNode }) {
       cleanup: (() => void) | undefined;
     const register = () => {
       void enableSafetyPush(userId, false).catch(() => {});
+      void enableRoutePush(userId, false).catch(() => {});
     };
     register();
     void listenForSafetyPush(
@@ -104,6 +109,14 @@ export function SafetyAlertsProvider({ children }: { children: ReactNode }) {
           void refresh();
           register();
         }
+      },
+      {
+        open: () => {
+          if (active && accountRef.current === userId) router.push("/trajets");
+        },
+        refresh: () => {
+          if (active && accountRef.current === userId) notifyRoutePushReceived();
+        },
       },
     )
       .then((dispose) => {

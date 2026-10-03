@@ -1,8 +1,9 @@
+import { ReportTicketHero, ReportTicketSeam } from './report-ticket-design';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { useLanguage } from '@/features/language/language-provider';
 import { localizeReportShare } from '@/features/language/documents';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
-import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
+import { createThemedStyles, useThemeColor, useAppTheme } from '@/features/appearance/theme-provider';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import Copy from 'lucide-react-native/icons/copy';
@@ -10,7 +11,6 @@ import Download from 'lucide-react-native/icons/download';
 import Share2 from 'lucide-react-native/icons/share-2';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import Clock3 from 'lucide-react-native/icons/clock-3';
-import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import X from 'lucide-react-native/icons/x';
 import { useMemo, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Platform, StyleSheet } from 'react-native';
@@ -21,8 +21,9 @@ import type { ReportShare } from '@/features/safety-report/share';
 import { prepareReportImage } from '@/features/safety-report/share-image';
 import type { PreparedReportImage } from '@/features/safety-report/share-image.types';
 
-export function ReportShareSheet({ report: originalReport, onClose }: { report: ReportShare; onClose: () => void }) {
+export function ReportShareSheet({ report: originalReport, onClose, stackPosition, stackCount }: { report: ReportShare; onClose: () => void; stackPosition?: number; stackCount?: number }) {
   const { language } = useLanguage();
+  const { scheme } = useAppTheme();
   const report = useMemo(() => localizeReportShare(originalReport, language), [originalReport, language]);
   const styles = useStyles();
   const themeColor = useThemeColor();
@@ -65,7 +66,7 @@ export function ReportShareSheet({ report: originalReport, onClose }: { report: 
       cancelAnimationFrame(frame);
       prepared?.dispose();
     };
-  }, [size, attempt, report]);
+  }, [size, attempt, report, scheme, stackPosition, stackCount]);
 
   async function share() {
     if (!image || busy.current) return;
@@ -112,14 +113,7 @@ export function ReportShareSheet({ report: originalReport, onClose }: { report: 
                   setSize((previous) => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height });
                 }
               }}>
-                <View style={styles.brandRow}>
-                  <Text style={styles.brand}>STOP ACCIDENTS</Text>
-                  <Text style={styles.brandCaption}>SIGNALEMENT</Text>
-                </View>
-                <View style={styles.eventHeading}>
-                  <View style={styles.iconBox}><AppIcon icon={TriangleAlert} size={24} color="#D94235" /></View>
-                  <Text style={styles.eventTitle}>{report.title}</Text>
-                </View>
+                <ReportTicketHero kind={report.kind} title={report.label} position={stackPosition} count={stackCount} />
                 <View style={styles.details}>
                   <View style={styles.line}>
                     <AppIcon icon={MapPin} size={17} color="#858C98" />
@@ -136,8 +130,9 @@ export function ReportShareSheet({ report: originalReport, onClose }: { report: 
                   )}
                   {report.estimated && <Text style={styles.credit}>Données géographiques © OpenStreetMap</Text>}
                 </View>
+                <ReportTicketSeam />
                 <View style={styles.imageFooter} accessible accessibilityLabel="QR code vers l’événement">
-                  <QRCode value={report.url} size={132} quietZone={16} ecl="M" color="#000000" backgroundColor="#FFFFFF" />
+                  <QRCode value={report.url} size={100} quietZone={12} ecl="M" color="#000000" backgroundColor="#FFFFFF" />
                 </View>
               </View>
               {image && <Image source={{ uri: image.uri }} accessible={false} contentFit="fill" style={styles.generatedImage} />}
@@ -192,22 +187,22 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingTop: 0, gap: 12 },
   preview: { ...surfaceDepth(themeColor, 'card'), borderWidth: 1, borderColor: themeColor('#E9ECF0', 'border'), borderRadius: 20, overflow: 'hidden' },
-  generatedImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: '#FFFFFF' },
-  imageCard: { padding: 20, backgroundColor: '#FFFFFF' },
+  generatedImage: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: themeColor('#FFFEFA', 'surface') },
+  imageCard: { padding: 20, borderRadius: 26, overflow: 'hidden', backgroundColor: themeColor('#FFFEFA', 'surface') },
   brandRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 22 },
   brand: { color: '#C43F32', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   brandCaption: { color: '#888D97', fontSize: 9, fontWeight: '600', letterSpacing: 1 },
   eventHeading: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: { width: 46, height: 46, borderRadius: 14, backgroundColor: '#FFF0EC', alignItems: 'center', justifyContent: 'center' },
   eventTitle: { flex: 1, color: '#20242C', fontSize: 20, lineHeight: 26, fontWeight: '700' },
-  details: { borderTopWidth: 1, borderTopColor: '#E9ECF0', marginTop: 18, paddingTop: 16, gap: 12 },
+  details: { paddingTop: 18, gap: 10 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  location: { flex: 1, fontSize: 14, lineHeight: 21, color: '#3E4551', fontWeight: '500' },
-  date: { flex: 1, fontSize: 12, lineHeight: 18, color: '#737C89' },
+  location: { flex: 1, fontSize: 14, lineHeight: 21, color: themeColor('#3E4551', 'secondary'), fontWeight: '500' },
+  date: { flex: 1, fontSize: 12, lineHeight: 18, color: themeColor('#737C89', 'muted') },
   badge: { alignSelf: 'flex-start', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8 },
   badgeText: { fontSize: 12, fontWeight: '600' },
   credit: { color: '#777E89', fontSize: 10 },
-  imageFooter: { marginTop: 20, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#E9ECF0', alignItems: 'center' },
+  imageFooter: { marginTop: 24, alignItems: 'center' },
   loading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 12 },
   help: { fontSize: 12, lineHeight: 18, color: themeColor('#667080', 'muted') },
   primary: { ...surfaceDepth(themeColor, 'raised'), minHeight: 48, borderRadius: 14, backgroundColor: '#C43F32', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, gap: 9 },

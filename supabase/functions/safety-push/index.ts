@@ -1,6 +1,7 @@
 // @ts-nocheck -- Supabase Edge / Deno entry point; dispatch.mjs is tested with Node.
+// eslint-disable-next-line import/no-unresolved -- Resolved by the Deno npm loader.
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
-import { dispatchSafetyPush } from "./dispatch.mjs";
+import { dispatchSafetyPush, dispatchRoutePush } from "./dispatch.mjs";
 
 Deno.serve(async (request) => {
   if (request.method !== "POST") return new Response(null, { status: 405 });
@@ -19,12 +20,22 @@ Deno.serve(async (request) => {
   });
   if (error || data !== true) return new Response(null, { status: 401 });
   try {
-    const result = await dispatchSafetyPush({
+    const dependencies = {
       rpc: (name, args) => client.rpc(name, args),
       fetch,
       accessToken: Deno.env.get("EXPO_ACCESS_TOKEN"),
+    };
+    // The existing one-minute cron drives both independent queues.
+    const results = await Promise.allSettled([
+      dispatchSafetyPush(dependencies),
+      dispatchRoutePush(dependencies),
+    ]);
+    if (results.some((result) => result.status === "rejected")) {
+      throw new Error("delivery_temporarily_unavailable");
+    }
+    return Response.json({
+      processed: results.reduce((count, result) => count + result.value.processed, 0),
     });
-    return Response.json(result);
   } catch {
     return Response.json(
       { error: "delivery_temporarily_unavailable" },
