@@ -45,6 +45,7 @@ function harness() {
     pending = [];
   return {
     react: {
+      useContext() { return null; },
       useState(initial) {
         const i = cursor++;
         if (!(i in values))
@@ -119,11 +120,11 @@ function storageFixture(initialUser = "owner") {
     },
   };
 }
-function draftHook(fixture, factory) {
+function draftHook(fixture, factory, testimony = null) {
   const h = harness();
   let active = true;
   const { useReportDraft } = compile(sources["use-report-draft.ts"], {
-    react: h.react,
+    react: { ...h.react, useContext: () => testimony },
     "@/lib/supabase": { supabase: { auth: fixture.auth } },
     "./api": { ensureReporter: fixture.ensureReporter },
     "./draft-storage": { draftStorage: fixture.storage },
@@ -354,4 +355,31 @@ test("reporter identity explains when anonymous sign-ins are disabled", async ()
     },
   });
   await assert.rejects(ensureReporter(), /sans compte.*pas encore activé/);
+});
+
+
+test("follow-up drafts skip location, isolate ordinary drafts and resume without copying old observations", async () => {
+  const f = storageFixture();
+  let counter = 0;
+  const factory = () => ({ id: `new-${++counter}`, coordinates: null, notes: '', photos: [] });
+  const normal = draftHook(f, factory);
+  normal.render(); await flush(); let state = normal.render();
+  state.setDraft({ ...state.draft, notes: 'Ordinary draft' });
+  state = normal.render(); await state.checkpoint(); normal.dispose();
+  const source = { id: 'source', report_kind: 'accident', event_id: 'event', latitude: 18.5, longitude: -72.3, location_description: 'Delmas' };
+  const follow = draftHook(f, factory, source);
+  follow.render(); await flush(); state = follow.render();
+  assert.equal(state.step, 1); assert.equal(state.savedSteps, 0);
+  assert.equal(state.draft.notes, ''); assert.equal(state.draft.sourceReportId, 'source');
+  assert.deepEqual(state.draft.coordinates, { latitude: 18.5, longitude: -72.3, accuracy: null });
+  assert.equal(state.draft.locationSource, 'manual');
+  const id = state.draft.id;
+  state.setDraft({ ...state.draft, notes: 'New testimony' });
+  state = follow.render(); await state.checkpoint(); follow.dispose();
+  const resumed = draftHook(f, factory, source);
+  resumed.render(); await flush(); state = resumed.render();
+  assert.equal(state.draft.id, id); assert.equal(state.draft.notes, 'New testimony'); resumed.dispose();
+  const ordinary = draftHook(f, factory);
+  ordinary.render(); await flush(); state = ordinary.render();
+  assert.equal(state.draft.notes, 'Ordinary draft'); ordinary.dispose();
 });

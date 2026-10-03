@@ -347,8 +347,9 @@ export function FireReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
+      if (draft.sourceReportId && savedSteps === 0) await saveFireReportStep(draft, 0, setProgress);
       if (
-        step === 1 &&
+        step === 1 && !draft.sourceReportId &&
         savedLocation.current !== fireLocationDescription(draft)
       ) {
         await saveFireReportStep(draft, 0, setProgress);
@@ -434,7 +435,7 @@ export function FireReportSheet({
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>INCENDIE</Text>
                   <Text accessibilityRole="header" style={styles.title}>
-                    Signaler un incendie
+                    {draft.sourceReportId ? 'Ajouter un témoignage' : 'Signaler un incendie'}
                   </Text>
                 </View>
                 <Pressable
@@ -500,7 +501,7 @@ export function FireReportSheet({
                     <Text numberOfLines={1} style={styles.locationZone}>
                       {draft.location ? <Text translate={false}>{draft.location}</Text> : 'Zone détectée par GPS'}
                     </Text>
-                    {editingLocationHint ? (
+                    {!draft.sourceReportId && (editingLocationHint ? (
                       <TextInput keyboardAppearance={scheme}
                         autoFocus
                         editable={!sending}
@@ -530,7 +531,7 @@ export function FireReportSheet({
                           {draft.locationHint ? <Text translate={false}>{draft.locationHint}</Text> : 'Ajouter un repère sur place'}
                         </Text>
                       </Pressable>
-                    )}
+                    ))}
                     {!draft.location && <GeocodingCredit />}
                   </View>
                 )}
@@ -644,7 +645,7 @@ export function FireReportSheet({
                   )}
                   <View style={styles.footerActions}>
                     <Action
-                      label={step === 1 ? 'Types' : 'Retour'}
+                      label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
                       secondary
                       icon={ArrowLeft}
                       onPress={() => {

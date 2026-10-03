@@ -1,5 +1,14 @@
 // French source messages are stable keys; never use this catalog for stored user content.
 export const haitianCreole: Record<string, string> = {
+  "Ajouter un témoignage": "Ajoute yon temwayaj",
+  "Mettre à jour l’info": "Mete enfòmasyon an ajou",
+  "Options du signalement": "Opsyon rapò a",
+  "Autres · bientôt": "Lòt opsyon · byento",
+  "Signaler ce contenu": "Siyale kontni sa a",
+  "Motif du signalement": "Rezon pou siyale a",
+  "Signalement envoyé": "Rapò a voye",
+  "Envoi impossible. Réessayez.": "Pa kapab voye. Eseye ankò.",
+  "Impossible de rattacher le témoignage. Ce signalement est peut-être indisponible.": "Pa kapab konekte temwayaj la. Rapò sa a ka pa disponib.",
   "Mon profil": "Pwofil mwen",
   "Paramètres": "Paramèt",
   "Le Site": "Sit la",

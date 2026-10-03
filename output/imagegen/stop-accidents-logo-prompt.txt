@@ -1,0 +1,8 @@
+Tool: built-in image_gen
+Input: /Users/louvenslouis/Downloads/images-2.jpeg
+Output: transparent PNG
+
+Use case: logo-brand / style-transfer.
+Input image is the edit target: the existing Haitian road-safety association STOP Accidents logo. Modernize this actual logo, preserving its recognizable identity: heavy STOP wordmark with a red octagonal stop-sign replacing the O, and the name Accidents below.
+Create ONE refined professional flat logo, not a presentation board, not multiple options. Transparent background, clean sharply defined graphic edges. Main top line exact text "STOP": tightly balanced bespoke bold black geometric sans lettering, with a solid vivid red octagon as the O. Inside the O use a minimal white stylized road receding upward, with a simple dashed center line, an elegant safety-road symbol replacing the intricate colliding cars. Preserve clear reading of S T [O] P, the sign aligns perfectly with cap height. Below, exact text "ACCIDENTS" in smaller dark charcoal uppercase modern sans, medium weight, generous controlled tracking, aligned to total top-line width. Excellent optical kerning, confident established nonprofit identity, contemporary Swiss visual discipline. Use near-black #151817, safety red #DF2436, white only inside road symbol.
+Remove original rectangular border, yellow diagonal text ribbon, tiny slogan, and warning triangle: consolidate identity into strong wordmark. No gradients, shadows, 3D, mockup, paper, texture, decoration, watermark, caption, tagline, extra words or invented symbols. One logo centered and filling about 85% of a wide landscape canvas, small even transparent margins. Actual alpha transparency, no white background, no checkerboard baked in. Designed to remain readable at small mobile-header size.

@@ -414,9 +414,10 @@ export function ReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
+      if (draft.sourceReportId && savedSteps === 0) await saveAccidentReportStep(draft, 0, setProgress);
       // The landmark adjusts the existing location before saving the subtype.
       // A failed retry keeps the same report ID and cannot erase other steps.
-      if (step === 1 && savedLocation.current !== locationDescription(draft)) {
+      if (step === 1 && !draft.sourceReportId && savedLocation.current !== locationDescription(draft)) {
         await saveAccidentReportStep(draft, 0, setProgress);
         savedLocation.current = locationDescription(draft);
       }
@@ -499,7 +500,7 @@ export function ReportSheet({
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>CHAQUE SIGNALEMENT COMPTE</Text>
                   <Text accessibilityRole="header" style={styles.title}>
-                    Signaler un accident
+                    {draft.sourceReportId ? 'Ajouter un témoignage' : 'Signaler un accident'}
                   </Text>
                 </View>
                 <Pressable
@@ -561,7 +562,7 @@ export function ReportSheet({
                       <Text numberOfLines={1} style={styles.locationZone}>
                         {draft.location ? <Text translate={false}>{draft.location}</Text> : 'Zone détectée par GPS'}
                       </Text>
-                      {editingLocationHint ? (
+                      {!draft.sourceReportId && (editingLocationHint ? (
                         <TextInput keyboardAppearance={scheme}
                           autoFocus
                           editable={!sending}
@@ -591,7 +592,7 @@ export function ReportSheet({
                             {draft.locationHint ? <Text translate={false}>{draft.locationHint}</Text> : 'Ajouter un repère sur place'}
                           </Text>
                         </Pressable>
-                      )}
+                      ))}
                     </View>
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
@@ -749,7 +750,7 @@ export function ReportSheet({
                   )}
                   <View style={styles.footerActions}>
                     <Action
-                      label={step === 1 ? 'Types' : 'Retour'}
+                      label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
                       secondary
                       icon={ArrowLeft}
                       onPress={() => {

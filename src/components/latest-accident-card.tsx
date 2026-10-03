@@ -1,3 +1,4 @@
+import { ReportCardActions } from '@/components/report-card-actions';
 import Flame from 'lucide-react-native/icons/flame';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
@@ -8,17 +9,16 @@ import Construction from 'lucide-react-native/icons/construction';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import CalendarDays from 'lucide-react-native/icons/calendar-days';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
-import ChevronUp from 'lucide-react-native/icons/chevron-up';
 import Clock3 from 'lucide-react-native/icons/clock-3';
 import Hash from 'lucide-react-native/icons/hash';
 import CarFront from 'lucide-react-native/icons/car-front';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
-import Share2 from 'lucide-react-native/icons/share-2';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import UserRoundSearch from 'lucide-react-native/icons/user-round-search';
 import Wrench from 'lucide-react-native/icons/wrench';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
@@ -33,8 +33,25 @@ import {
   type SafetyReportSummary,
 } from '@/features/safety-report/read';
 import { useReportLocation } from '@/features/safety-report/use-report-location';
-import { ReportShareSheet } from '@/components/report-share-sheet';
-import { createReportShare, type ReportShare } from '@/features/safety-report/share';
+
+const disclosureTiming = { duration: 320, easing: Easing.inOut(Easing.cubic), reduceMotion: ReduceMotion.System };
+
+function CardDisclosure({ expanded, children }: { expanded: boolean; children: ReactNode }) {
+  const contentHeight = useSharedValue(0);
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: withTiming(expanded ? contentHeight.value : 0, disclosureTiming),
+    opacity: withTiming(expanded ? 1 : 0, disclosureTiming),
+  }));
+  return (
+    <Animated.View style={[{ overflow: 'hidden' }, animatedStyle]} pointerEvents={expanded ? 'auto' : 'none'} aria-hidden={!expanded}>
+      <View style={{ position: 'absolute', width: '100%', top: 0 }} onLayout={({ nativeEvent }) => {
+        contentHeight.value = nativeEvent.layout.height;
+      }}>
+        {children}
+      </View>
+    </Animated.View>
+  );
+}
 
 export function LatestAccidentCard({
   report,
@@ -53,8 +70,9 @@ export function LatestAccidentCard({
   const themeColor = useThemeColor();
 
   const [expanded, setExpanded] = useState(false);
-  const [sharePreview, setSharePreview] = useState<ReportShare | null>(null);
-  const [shareError, setShareError] = useState<string | null>(null);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: withTiming(expanded ? '180deg' : '0deg', disclosureTiming) }],
+  }));
   const isSuspiciousVehicle = report?.report_kind === 'suspicious_vehicle';
   const isGunfire = report?.report_kind === 'gunfire';
   const isArmedPresence = report?.report_kind === 'armed_presence';
@@ -90,7 +108,7 @@ export function LatestAccidentCard({
         </Pressable>
       </View>
       {report ? (
-        <ContrastSurface style={[styles.card, !expanded && styles.compactCard]}>
+        <ContrastSurface style={[styles.card, styles.compactCard]}>
           <AnimatedPressable
             accessibilityRole="button"
             accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le dernier signalement : ${reportLabel}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}.${severity ? ` Gravité : ${severity.label}.` : ''}`}
@@ -101,29 +119,29 @@ export function LatestAccidentCard({
             style={styles.cardToggle}
           >
             <View style={styles.cardHeader}>
-              <View style={[styles.iconBox, !expanded && styles.compactIconBox, isKidnapping && styles.kidnappingIconBox]}>
+              <View style={[styles.iconBox, styles.compactIconBox, isKidnapping && styles.kidnappingIconBox]}>
                 <AppIcon
                   icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront}
-                  size={expanded ? 26 : 22}
+                  size={26}
                   color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#D94235', 'accent')}
                 />
               </View>
-              <View style={[styles.heading, !expanded && styles.compactHeading]}>
+              <View style={[styles.heading, styles.compactHeading]}>
                 <Text style={styles.eyebrow}>
                   {report.report_kind !== 'accident' ? 'TYPE DE SIGNALEMENT' : 'TYPE D’ACCIDENT'}
                 </Text>
                 <Text
-                  style={[styles.type, !expanded && styles.compactType]}
-                  numberOfLines={expanded ? undefined : 2}
+                  style={[styles.type, styles.compactType]}
+                  numberOfLines={2}
                 >
                   {reportLabel}
                 </Text>
               </View>
-              <View style={styles.chevronBox}>
-                <AppIcon icon={expanded ? ChevronUp : ChevronDown} size={19} color={themeColor("#737C89", 'muted')} />
-              </View>
+              <Animated.View style={[styles.chevronBox, chevronStyle]}>
+                <AppIcon icon={ChevronDown} size={19} color={themeColor("#737C89", 'muted')} />
+              </Animated.View>
             </View>
-            {!expanded && (
+            <CardDisclosure expanded={!expanded}>
               <View style={styles.compactSummary}>
                 <View style={styles.compactLine}>
                   <AppIcon icon={MapPin} size={15} strokeWidth={1.7} color={themeColor("#858C98", 'muted')} />
@@ -145,28 +163,10 @@ export function LatestAccidentCard({
                   )}
                 </View>
               </View>
-            )}
+              {location.estimated && <GeocodingCredit />}
+            </CardDisclosure>
           </AnimatedPressable>
-          {!expanded && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Partager ce signalement"
-              accessibilityHint="Génère une image de la carte avec une description et le lien de l’événement"
-              onPress={() => {
-                try {
-                  setShareError(null);
-                  setSharePreview(createReportShare(report, location));
-                } catch {
-                  setShareError('Impossible de préparer le partage. Réessayez.');
-                }
-              }}
-              style={({ pressed }) => [styles.shareButton, pressed && styles.shareButtonPressed]}
-            >
-              <AppIcon icon={Share2} size={17} color={themeColor("#737C89", 'muted')} />
-            </Pressable>
-          )}
-          {!expanded && location.estimated && <GeocodingCredit />}
-          {expanded && (
+          <CardDisclosure expanded={expanded}>
             <AnimatedPressable
               accessibilityRole="button"
               accessibilityLabel={`Voir les détails du signalement : ${reportLabel}`}
@@ -180,7 +180,7 @@ export function LatestAccidentCard({
                 <View style={[styles.badge, { backgroundColor: isKidnapping ? themeColor('#F4ECF8', 'violetSoft') : themeColor('#EEF2FF', 'infoSoft') }]}>
                   <AppIcon icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
                   <Text style={[styles.badgeText, { color: isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info') }]}>
-                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : 'Accident'}
+                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : report.report_kind === 'fire' ? 'Incendie' : 'Accident'}
                   </Text>
                 </View>
                 {severity && (
@@ -238,7 +238,8 @@ export function LatestAccidentCard({
                 </View>
               </View>
             </AnimatedPressable>
-          )}
+          </CardDisclosure>
+          <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} />
         </ContrastSurface>
       ) : (
         <View
@@ -282,8 +283,6 @@ export function LatestAccidentCard({
           affichées.
         </Text>
       )}
-      {shareError && <Text accessibilityRole="alert" style={styles.error}>{shareError}</Text>}
-      {sharePreview && <ReportShareSheet report={sharePreview} onClose={() => setSharePreview(null)} />}
     </View>
   );
 }
@@ -315,7 +314,7 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     borderRadius: 30,
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
-  compactCard: { padding: 16, borderRadius: 22 },
+  compactCard: { padding: 20, borderRadius: 28, borderTopWidth: 4, borderTopColor: themeColor('#E66E4F', 'accent'), backgroundColor: themeColor('#FFFAF5', 'surface') },
   cardToggle: { width: '100%' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
@@ -327,12 +326,10 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  compactIconBox: { width: 46, height: 46, borderRadius: 14 },
+  compactIconBox: { width: 54, height: 54, borderRadius: 18 },
   kidnappingIconBox: { backgroundColor: themeColor('#F4ECF8', 'violetSoft') },
   heading: { flex: 1, minWidth: 0 },
-  compactHeading: { paddingRight: 38 },
-  shareButton: { position: 'absolute', top: 17, right: 48, width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-  shareButtonPressed: { backgroundColor: themeColor('#F4F5F7', 'elevated') },
+  compactHeading: { paddingRight: 0 },
   eyebrow: {
     fontSize: 10,
     fontWeight: '700',

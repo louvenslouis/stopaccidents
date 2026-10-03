@@ -74,6 +74,13 @@ export async function nearbyEvents(
   return data as NearbyEvent[];
 }
 export async function prepareReportEvent(kind: ReportKind, draft: EventDraft) {
+  if (draft.sourceReportId) {
+    const { error } = await supabase.rpc('prepare_report_testimony', {
+      p_kind: kind, p_report_id: draft.id, p_source_report_id: draft.sourceReportId,
+    });
+    if (error) throw new Error('Impossible de rattacher le témoignage. Ce signalement est peut-être indisponible.');
+    return;
+  }
   if (draft.locationSource === 'manual' && !validManualContext(draft))
     throw new Error('Choisissez un lieu et un moment dans les trois dernières heures.');
   const { error } = await supabase.rpc(draft.locationSource === 'manual' ? "prepare_manual_report_event" : "prepare_report_event", {

@@ -1,3 +1,4 @@
+import { ReportCardActivityContext } from '@/components/report-card-actions';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { useLanguage } from '@/features/language/language-provider';
 import { Text, View } from '@/features/language/native';
@@ -55,11 +56,12 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: initialWidth } = useWindowDimensions();
   const [webWidth, setWebWidth] = useState(0);
+  const [cardActive, setCardActive] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
   const [reportType, setReportType] = useState<ReportType | null>(null);
   const selectedReport = sharedReportSelection(signalement);
-  const latestReport = useAccident(readLatestReport, !reportOpen && !selectedReport, 30000);
+  const latestReport = useAccident(readLatestReport, !reportOpen && !selectedReport && !cardActive, 30000);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
   const reportButtonRailWidth = isWideLayout
@@ -130,7 +132,7 @@ export default function HomeScreen() {
   }));
 
   return (
-    <>
+    <ReportCardActivityContext value={setCardActive}>
       <AppScreen
         title="Accueil"
         hideIntro
@@ -172,7 +174,7 @@ export default function HomeScreen() {
           onOpen={(id) => router.setParams({ signalement: id })}
         />
         <HomeSections
-          enabled={!reportOpen && !selectedReport}
+          enabled={!reportOpen && !selectedReport && !cardActive}
           onOpen={(id) => router.setParams({ signalement: id })}
           zonesOpen={zonesOpen}
           onZonesOpen={() => setZonesOpen(true)}
@@ -242,7 +244,7 @@ export default function HomeScreen() {
           }}
         />
       )}
-    </>
+    </ReportCardActivityContext>
   );
 }
 

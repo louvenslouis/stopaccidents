@@ -1,3 +1,4 @@
+import { ReportCardActions } from '@/components/report-card-actions';
 import Flame from 'lucide-react-native/icons/flame';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { useLanguage } from '@/features/language/language-provider';
@@ -116,13 +117,14 @@ function ReportRow({
   const Icon = appearance.icon;
   const location = useReportLocation(report);
   return (
+    <View style={{ backgroundColor: themeColor('#FFFFFF', 'surface'), borderRadius: 24, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: themeColor('#E5E9E4', 'border'), borderTopWidth: 3, borderTopColor: appearance.color }}>
     <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={`${t(appearance.label)}, ${location.label}, ${t(reportAge(observedAt))}. ${t('Voir le signalement')}`}
       onPress={() => onOpen(reportSelection(report))}
       hoverScale={1.005}
       pressedScale={0.985}
-      style={styles.reportRow}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
     >
       <View
         style={[styles.reportIcon, { backgroundColor: appearance.background }]}
@@ -148,6 +150,8 @@ function ReportRow({
       </View>
       <ChevronRight size={17} color={themeColor("#8F9991", 'muted')} />
     </AnimatedPressable>
+    <ReportCardActions report={report} />
+    </View>
   );
 }
 

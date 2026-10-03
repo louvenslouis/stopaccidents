@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { TestimonyContext } from './testimony-context';
+import { useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { ensureReporter, type EventDraft, type ReportKind } from "./api";
 import { draftStorage } from "./draft-storage";
@@ -23,6 +24,8 @@ export function useReportDraft<D extends EventDraft>(
   makeDraft: () => D,
   active: boolean,
 ) {
+  const testimony = useContext(TestimonyContext);
+  const source = testimony?.report_kind === kind ? testimony : null;
   const [draft, setDraft] = useState<D>(makeDraft);
   const [step, setStep] = useState(0);
   const [savedSteps, setSavedSteps] = useState(0);
@@ -63,7 +66,7 @@ export function useReportDraft<D extends EventDraft>(
         return;
       }
       try {
-        const storageKey = `stopaccidents.draft.${userId}.${kind}`;
+        const storageKey = `stopaccidents.draft.${userId}.${kind}${source ? `.testimony.${source.id}` : ''}`;
         await writes.get(storageKey)?.catch(() => {});
         const value = await draftStorage.getItem(storageKey);
         const saved: Snapshot<D> | null = value ? JSON.parse(value) : null;
@@ -95,6 +98,18 @@ export function useReportDraft<D extends EventDraft>(
           setSavedSteps(saved.savedSteps);
           setReceipt(saved.receipt);
         }
+        if (source && (!saved || saved.receipt || !saved.draft.sourceReportId)) {
+          if (source.latitude === null || source.longitude === null) throw new Error('Missing location');
+          setDraft({ ...makeDraft(), sourceReportId: source.id,
+            eventId: source.event_id, eventChoiceMade: true,
+            location: source.location_description, locationHint: '',
+            locationSource: 'manual', occurredAt: new Date().toISOString(), minutesAgo: 0,
+            coordinates: { latitude: source.latitude, longitude: source.longitude, accuracy: null },
+          });
+          setStep(1);
+          setSavedSteps(0);
+          setReceipt(null);
+        }
         key.current = storageKey;
         owner.current = userId;
         setStorageError(null);
@@ -109,7 +124,7 @@ export function useReportDraft<D extends EventDraft>(
     return () => {
       cancelled = true;
     };
-  }, [active, ready, kind, retry]);
+  }, [active, ready, kind, retry, source, makeDraft]);
   useEffect(() => {
     if (!ready || !key.current) return;
     const value = JSON.stringify({

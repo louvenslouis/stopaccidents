@@ -322,8 +322,9 @@ export function GunfireReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
+      if (draft.sourceReportId && savedSteps === 0) await saveGunfireReportStep(draft, 0, setProgress);
       if (
-        step === 1 &&
+        step === 1 && !draft.sourceReportId &&
         savedLocation.current !== gunfireLocationDescription(draft)
       ) {
         await saveGunfireReportStep(draft, 0, setProgress);
@@ -402,7 +403,7 @@ export function GunfireReportSheet({
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>SITUATION OBSERVÉE</Text>
                   <Text accessibilityRole="header" style={styles.title}>
-                    Signaler des tirs
+                    {draft.sourceReportId ? 'Ajouter un témoignage' : 'Signaler des tirs'}
                   </Text>
                 </View>
                 <Pressable
@@ -474,7 +475,7 @@ export function GunfireReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <View style={styles.locationCard}>
+                    {!draft.sourceReportId && (<View style={styles.locationCard}>
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
                         <View style={styles.flex}>
@@ -511,7 +512,7 @@ export function GunfireReportSheet({
                         multiline
                         style={[styles.input, styles.landmarkInput]}
                       />
-                    </View>
+                    </View>)}
                     <View style={styles.sectionHeading}>
                       <AppIcon icon={AudioLines} color={themeColor("#D94235", 'accent')} size={25} />
                       <View style={styles.flex}>
@@ -638,7 +639,7 @@ export function GunfireReportSheet({
                   )}
                   <View style={styles.footerActions}>
                     <Action
-                      label={step === 1 ? "Types" : "Retour"}
+                      label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
                       secondary
                       icon={ArrowLeft}
                       onPress={() => {

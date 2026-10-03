@@ -275,8 +275,9 @@ export function BarricadeReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
+      if (draft.sourceReportId && savedSteps === 0) await saveBarricadeReportStep(draft, 0, setProgress);
       if (
-        step === 1 &&
+        step === 1 && !draft.sourceReportId &&
         savedLocation.current !== barricadeLocationDescription(draft)
       ) {
         await saveBarricadeReportStep(draft, 0, setProgress);
@@ -350,7 +351,7 @@ export function BarricadeReportSheet({
                 <View style={styles.flex}>
                   <Text style={styles.eyebrow}>INFORMER LES USAGERS</Text>
                   <Text accessibilityRole="header" style={styles.title}>
-                    Signaler une route barricadée
+                    {draft.sourceReportId ? 'Ajouter un témoignage' : 'Signaler une route barricadée'}
                   </Text>
                 </View>
                 <Pressable
@@ -421,7 +422,7 @@ export function BarricadeReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <View style={styles.locationCard}>
+                    {!draft.sourceReportId && (<View style={styles.locationCard}>
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
                         <View style={styles.flex}>
@@ -458,7 +459,7 @@ export function BarricadeReportSheet({
                         multiline
                         style={[styles.input, styles.landmarkInput]}
                       />
-                    </View>
+                    </View>)}
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
                         <AppIcon icon={Construction} color={themeColor("#D94235", 'accent')} size={23} />
@@ -597,7 +598,7 @@ export function BarricadeReportSheet({
                   )}
                   <View style={styles.footerActions}>
                     <Action
-                      label={step === 1 ? 'Types' : 'Retour'}
+                      label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
                       secondary
                       icon={ArrowLeft}
                       onPress={() => {
