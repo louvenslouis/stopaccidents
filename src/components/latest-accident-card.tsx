@@ -59,7 +59,9 @@ export function LatestAccidentCard({
   error,
   onRefresh,
   onOpen,
+  hideHeader = false,
 }: {
+  hideHeader?: boolean;
   report: SafetyReportSummary | null;
   loading: boolean;
   error: string | null;
@@ -87,8 +89,8 @@ export function LatestAccidentCard({
       ? accidentTypeLabel(report)
       : '';
   return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
+    <View style={[styles.section, hideHeader && { marginTop: 0 }]}>
+      {!hideHeader && <View style={styles.sectionHeader}>
         <Text accessibilityRole="header" style={styles.sectionTitle}>
           Dernier signalement
         </Text>
@@ -106,7 +108,7 @@ export function LatestAccidentCard({
             <AppIcon icon={RefreshCw} size={18} color={themeColor("#787E89", 'muted')} />
           )}
         </Pressable>
-      </View>
+      </View>}
       {report ? (
         <ContrastSurface style={[styles.card, styles.compactCard]}>
           <AnimatedPressable

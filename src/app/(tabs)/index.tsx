@@ -5,13 +5,14 @@ import { Text, View } from '@/features/language/native';
 import { useAppLocation } from '@/features/location/app-location';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AppScreen } from '@/components/app-screen';
-import { LatestAccidentCard } from '@/components/latest-accident-card';
+import { RecentReportStack } from '@/components/recent-report-stack';
+import { recentReportStack } from '@/features/home/report-stack';
 import { HomeSections } from '@/components/home/home-sections';
 import { HomeMenu } from '@/components/home/home-menu';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { sharedReportSelection } from '@/features/safety-report/share';
 import { SafetyReportDetailSheet } from '@/components/safety-report-detail-sheet';
-import { readLatestReport } from '@/features/safety-report/read';
+import { readLatestReport, readMapReports } from '@/features/safety-report/read';
 import { useAccident } from '@/features/accident-report/use-accident';
 import { ReportSheet } from '@/components/report-sheet';
 import type { ReportType } from '@/components/report-type-picker';
@@ -62,6 +63,8 @@ export default function HomeScreen() {
   const [reportType, setReportType] = useState<ReportType | null>(null);
   const selectedReport = sharedReportSelection(signalement);
   const latestReport = useAccident(readLatestReport, !reportOpen && !selectedReport && !cardActive, 30000);
+  const recentReports = useAccident(readMapReports, !reportOpen && !selectedReport && !cardActive, 30000);
+  const stackedReports = recentReportStack(latestReport.data, recentReports.data?.reports ?? []);
   const width = Platform.OS === 'web' ? webWidth : initialWidth;
   const isWideLayout = width >= WIDE_LAYOUT_BREAKPOINT;
   const reportButtonRailWidth = isWideLayout
@@ -166,11 +169,11 @@ export default function HomeScreen() {
           </View>
         }
       >
-        <LatestAccidentCard
-          report={latestReport.data}
-          loading={latestReport.loading}
-          error={latestReport.error}
-          onRefresh={latestReport.refresh}
+        <RecentReportStack
+          reports={stackedReports}
+          loading={latestReport.loading || recentReports.loading}
+          error={latestReport.error || recentReports.error}
+          onRefresh={() => { latestReport.refresh(); recentReports.refresh(); }}
           onOpen={(id) => router.setParams({ signalement: id })}
         />
         <HomeSections

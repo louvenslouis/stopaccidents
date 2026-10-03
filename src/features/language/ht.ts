@@ -1,5 +1,9 @@
 // French source messages are stable keys; never use this catalog for stored user content.
 export const haitianCreole: Record<string, string> = {
+  "Signalements récents": "Dènye rapò yo",
+  "Actualiser les signalements récents": "Rafrechi dènye rapò yo",
+  "Signalement plus récent": "Rapò ki pi resan",
+  "Signalement précédent": "Rapò anvan an",
   "Ajouter un témoignage": "Ajoute yon temwayaj",
   "Mettre à jour l’info": "Mete enfòmasyon an ajou",
   "Options du signalement": "Opsyon rapò a",
