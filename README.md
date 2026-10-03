@@ -16,6 +16,27 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npx expo start
    ```
 
+### Déploiement automatique GitHub Pages
+
+Chaque push sur `master` lance le workflow
+`.github/workflows/deploy-pages.yml` : installation avec `npm ci`, export web Expo,
+puis publication de `dist` sur
+[le site](https://louvenslouis.github.io/stopaccidents/).
+Le workflow peut aussi être lancé manuellement depuis l’onglet **Actions**.
+
+Dans **Settings → Pages**, la source de publication doit être **GitHub Actions**.
+Dans **Settings → Secrets and variables → Actions → Variables**, renseigner
+`EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` avec les mêmes
+valeurs publiques que dans `.env.local`. Le fichier local n’est pas envoyé sur
+GitHub. Les autres variables publiques web de `.env.example` peuvent être
+configurées au même endroit ; les valeurs par défaut de l’application s’appliquent
+si elles sont absentes. Une modification des variables prend effet au prochain
+déploiement.
+
+L’ancien `npm run deploy` publie uniquement sur la branche `gh-pages` ; avec la
+source **GitHub Actions**, utiliser un push sur `master` ou le lancement manuel
+du workflow pour mettre le site à jour.
+
 ### Supabase
 
 The app uses the Supabase project configured in `.env.local`. For a new checkout,

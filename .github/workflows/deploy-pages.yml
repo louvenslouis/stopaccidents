@@ -1,0 +1,77 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      EXPO_NO_DOTENV: '1'
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      EXPO_PUBLIC_GOOGLE_AUTH_ENABLED: ${{ vars.EXPO_PUBLIC_GOOGLE_AUTH_ENABLED || 'false' }}
+      EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL || 'https://louvenslouis.github.io/stopaccidents/' }}
+      EXPO_PUBLIC_GEOCODING_URL: ${{ vars.EXPO_PUBLIC_GEOCODING_URL }}
+      EXPO_PUBLIC_GEOCODING_SEARCH_URL: ${{ vars.EXPO_PUBLIC_GEOCODING_SEARCH_URL }}
+      EXPO_PUBLIC_PLACE_SEARCH_URL: ${{ vars.EXPO_PUBLIC_PLACE_SEARCH_URL }}
+      EXPO_PUBLIC_ROUTING_URL: ${{ vars.EXPO_PUBLIC_ROUTING_URL }}
+      EXPO_PUBLIC_WEATHER_URL: ${{ vars.EXPO_PUBLIC_WEATHER_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Validate public configuration
+        shell: bash
+        run: |
+          if [[ "$EXPO_PUBLIC_SUPABASE_URL" != 'https://vqzmzblwmbhmfoikpbhy.supabase.co' ]]; then
+            echo '::error::Set the repository variable EXPO_PUBLIC_SUPABASE_URL to the project URL.'
+            exit 1
+          fi
+          if [[ "$EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" != sb_publishable_* || "$EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY" == 'sb_publishable_replace_with_your_key' ]]; then
+            echo '::error::Set the repository variable EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY to the public publishable key.'
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build website
+        run: npm run predeploy
+
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
