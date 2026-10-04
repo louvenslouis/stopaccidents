@@ -1,5 +1,6 @@
 import { ReportTicketHero, ReportTicketSeam } from './report-ticket-design';
 import { ReportCardActions } from '@/components/report-card-actions';
+import UsersRound from 'lucide-react-native/icons/users-round';
 import Flame from 'lucide-react-native/icons/flame';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
@@ -65,12 +66,10 @@ export function LatestAccidentCard({
   onRefresh,
   onOpen,
   hideHeader = false,
-  stackPosition,
-  stackCount,
+  canInteract,
 }: {
   hideHeader?: boolean;
-  stackPosition?: number;
-  stackCount?: number;
+  canInteract?: () => boolean;
   report: SafetyReportSummary | null;
   loading: boolean;
   error: string | null;
@@ -92,7 +91,7 @@ export function LatestAccidentCard({
   const isBreakdown = report?.report_kind === 'breakdown';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
-  const reportLabel = report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
+  const reportLabel = report?.report_kind === 'gathering' ? 'Rassemblement' : report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
     ? 'Enlèvement'
     : report?.report_kind === 'accident'
       ? accidentTypeLabel(report)
@@ -119,21 +118,16 @@ export function LatestAccidentCard({
         </Pressable>
       </View>}
       {report ? (
-        <ContrastSurface style={[styles.card, styles.compactCard]}>
-          <AnimatedPressable
-            accessibilityRole="button"
-            accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le dernier signalement : ${reportLabel}. ${location.estimated ? 'Zone estimée' : 'Lieu'} : ${location.label}.${severity ? ` Gravité : ${severity.label}.` : ''}`}
-            accessibilityState={{ expanded }}
-            onPress={() => setExpanded((value) => !value)}
-            pressedScale={0.985}
-            hoverScale={1.005}
-            style={styles.cardToggle}
-          >
-            <ReportTicketHero kind={report.report_kind} title={reportLabel} position={stackPosition} count={stackCount}>
+        <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} canInteract={canInteract}>
+          {({ header, footer }) => <ContrastSurface style={[styles.card, styles.compactCard]}>
+            <ReportTicketHero kind={report.report_kind} title={reportLabel} actions={header}
+              expanded={expanded} accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le signalement : ${reportLabel}`}
+              onPress={() => { if (!canInteract || canInteract()) setExpanded(value => !value); }}>
               <Animated.View style={[{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' }, chevronStyle]}>
                 <AppIcon icon={ChevronDown} size={19} color="#182C2A" />
               </Animated.View>
             </ReportTicketHero>
+            <AnimatedPressable accessibilityRole="button" accessibilityLabel="Déployer le signalement" onPress={() => { if (!canInteract || canInteract()) setExpanded(true); }} pressedScale={0.985}>
             <CardDisclosure expanded={!expanded}>
               <View style={styles.compactSummary}>
                 <View style={styles.compactLine}>
@@ -164,16 +158,16 @@ export function LatestAccidentCard({
               accessibilityRole="button"
               accessibilityLabel={`Voir les détails du signalement : ${reportLabel}`}
               accessibilityHint="Ouvre la fiche complète de ce signalement"
-              onPress={() => onOpen(reportSelection(report))}
+              onPress={() => { if (!canInteract || canInteract()) onOpen(reportSelection(report)); }}
               pressedScale={0.985}
               hoverScale={1.005}
             >
               {report.testimony_count && <Text style={{ color: themeColor('#267E70', 'success'), fontSize: 13, paddingHorizontal: 18, paddingBottom: 12 }}>{report.testimony_count} témoignage{report.testimony_count > 1 ? 's' : ''} · dernier témoignage {formatAccidentDate(report.last_observed_at ?? report.created_at)}</Text>}
               <View style={styles.badges}>
                 <View style={[styles.badge, { backgroundColor: isKidnapping ? themeColor('#F4ECF8', 'violetSoft') : themeColor('#EEF2FF', 'infoSoft') }]}>
-                  <AppIcon icon={report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
+                  <AppIcon icon={report.report_kind === 'gathering' ? UsersRound : report.report_kind === 'fire' ? Flame : isGunfire || isArmedPresence ? ShieldAlert : isBarricade ? Construction : isBreakdown ? Wrench : isKidnapping ? UserRoundSearch : CarFront} size={15} strokeWidth={1.6} color={isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info')} />
                   <Text style={[styles.badgeText, { color: isKidnapping ? themeColor('#7C3FA0', 'violet') : themeColor('#4358C7', 'info') }]}>
-                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : report.report_kind === 'fire' ? 'Incendie' : 'Accident'}
+                    {isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping ? 'Enlèvement' : report.report_kind === 'gathering' ? 'Rassemblement' : report.report_kind === 'fire' ? 'Incendie' : 'Accident'}
                   </Text>
                 </View>
                 {severity && (
@@ -233,8 +227,9 @@ export function LatestAccidentCard({
             </AnimatedPressable>
           </CardDisclosure>
           <ReportTicketSeam />
-          <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} stackPosition={stackPosition} stackCount={stackCount} />
-        </ContrastSurface>
+          {footer}
+        </ContrastSurface>}
+        </ReportCardActions>
       ) : (
         <View
           style={[styles.card, styles.empty]}
@@ -309,7 +304,6 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFFFFF', 'surface'),
   },
   compactCard: { padding: 20, borderRadius: 26, backgroundColor: themeColor('#FFFEFA', 'surface'), overflow: 'hidden', borderWidth: 1, borderColor: themeColor('#E4E8DF', 'border') },
-  cardToggle: { width: '100%' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
     ...surfaceDepth(themeColor, 'control'),

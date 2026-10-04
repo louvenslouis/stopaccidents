@@ -1,4 +1,5 @@
 import { ReportCardActions } from '@/components/report-card-actions';
+import UsersRound from 'lucide-react-native/icons/users-round';
 import Flame from 'lucide-react-native/icons/flame';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
 import { useLanguage } from '@/features/language/language-provider';
@@ -51,6 +52,7 @@ const reportAppearance = {
     color: "#9B681D",
     background: "#F8F0DB",
   },
+  gathering: { label: "Rassemblements", icon: UsersRound, color: "#287F85", background: "#EAF5F5", light: "#79CDD0" },
   fire: { label: "Incendies", icon: Flame, color: "#D96025", background: "#FFF0E5", light: "#FFA553" },
   breakdown: {
     label: "Véhicule en panne",

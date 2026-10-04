@@ -36,7 +36,7 @@ const report = {
 };
 
 test('all report categories have stable public links that reopen the original report', () => {
-  for (const kind of ['accident', 'kidnapping', 'barricade', 'gunfire', 'armed_presence', 'suspicious_vehicle', 'breakdown']) {
+  for (const kind of ['accident', 'kidnapping', 'barricade', 'gunfire', 'armed_presence', 'suspicious_vehicle', 'breakdown', 'fire', 'gathering']) {
     const data = { ...report, report_kind: kind };
     const url = new URL(share.reportShareUrl(data, 'https://example.org/stopaccidents/?old=1#old'));
     assert.equal(url.pathname, '/stopaccidents/');

@@ -1,0 +1,61 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { safetyDatabase } from './helpers/safety-db.mjs';
+
+test('gathering reports persist stages, protect ownership, support manual context and respect moderation', async () => {
+  const db = await safetyDatabase();
+  const owner = '11111111-1111-4111-8111-111111111111';
+  const other = '22222222-2222-4222-8222-222222222222';
+  const id = '33333333-3333-4333-8333-333333333333';
+  const manual = '44444444-4444-4444-8444-444444444444';
+  try {
+    await db.exec(`insert into auth.users(id) values ('${owner}'), ('${other}');
+      set role authenticated;
+      select set_config('request.jwt.claims','{"sub":"${owner}"}',false);
+      select public.prepare_report_event('gathering','${id}',null,18.55,-72.3,9);
+      select public.save_gathering_report_step('${id}',1,'Delmas',18.55,-72.3,9);`);
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',3,p_gathering_state=>'stationary')`));
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',2,p_gathering_type=>'invalid')`));
+    await db.exec(`select public.save_gathering_report_step('${id}',2,p_gathering_type=>'demonstration');
+      select public.save_gathering_report_step('${id}',3,p_gathering_state=>'stationary');
+      select public.save_gathering_report_step('${id}',4,p_traffic_impact=>'unknown',p_details=>'Marche');
+      select public.save_gathering_report_step('${id}',4,p_traffic_impact=>'unknown',p_details=>'Marche');`);
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',3,p_gathering_state=>'invalid')`));
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',4,p_traffic_impact=>'invalid')`));
+    assert.equal((await db.query(`select count(*)::int as n from public.report_rewards where report_kind='gathering' and report_id='${id}'`)).rows[0].n, 1);
+    const result = (await db.query(`select public.read_gathering_report('${id}') as report`)).rows[0].report;
+    assert.equal(result.gathering_type, 'demonstration');
+    assert.equal(result.gathering_state, 'stationary');
+    assert.equal(result.traffic_impact, 'unknown');
+    assert.equal(result.completed_step, 4);
+    assert.equal(result.reporter_id, undefined);
+    assert.equal((await db.query(`select count(*)::int as n from public.gathering_reports`)).rows[0].n, 1);
+    const feed = (await db.query('select public.read_map_reports() as feed')).rows[0].feed;
+    assert.ok(feed.reports.some(r => r.report_kind === 'gathering' && r.id === id));
+    await db.exec(`select set_config('request.jwt.claims','{"sub":"${other}"}',false)`);
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',2,p_gathering_type=>'march')`));
+    assert.equal((await db.query(`select count(*)::int as n from public.gathering_reports`)).rows[0].n, 0);
+    await db.exec(`select public.prepare_manual_report_event('gathering','${manual}',null,18.6,-72.4,null,now(),30);
+      select public.save_gathering_report_step('${manual}',1,'Pétion-Ville',18.6,-72.4,null);`);
+    const context = (await db.query(`select public.read_gathering_report('${manual}') as report`)).rows[0].report;
+    assert.equal(context.location_source, 'manual');
+    assert.ok(context.occurred_at);
+    await db.exec(`select public.save_gathering_report_step('${manual}',2,p_gathering_type=>'march');
+      select public.save_gathering_report_step('${manual}',3,p_gathering_state=>'moving');
+      select public.save_gathering_report_step('${manual}',4,p_traffic_impact=>'slowed');
+      select public.save_gathering_report_step('${manual}',2,p_gathering_type=>'other');
+      set role anon;`);
+    const publicReport = (await db.query(`select public.read_gathering_report('${manual}') as report`)).rows[0].report;
+    assert.equal(publicReport.gathering_type, 'other');
+    assert.equal(publicReport.gathering_state, 'moving');
+    assert.equal(publicReport.traffic_impact, 'slowed');
+    assert.equal(publicReport.reporter_id, undefined);
+    await db.exec(`reset role;
+      insert into private.publication_moderation(kind,report_id,suspended,reason,actor_id)
+      values('gathering','${id}',true,'Test suspension','${owner}');
+      set role anon;`);
+    assert.equal((await db.query(`select public.read_gathering_report('${id}') as report`)).rows[0].report, null);
+    await assert.rejects(db.exec(`select * from public.gathering_reports`));
+    await assert.rejects(db.exec(`select public.save_gathering_report_step('${manual}',2,p_gathering_type=>'march')`));
+  } finally { await db.close(); }
+});

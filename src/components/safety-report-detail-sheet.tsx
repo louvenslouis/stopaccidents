@@ -1,3 +1,4 @@
+import { GatheringDetailSheet } from '@/components/gathering-detail-sheet';
 import { FireDetailSheet } from '@/components/fire-detail-sheet';
 import { SuspiciousVehicleDetailSheet } from '@/components/suspicious-vehicle-detail-sheet';
 import { GunfireDetailSheet } from '@/components/gunfire-detail-sheet';
@@ -19,6 +20,7 @@ export function SafetyReportDetailSheet({
 }) {
   const report = parseReportSelection(selection);
   if (!report) return null;
+  if (report.reportKind === 'gathering') return <GatheringDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'fire') return <FireDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'suspicious_vehicle') return <SuspiciousVehicleDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;
   if (report.reportKind === 'gunfire') return <GunfireDetailSheet id={report.id} onClose={onClose} hideContributions={hideContributions} />;

@@ -1,4 +1,5 @@
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
+import { GatheringReportSheet } from '@/components/gathering-report-sheet';
 import { FireReportSheet } from '@/components/fire-report-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -805,6 +806,7 @@ export function ReportSheet({
     <GunfireReportSheet visible={visible && reportType === 'gunfire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <ArmedPresenceReportSheet visible={visible && reportType === 'armed_presence'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <BarricadeReportSheet visible={visible && reportType === 'barricade'} onBackToTypes={onBackToTypes} onClose={onClose} />
+    <GatheringReportSheet visible={visible && reportType === 'gathering'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <FireReportSheet visible={visible && reportType === 'fire'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <BreakdownReportSheet visible={visible && reportType === 'breakdown'} onBackToTypes={onBackToTypes} onClose={onClose} />
     <KidnappingReportSheet

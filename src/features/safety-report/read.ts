@@ -58,7 +58,14 @@ export async function readFireReport(id: string, signal: AbortSignal): Promise<F
   if (error) throw new Error('Impossible de charger cet incendie. Réessayez.');
   return data as FireReportDetail | null;
 }
-export type SafetyReportSummary = FireReportSummary | GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary | BreakdownReportSummary;
+export type GatheringReportSummary = ReportLocation & { report_kind: 'gathering'; accident_type: null; severity: null };
+export type GatheringReportDetail = GatheringReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; gathering_type: string; gathering_state: string; traffic_impact: string; details: string };
+export async function readGatheringReport(id: string, signal: AbortSignal): Promise<GatheringReportDetail | null> {
+  const { data, error } = await supabase.rpc('read_gathering_report', { p_id: id }).abortSignal(signal);
+  if (error) throw new Error('Impossible de charger ce rassemblement. Réessayez.');
+  return data as GatheringReportDetail | null;
+}
+export type SafetyReportSummary = GatheringReportSummary | FireReportSummary | GunfireReportSummary | AccidentReportSummary | KidnappingReportSummary | BarricadeReportSummary | ArmedPresenceReportSummary | SuspiciousVehicleReportSummary | BreakdownReportSummary;
 
 export async function readSuspiciousVehicleReport(id: string, signal: AbortSignal): Promise<SuspiciousVehicleReportDetail | null> {
   const { data, error } = await supabase.rpc('read_suspicious_vehicle_report', { p_id: id }).abortSignal(signal);
@@ -151,7 +158,7 @@ export function parseReportSelection(value: string) {
   if (separator < 1) return null;
   const reportKind = value.slice(0, separator);
   const id = value.slice(separator + 1);
-  if ((reportKind !== 'fire' && reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle' && reportKind !== 'breakdown') || !id) {
+  if ((reportKind !== 'gathering' && reportKind !== 'fire' && reportKind !== 'gunfire' && reportKind !== 'accident' && reportKind !== 'kidnapping' && reportKind !== 'barricade' && reportKind !== 'armed_presence' && reportKind !== 'suspicious_vehicle' && reportKind !== 'breakdown') || !id) {
     return null;
   }
   return { reportKind, id } as const;

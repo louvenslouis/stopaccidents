@@ -23,6 +23,7 @@ export function reportShareUrl(report: SafetyReportSummary, siteUrl = process.en
 export function reportLabel(report: SafetyReportSummary) {
   switch (report.report_kind) {
     case 'accident': return accidentTypeLabel(report);
+    case 'gathering': return 'Rassemblement';
     case 'fire': return 'Incendie';
     case 'gunfire': return 'Tirs entendus';
     case 'suspicious_vehicle': return 'Vehicule Suspect';

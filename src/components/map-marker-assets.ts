@@ -3,6 +3,7 @@ import { Asset } from 'expo-asset';
 import type { AccidentMarker } from './map-frame-props';
 
 const markerSources = {
+  gathering: require('../../assets/images/report-illustrations/gathering.svg'),
   fire: require('../../assets/images/fire-report/fire.png'),
   gunfire: require('../../assets/images/report-illustrations/gunfire.png'),
   suspicious_vehicle: require('../../assets/images/report-illustrations/suspicious-vehicle.png'),

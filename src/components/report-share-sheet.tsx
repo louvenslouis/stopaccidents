@@ -21,7 +21,7 @@ import type { ReportShare } from '@/features/safety-report/share';
 import { prepareReportImage } from '@/features/safety-report/share-image';
 import type { PreparedReportImage } from '@/features/safety-report/share-image.types';
 
-export function ReportShareSheet({ report: originalReport, onClose, stackPosition, stackCount }: { report: ReportShare; onClose: () => void; stackPosition?: number; stackCount?: number }) {
+export function ReportShareSheet({ report: originalReport, onClose }: { report: ReportShare; onClose: () => void }) {
   const { language } = useLanguage();
   const { scheme } = useAppTheme();
   const report = useMemo(() => localizeReportShare(originalReport, language), [originalReport, language]);
@@ -66,7 +66,7 @@ export function ReportShareSheet({ report: originalReport, onClose, stackPositio
       cancelAnimationFrame(frame);
       prepared?.dispose();
     };
-  }, [size, attempt, report, scheme, stackPosition, stackCount]);
+  }, [size, attempt, report, scheme]);
 
   async function share() {
     if (!image || busy.current) return;
@@ -113,7 +113,7 @@ export function ReportShareSheet({ report: originalReport, onClose, stackPositio
                   setSize((previous) => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height });
                 }
               }}>
-                <ReportTicketHero kind={report.kind} title={report.label} position={stackPosition} count={stackCount} />
+                <ReportTicketHero kind={report.kind} title={report.label} />
                 <View style={styles.details}>
                   <View style={styles.line}>
                     <AppIcon icon={MapPin} size={17} color="#858C98" />

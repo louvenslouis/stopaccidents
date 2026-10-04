@@ -38,6 +38,9 @@ export function safetyReportMarkers(reports: SafetyReportSummary[]): AccidentMar
     if (report.report_kind === 'barricade') {
       return [{ id: reportSelection(report), latitude, longitude, color: '#B96B16', priority: 4, illustration: 'barricade', title: `Route barricadée · ${activity}` }];
     }
+    if (report.report_kind === 'gathering') {
+      return [{ id: reportSelection(report), latitude, longitude, color: '#287F85', priority: 3, illustration: 'gathering', title: `Rassemblement · ${activity}` }];
+    }
     if (report.report_kind === 'fire') {
       return [{ id: reportSelection(report), latitude, longitude, color: '#D96025', priority: 5, illustration: 'fire', title: `Incendie · ${activity}` }];
     }

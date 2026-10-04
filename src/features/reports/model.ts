@@ -12,6 +12,7 @@ export const categories = [
 export const kindLabels: Record<SafetyReportSummary["report_kind"], string> = {
   accident: "Accident",
   barricade: "Route barricadée",
+  gathering: "Rassemblements",
   fire: "Incendies",
   breakdown: "Véhicule en panne",
   kidnapping: "Enlèvement",

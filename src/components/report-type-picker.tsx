@@ -41,6 +41,7 @@ const reportTypes = [
     border: "#F0D9BD",
     description: "Emplacement, type de véhicule et impact sur la circulation.",
   },
+  { id: "gathering", title: "Rassemblement", tint: "#EAF5F5", border: "#B8DEDD", description: "Rassemblement" },
   { id: "fire", title: "Incendie", tint: "#FFF0E5", border: "#F6CFB2", description: "Incendie" },
   { id: "gunfire", title: "Tirs entendus", tint: "#FFF0EE", border: "#F3D1CB", description: "Proximité perçue, quantité approximative et rythme des tirs." },
   {

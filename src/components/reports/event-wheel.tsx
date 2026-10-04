@@ -1,3 +1,4 @@
+import UsersRound from 'lucide-react-native/icons/users-round';
 import Flame from 'lucide-react-native/icons/flame';
 import { Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
@@ -66,6 +67,7 @@ const sectorPresentation: Record<
     color: "#4365D9",
     light: "#7694EE",
   },
+  gathering: { label: "Rassemblements", icon: UsersRound, color: "#287F85", light: "#79CDD0" },
   fire: { label: "Incendies", icon: Flame, color: "#D96025", light: "#FFA553" },
   breakdown: {
     label: "Véhicules en panne",
