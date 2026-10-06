@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 export type Connection = {
   id: string;
   alias: string;
+  email: string | null;
   status: 'pending' | 'accepted';
   direction: 'incoming' | 'outgoing';
   created_at: string;

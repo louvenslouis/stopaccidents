@@ -25,7 +25,7 @@ import { reusableAppLocation } from '@/features/location/app-location-model';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { randomUUID } from 'expo-crypto';
-import { ReportIllustration } from '@/components/report-illustration';
+import { Image, type ImageSource } from 'expo-image';
 
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -37,9 +37,20 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 const stepLabels = ['Type', 'Situation', 'Circulation'];
-function QuestionIllustration() {
+const stepIllustrations = {
+  1: require('../../assets/images/gathering-report/types.png'),
+  2: require('../../assets/images/gathering-report/situation.png'),
+  3: require('../../assets/images/gathering-report/traffic.png'),
+} satisfies Record<number, ImageSource>;
+
+function QuestionIllustration({ step }: { step: 1 | 2 | 3 }) {
   const styles = useStyles();
-  return <View style={styles.questionArt}><ReportIllustration kind="gathering" size={100} /></View>;
+  return (
+    <View style={styles.questionArt}>
+      <Image source={stepIllustrations[step]} style={styles.questionImage}
+        contentFit="contain" accessible={false} alt="" />
+    </View>
+  );
 }
 
 const makeDraft = (): GatheringReportDraft => ({
@@ -526,7 +537,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <QuestionIllustration />
+                    <QuestionIllustration step={1} />
                     <Text style={styles.sectionTitle}>
                       Quel type de rassemblement ?
                     </Text>
@@ -547,7 +558,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 2 && (
                   <>
-                    <QuestionIllustration />
+                    <QuestionIllustration step={2} />
                     <Text style={styles.sectionTitle}>
                       Quelle est la situation ?
                     </Text>
@@ -589,7 +600,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 3 && (
                   <>
-                    <QuestionIllustration />
+                    <QuestionIllustration step={3} />
                     <Text style={styles.sectionTitle}>
                       Quel impact sur la circulation ?
                     </Text>

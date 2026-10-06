@@ -13,8 +13,8 @@ function find(node, predicate) {
   return null;
 }
 
-test('a connected profile exposes home and work address fields with a save action', async () => {
-  const source = await readFile('src/app/profil/index.tsx', 'utf8');
+test('saved places exposes home and work address fields with a save action', async () => {
+  const source = await readFile('src/components/saved-places-card.tsx', 'utf8');
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,

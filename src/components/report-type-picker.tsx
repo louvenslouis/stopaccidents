@@ -18,55 +18,9 @@ import Animated, {
 import { AppIcon } from "@/components/ui/app-icon";
 import { AnimatedPressable } from "@/components/ui/animated-pressable";
 
-// Add future report categories here; each choice routes to its own form.
-const reportTypes = [
-  {
-    id: "accident",
-    title: "Accident",
-    tint: "#FFF0E9",
-    border: "#F7D9CC",
-    description: "Collision, sortie de route ou personne renversée.",
-  },
-  {
-    id: "barricade",
-    tint: "#FFF5DF",
-    border: "#F2E3BC",
-    title: "Route barricadée",
-    description: "Route bloquée, obstacles et possibilités de passage.",
-  },
-  {
-    id: "breakdown",
-    title: "Véhicule en panne",
-    tint: "#FFF4E8",
-    border: "#F0D9BD",
-    description: "Emplacement, type de véhicule et impact sur la circulation.",
-  },
-  { id: "gathering", title: "Rassemblement", tint: "#EAF5F5", border: "#B8DEDD", description: "Rassemblement" },
-  { id: "fire", title: "Incendie", tint: "#FFF0E5", border: "#F6CFB2", description: "Incendie" },
-  { id: "gunfire", title: "Tirs entendus", tint: "#FFF0EE", border: "#F3D1CB", description: "Proximité perçue, quantité approximative et rythme des tirs." },
-  {
-    id: "kidnapping",
-    title: "Enlèvement",
-    tint: "#F0EDFF",
-    border: "#E0D9F8",
-    description: "Véhicules, direction prise et indices sur la personne.",
-  },
-  {
-    id: "armed_presence",
-    tint: "#EDF3F8",
-    border: "#D9E4ED",
-    title: "Présence d’hommes armés",
-    description: "Localisation, nombre approximatif et situation observée.",
-  },
-  {
-    id: "suspicious_vehicle",
-    tint: "#EAF6F0",
-    border: "#D1E9DC",
-    title: "Vehicule Suspect",
-    description: "Description du véhicule et faits observés.",
-  },
-] as const;
-export type ReportType = (typeof reportTypes)[number]["id"];
+import { reportTypes, type ReportType } from '@/features/report-preferences/model';
+import { useReportPreferences } from '@/features/report-preferences/provider';
+export type { ReportType } from '@/features/report-preferences/model';
 
 function ReportTypeChoice({
   type,
@@ -144,6 +98,7 @@ export function ReportTypePicker({
   const styles = useStyles();
   const themeColor = useThemeColor();
 
+  const { visibility, ready } = useReportPreferences();
   const { width: windowWidth, fontScale } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(0);
   const availableWidth = gridWidth || Math.max(0, windowWidth - 48);
@@ -181,7 +136,7 @@ export function ReportTypePicker({
           style={styles.grid}
           onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
         >
-          {reportTypes.map((type, index) => (
+          {reportTypes.filter((type) => ready && visibility[type.id]).map((type, index) => (
             <ReportTypeChoice
               key={type.id}
               type={type}

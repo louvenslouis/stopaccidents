@@ -130,12 +130,13 @@ test('completion signup link opens the account creation form directly', () => {
   assert.ok(screen.hasText('Créer un compte'));
 });
 
-test('only registered accounts see the rewards balance in the profile', () => {
-  for (const session of [null, { user: { is_anonymous: true } }]) {
-    assert.equal(find(profile(session).render(), (node) => node.type === 'RewardsCard'), null);
+test('profile exposes rewards through its dedicated entry', () => {
+  for (const session of [null, { user: { is_anonymous: true } },
+    { user: { email: 'personne@example.com', is_anonymous: false } }]) {
+    const tree = profile(session).render();
+    assert.equal(find(tree, (node) => node.type === 'RewardsCard'), null);
+    assert.ok(find(tree, (node) => node.props?.accessibilityLabel === 'Récompenses'));
   }
-  assert.ok(find(profile({ user: { email: 'personne@example.com', is_anonymous: false } }).render(),
-    (node) => node.type === 'RewardsCard'));
 });
 
 test('signup submits normalized email and opens the account without email verification', async () => {

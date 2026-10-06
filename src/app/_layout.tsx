@@ -6,6 +6,7 @@ import { startSupabaseAuthLifecycle } from '@/lib/supabase';
 import { useEffect } from 'react';
 import { ThemeProvider, useThemeColor } from '@/features/appearance/theme-provider';
 import { Stack } from 'expo-router';
+import { ReportPreferencesProvider } from '@/features/report-preferences/provider';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -30,7 +31,9 @@ export default function RootLayout() {
         <AppLocationProvider>
           <LiveLocationProvider>
             <SafetyAlertsProvider>
-              <RootNavigator />
+              <ReportPreferencesProvider>
+                <RootNavigator />
+              </ReportPreferencesProvider>
             </SafetyAlertsProvider>
           </LiveLocationProvider>
         </AppLocationProvider>

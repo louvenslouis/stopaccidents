@@ -101,7 +101,7 @@ function ConnectionsContent() {
     return <View key={item.id} style={styles.person}>
       <View style={styles.personIdentity}>
         <View style={styles.avatar}><UserRound size={20} color={color('#267E70', 'success')} /></View>
-        <Text translate={false} selectable style={styles.personAlias}>{item.alias}</Text>
+        <Text translate={false} selectable style={styles.personAlias}>{item.status === 'accepted' ? (item.email || item.alias) : item.alias}</Text>
         {busy === item.id && <ActivityIndicator size="small" color={color('#267E70', 'success')} />}
       </View>
       {pending && <View style={styles.actions}>

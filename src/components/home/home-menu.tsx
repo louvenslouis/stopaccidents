@@ -65,7 +65,7 @@ export function HomeMenu() {
 
   const items = [
     { label: 'Mon profil', icon: UserRound, action: () => { close(); router.push('/profil'); } },
-    { label: 'Mes trajets', icon: Route, action: () => { close(); router.push('/trajets'); } },
+    { label: 'Lieux et trajets', icon: Route, action: () => { close(); router.push('/lieux-trajets'); } },
     { label: 'Paramètres', icon: Settings, action: () => { close(); router.push('/parametres'); } },
     { label: 'Le Site', icon: Globe, action: openSite },
   ];

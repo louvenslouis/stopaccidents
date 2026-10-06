@@ -1,5 +1,8 @@
 // French source messages are stable keys; never use this catalog for stored user content.
 export const haitianCreole: Record<string, string> = {
+  "Types de signalement": "Kalite rapò",
+  "Lieux et trajets": "Kote ak trajè",
+  "Récompenses": "Rekonpans",
   "Mes trajets": "Trajè mwen yo",
   "Mes trajets surveillés": "Trajè m ap siveye yo",
   "Vos trajets habituels": "Trajè ou fè souvan yo",

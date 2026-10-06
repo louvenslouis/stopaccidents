@@ -2,18 +2,16 @@ import { StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import { AppScreen } from '@/components/app-screen';
-import { AppearanceCard } from '@/components/appearance-card';
-import { ReportTypesCard } from '@/components/report-types-card';
-import { LanguageCard } from '@/components/language-card';
+import { RewardsCard } from '@/components/rewards-card';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { View } from '@/features/language/native';
 
-export default function SettingsScreen() {
+export default function RewardsScreen() {
   const router = useRouter();
   return (
     <AppScreen
-      title="Paramètres"
+      title="Récompenses"
       headerRight={
         <AnimatedPressable
           accessibilityLabel="Retour"
@@ -24,9 +22,7 @@ export default function SettingsScreen() {
         </AnimatedPressable>
       }>
       <View style={styles.content}>
-        <LanguageCard />
-        <AppearanceCard />
-        <ReportTypesCard />
+        <RewardsCard />
       </View>
     </AppScreen>
   );

@@ -34,6 +34,8 @@ test('connections require recipient consent and keep invitations private', async
 
     const alice = randomUUID(), bob = randomUUID(), eve = randomUUID(), guest = randomUUID();
     await db.query('insert into auth.users(id,is_anonymous) values ($1,false),($2,false),($3,false),($4,true)', [alice,bob,eve,guest]);
+    await db.query('update auth.users set email = $1 where id = $2', ['alice@example.com', alice]);
+    await db.query('update auth.users set email = $1 where id = $2', ['bob@example.com', bob]);
     const aliases = (await db.query('select user_id,alias from public.user_aliases')).rows;
     const alias = id => aliases.find(row => row.user_id === id).alias;
     async function login(id, role = 'authenticated') {
@@ -59,6 +61,7 @@ test('connections require recipient consent and keep invitations private', async
     assert.equal(outgoing[0].status, 'pending');
     assert.equal(outgoing[0].direction, 'outgoing');
     assert.equal(outgoing[0].alias, alias(bob));
+    assert.equal(outgoing[0].email, null);
     assert.ok(!JSON.stringify(outgoing).includes(bob));
     await rejects(invite(alias(bob)), 'connection_already_exists');
     await rejects(respond(id,'accept'), 'connection_invitation_unavailable');
@@ -73,13 +76,16 @@ test('connections require recipient consent and keep invitations private', async
     for (const action of ['accept','decline','cancel']) await rejects(respond(id,action), 'connection_invitation_unavailable');
     await login(bob);
     assert.equal((await read()).connections[0].direction, 'incoming');
+    assert.equal((await read()).connections[0].email, null);
     await rejects(invite(alias(alice)), 'connection_already_exists');
     await rejects(respond(id,'cancel'), 'connection_invitation_unavailable');
     await respond(id,'accept');
+    assert.equal((await read()).connections[0].email, 'alice@example.com');
     assert.equal((await read()).connections[0].status, 'accepted');
     await rejects(respond(id,'accept'), 'connection_invitation_unavailable');
     await login(alice);
     assert.equal((await read()).connections[0].status, 'accepted');
+    assert.equal((await read()).connections[0].email, 'bob@example.com');
     await rejects(respond(id,'cancel'), 'connection_invitation_unavailable');
     await rejects(invite(alias(bob)), 'connection_already_exists');
 

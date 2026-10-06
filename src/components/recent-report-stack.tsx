@@ -1,13 +1,9 @@
 import * as Haptics from 'expo-haptics';
-import { AnimatedPressable } from './ui/animated-pressable';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, PanResponder, Platform, StyleSheet } from 'react-native';
+import { Animated, Easing, PanResponder, Platform, StyleSheet } from 'react-native';
 import Reanimated, { LinearTransition, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
-import ChevronLeft from 'lucide-react-native/icons/chevron-left';
-import ChevronRight from 'lucide-react-native/icons/chevron-right';
-import RefreshCw from 'lucide-react-native/icons/refresh-cw';
-import { Text, View } from '@/features/language/native';
-import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
+import { View } from '@/features/language/native';
+import { createThemedStyles } from '@/features/appearance/theme-provider';
 import type { SafetyReportSummary } from '@/features/safety-report/read';
 import { stackReportKey } from '@/features/home/report-stack';
 import { LatestAccidentCard } from './latest-accident-card';
@@ -20,7 +16,6 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
   onOpen: (id: string) => void;
 }) {
   const styles = useStyles();
-  const color = useThemeColor();
   const reducedMotion = useReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
   const [moving, setMoving] = useState(false);
@@ -87,12 +82,6 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
     onPanResponderTerminationRequest: () => false,
   }), [reports.length, canOlder, canNewer, offset, navigate, settle]);
   return <View style={styles.section}>
-    <View style={styles.header}>
-      <Text accessibilityRole="header" style={styles.title}>Signalements récents</Text>
-      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Actualiser les signalements récents" disabled={loading || moving} onPress={onRefresh} style={styles.button}>
-        {loading ? <ActivityIndicator size="small" color={color('#737C89', 'muted')} /> : <RefreshCw size={18} color={color('#737C89', 'muted')} />}
-      </AnimatedPressable>
-    </View>
     <View style={reports.length > 1 && styles.deck} onLayout={event => { width.current = event.nativeEvent.layout.width;
       setCardWidth(previous => Math.abs(previous - event.nativeEvent.layout.width) > 1 ? event.nativeEvent.layout.width : previous); }}>
       {reports.length > 2 && <View pointerEvents="none" aria-hidden style={[styles.backCard, styles.farCard]} />}
@@ -116,22 +105,11 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
         }) : <LatestAccidentCard report={null} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />}
       </Reanimated.View>
     </View>
-    {reports.length > 1 && <View style={styles.navigation}>
-      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Signalement plus récent" disabled={!canNewer || moving} onPress={() => { if (!busy.current) navigate(-1); }} style={[styles.button, !canNewer && styles.disabled]}>
-        <ChevronLeft size={20} color={color('#49614D', 'secondary')} />
-      </AnimatedPressable>
-      <Text translate={false} accessibilityLiveRegion="polite" style={styles.counter}>{index + 1} / {reports.length}</Text>
-      <AnimatedPressable haptic="none" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Signalement précédent" disabled={!canOlder || moving} onPress={() => { if (!busy.current) navigate(1); }} style={[styles.button, !canOlder && styles.disabled]}>
-        <ChevronRight size={20} color={color('#49614D', 'secondary')} />
-      </AnimatedPressable>
-    </View>}
   </View>;
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
-  section: { marginTop: 12, width: '100%', maxWidth: 640, alignSelf: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { color: color('#24262C', 'text'), fontSize: 19, fontWeight: '700', letterSpacing: -0.4 },
-  deck: { marginTop: 12, marginHorizontal: 10, marginBottom: 38, transform: [{ translateX: -2.5 }, { translateY: -8 }] },
+  section: { width: '100%', maxWidth: 640, alignSelf: 'center' },
+  deck: { marginTop: 8, marginHorizontal: 10, marginBottom: 12, transform: [{ translateX: -2.5 }, { translateY: -8 }] },
   backCard: {
     position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 1,
     borderRadius: 28,
@@ -147,8 +125,4 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
     borderColor: color('#AFBEE4', 'info'),
     boxShadow: '0px 12px 20px -8px rgba(20, 30, 55, 0.25)',
   },
-  navigation: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 18, marginTop: 4 },
-  button: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
-  counter: { color: color('#737C89', 'muted'), fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  disabled: { opacity: 0.3 },
 }));
