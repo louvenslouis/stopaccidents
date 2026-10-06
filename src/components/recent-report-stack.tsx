@@ -108,7 +108,7 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
   </View>;
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
-  section: { width: '100%', maxWidth: 640, alignSelf: 'center' },
+  section: { marginTop: 16, width: '100%', maxWidth: 640, alignSelf: 'center' },
   deck: { marginTop: 8, marginHorizontal: 10, marginBottom: 12, transform: [{ translateX: -2.5 }, { translateY: -8 }] },
   backCard: {
     position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 1,
