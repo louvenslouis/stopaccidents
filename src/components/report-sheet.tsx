@@ -1,3 +1,6 @@
+import { ReportPhotos } from '@/components/report-photos';
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { GatheringReportSheet } from '@/components/gathering-report-sheet';
 import { FireReportSheet } from '@/components/fire-report-sheet';
@@ -12,10 +15,8 @@ import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { AccidentTypePicker } from '@/components/accident-type-picker';
 import { ReportReward } from '@/components/report-reward';
 import { randomUUID } from 'expo-crypto';
-import { Image } from 'expo-image';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
-import Camera from 'lucide-react-native/icons/camera';
 import Car from 'lucide-react-native/icons/car';
 import Check from 'lucide-react-native/icons/check';
 import CheckCheck from 'lucide-react-native/icons/check-check';
@@ -271,6 +272,7 @@ export function ReportSheet({
   const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
   const eventChoice = useEventChoice('accident');
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -298,7 +300,7 @@ export function ReportSheet({
     };
   }, []);
   function close() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     if (cameraOpen) {
       setCameraOpen(false);
       return;
@@ -313,11 +315,12 @@ export function ReportSheet({
     onClose();
   }
   function update<K extends keyof ReportDraft>(key: K, value: ReportDraft[K]) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -403,9 +406,9 @@ export function ReportSheet({
       }
     }
   }
-  async function next() {
-    if (!draft || submitting.current) return;
-    const validation = validateStep(draft, step);
+  async function next(skip = false) {
+    if (!draft || submitting.current || selectingPhotos) return;
+    const validation = skip ? null : validateStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -415,15 +418,18 @@ export function ReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveAccidentReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveAccidentReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       // The landmark adjusts the existing location before saving the subtype.
       // A failed retry keeps the same report ID and cannot erase other steps.
-      if (step === 1 && !draft.sourceReportId && savedLocation.current !== locationDescription(draft)) {
+      if (!skip && step === 1 && !draft.sourceReportId && savedLocation.current !== locationDescription(draft)) {
         await saveAccidentReportStep(draft, 0, setProgress);
         savedLocation.current = locationDescription(draft);
       }
-      const id = await saveAccidentReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveAccidentReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 3) setReceipt(id);
       else changeStep(step + 1);
     } catch (e) {
@@ -470,7 +476,7 @@ export function ReportSheet({
               key={draft.id}
               initialContext={draft}
               active={visible && reportType === 'accident'}
-              busy={locating || sending}
+              busy={locating || sending || selectingPhotos}
               cancelDisabled={sending}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
@@ -505,7 +511,7 @@ export function ReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -525,9 +531,9 @@ export function ReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -586,7 +592,7 @@ export function ReportSheet({
                               ? `Modifier le repère : ${draft.locationHint}`
                               : 'Ajouter un repère sur place'
                           }
-                          disabled={sending}
+                          disabled={sending || selectingPhotos}
                           onPress={() => setEditingLocationHint(true)}
                         >
                           <Text numberOfLines={1} style={styles.locationHintPrompt}>
@@ -598,7 +604,8 @@ export function ReportSheet({
                     <Text style={styles.sectionTitle}>
                       Quel type d’accident ?
                     </Text>
-                    <AccidentTypePicker value={draft.accidentType} disabled={sending} onChange={(value) => update('accidentType', value)} />
+                    <ReportScene kind="accident" value={draft.accidentType} />
+                    <AccidentTypePicker value={draft.accidentType} disabled={sending || selectingPhotos} onChange={(value) => update('accidentType', value)} />
                   </>
                 )}
                 {step === 2 && (
@@ -662,7 +669,7 @@ export function ReportSheet({
                       label="Numéro d’immatriculation"
                       placeholder="Ex. : AA-12345"
                       value={draft.registrations}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                       capitalize
                       onChange={(value) => update('registrations', value)}
                     />
@@ -670,67 +677,26 @@ export function ReportSheet({
                       label="Numéro de pièce d’identité"
                       placeholder="Ex. : numéro disponible"
                       value={draft.identities}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                       onChange={(value) => update('identities', value)}
                     />
-                    <View style={styles.compactFieldHeader}>
-                      <Text style={styles.label}>Photos</Text>
-                      <Text style={styles.optional}>
-                        {draft.photos.length}/{MAX_PHOTOS}
-                      </Text>
-                    </View>
-                    <View style={styles.photoGrid}>
-                      {draft.photos.map((photo, index) => (
-                        <View style={styles.photoWrap} key={photo.id}>
-                          <Image
-                            source={{ uri: photo.uri }}
-                            style={styles.photo}
-                            contentFit="cover"
-                            accessibilityLabel={`Photo de l’accident ${index + 1}`}
-                          />
-                          <Pressable
-                            disabled={sending}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Retirer la photo ${index + 1}`}
-                            onPress={() =>
-                              update(
-                                'photos',
-                                draft.photos.filter(
-                                  (item) => item.id !== photo.id,
-                                ),
-                              )
-                            }
-                            style={styles.removePhoto}
-                          >
-                            <AppIcon icon={X} size={16} color="#fff" />
-                          </Pressable>
-                        </View>
-                      ))}
-                      {draft.photos.length < MAX_PHOTOS && (
-                        <Pressable
-                          disabled={sending}
-                          accessibilityRole="button"
-                          accessibilityLabel="Prendre une photo avec la caméra"
-                          onPress={() => setCameraOpen(true)}
-                          style={styles.addPhoto}
-                        >
-                          <AppIcon icon={Camera} size={25} color={themeColor("#D94235", 'accent')} />
-                          <Text style={styles.addPhotoText}>Ajouter</Text>
-                        </Pressable>
-                      )}
-                    </View>
+                    <ReportPhotos photos={draft.photos} context={draft} disabled={sending}
+                      onChange={(photos) => setDraft(current => ({ ...current, photos }))} onCamera={() => setCameraOpen(true)}
+                      onBusyChange={setSelectingPhotos} />
                     <Text style={styles.label}>Autres informations</Text>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Autres informations sur l’accident"
-                      placeholder="Ajouter une information"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.notes}
-                      onChangeText={(value) => update('notes', value)}
-                      maxLength={2000}
-                      multiline
-                      style={[styles.input, styles.notes]}
-                    />
+                    <OptionalReportDetails key="notes" hasValue={Boolean(draft.notes)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Autres informations sur l’accident"
+                        placeholder="Ajouter une information"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.notes}
+                        onChangeText={(value) => update('notes', value)}
+                        maxLength={2000}
+                        multiline
+                        style={[styles.input, styles.notes]}
+                      />
+                    </OptionalReportDetails>
                   </>
                 )}
               </ScrollView>
@@ -749,6 +715,10 @@ export function ReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -763,7 +733,7 @@ export function ReportSheet({
                           onBackToTypes();
                         } else changeStep(step - 1);
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
@@ -775,8 +745,8 @@ export function ReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 3 ? CheckCheck : ArrowRight}
-                        onPress={next}
-                        disabled={sending || locating}
+                        onPress={() => next()}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

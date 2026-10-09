@@ -1,3 +1,4 @@
+import { useReportCardPhotos } from '@/features/home/use-report-card-photos';
 import { ReportTicketHero, ReportTicketSeam } from './report-ticket-design';
 import { ReportCardActions } from '@/components/report-card-actions';
 import UsersRound from 'lucide-react-native/icons/users-round';
@@ -91,6 +92,7 @@ export function LatestAccidentCard({
   const isBreakdown = report?.report_kind === 'breakdown';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
+  const photos = useReportCardPhotos(report, loading);
   const reportLabel = report?.report_kind === 'gathering' ? 'Rassemblement' : report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
     ? 'Enlèvement'
     : report?.report_kind === 'accident'
@@ -120,7 +122,7 @@ export function LatestAccidentCard({
       {report ? (
         <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} canInteract={canInteract}>
           {({ header, footer }) => <ContrastSurface style={[styles.card, styles.compactCard]}>
-            <ReportTicketHero kind={report.report_kind} title={reportLabel} actions={header}
+            <ReportTicketHero kind={report.report_kind} title={reportLabel} actions={header} photos={photos}
               expanded={expanded} accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le signalement : ${reportLabel}`}
               onPress={() => { if (!canInteract || canInteract()) setExpanded(value => !value); }}>
               <Animated.View style={[{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' }, chevronStyle]}>

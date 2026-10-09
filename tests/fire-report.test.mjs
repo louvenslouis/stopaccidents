@@ -30,12 +30,12 @@ test('fire validates location, target, fire state and people in danger', () => {
   assert.ok(model.validateFireStep({ ...draft, coordinates: null }, 0));
   assert.ok(model.validateFireStep({ ...draft, coordinates: { ...draft.coordinates, accuracy: 31 } }, 0));
   assert.equal(model.validateFireStep(draft, 1), null);
-  assert.ok(model.validateFireStep({ ...draft, fireTarget: null }, 1));
+  assert.equal(model.validateFireStep({ ...draft, fireTarget: null }, 1), null);
   assert.ok(model.validateFireStep({ ...draft, fireTarget: 'invalid' }, 1));
   assert.equal(model.validateFireStep(draft, 2), null);
-  assert.ok(model.validateFireStep({ ...draft, fireState: null }, 2));
+  assert.equal(model.validateFireStep({ ...draft, fireState: null }, 2), null);
   assert.equal(model.validateFireStep(draft, 3), null);
-  assert.ok(model.validateFireStep({ ...draft, peopleDanger: null }, 3));
+  assert.equal(model.validateFireStep({ ...draft, peopleDanger: null }, 3), null);
   assert.equal(model.validateFireStep({ ...draft, details: 'x'.repeat(2000) }, 3), null);
   assert.ok(model.validateFireStep({ ...draft, details: 'x'.repeat(2001) }, 3));
   assert.equal(model.fireLocationDescription(draft), 'Delmas — Près du carrefour');

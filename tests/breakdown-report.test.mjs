@@ -30,12 +30,12 @@ test('breakdown validates location, position, vehicle and traffic impact', () =>
   assert.ok(model.validateBreakdownStep({ ...draft, coordinates: null }, 0));
   assert.ok(model.validateBreakdownStep({ ...draft, coordinates: { ...draft.coordinates, accuracy: 31 } }, 0));
   assert.equal(model.validateBreakdownStep(draft, 1), null);
-  assert.ok(model.validateBreakdownStep({ ...draft, breakdownPosition: null }, 1));
+  assert.equal(model.validateBreakdownStep({ ...draft, breakdownPosition: null }, 1), null);
   assert.ok(model.validateBreakdownStep({ ...draft, breakdownPosition: 'invalid' }, 1));
   assert.equal(model.validateBreakdownStep(draft, 2), null);
-  assert.ok(model.validateBreakdownStep({ ...draft, vehicleType: null }, 2));
+  assert.equal(model.validateBreakdownStep({ ...draft, vehicleType: null }, 2), null);
   assert.equal(model.validateBreakdownStep(draft, 3), null);
-  assert.ok(model.validateBreakdownStep({ ...draft, trafficImpact: null }, 3));
+  assert.equal(model.validateBreakdownStep({ ...draft, trafficImpact: null }, 3), null);
   assert.equal(model.validateBreakdownStep({ ...draft, details: 'x'.repeat(2000) }, 3), null);
   assert.ok(model.validateBreakdownStep({ ...draft, details: 'x'.repeat(2001) }, 3));
   assert.equal(model.breakdownLocationDescription(draft), 'Delmas — Près du carrefour');

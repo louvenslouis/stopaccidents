@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -156,6 +158,7 @@ export function ArmedPresenceReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -260,9 +263,9 @@ export function ArmedPresenceReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateArmedPresenceStep(draft, step);
+    const validation = skip ? null : validateArmedPresenceStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -272,16 +275,19 @@ export function ArmedPresenceReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveArmedPresenceReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveArmedPresenceReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== armedPresenceLocationDescription(draft)
       ) {
         await saveArmedPresenceReportStep(draft, 0, setProgress);
         savedLocation.current = armedPresenceLocationDescription(draft);
       }
-      const id = await saveArmedPresenceReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveArmedPresenceReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 2) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -372,9 +378,9 @@ export function ArmedPresenceReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -419,6 +425,7 @@ export function ArmedPresenceReportSheet({
                 )}
                 {step === 1 && (
                   <>
+                    <ReportScene kind="armed" value={draft.presence} />
                     {!draft.sourceReportId && (<View style={styles.locationCard}>
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
@@ -544,19 +551,21 @@ export function ArmedPresenceReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions facultatives"
-                      placeholder="Ex. : heure de l’observation, véhicules présents, direction déjà observée…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) =>
-                        update('details', value)
-                      }
-                      maxLength={MAX_DETAILS_LENGTH}
-                      multiline
-                      style={[styles.input, styles.personNotes]}
-                    />
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions facultatives"
+                        placeholder="Ex. : heure de l’observation, véhicules présents, direction déjà observée…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) =>
+                          update('details', value)
+                        }
+                        maxLength={MAX_DETAILS_LENGTH}
+                        multiline
+                        style={[styles.input, styles.personNotes]}
+                      />
+                    </OptionalReportDetails>
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -582,6 +591,10 @@ export function ArmedPresenceReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -609,7 +622,7 @@ export function ArmedPresenceReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 2 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

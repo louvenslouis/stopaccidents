@@ -14,7 +14,7 @@ test('fire reports persist stages, protect ownership, support manual context and
       select set_config('request.jwt.claims','{"sub":"${owner}"}',false);
       select public.prepare_report_event('fire','${id}',null,18.55,-72.3,9);
       select public.save_fire_report_step('${id}',1,'Delmas',18.55,-72.3,9);`);
-    await assert.rejects(db.exec(`select public.save_fire_report_step('${id}',3,p_fire_state=>'active')`));
+    await db.exec(`select public.save_fire_report_step('${id}',3,p_fire_state=>'active')`);
     await assert.rejects(db.exec(`select public.save_fire_report_step('${id}',2,p_fire_target=>'invalid')`));
     await db.exec(`select public.save_fire_report_step('${id}',2,p_fire_target=>'house');
       select public.save_fire_report_step('${id}',3,p_fire_state=>'active');

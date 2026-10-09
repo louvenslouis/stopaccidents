@@ -2,6 +2,8 @@ import { AnimatedPressable } from './ui/animated-pressable';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Dimensions, Modal, StyleSheet, useWindowDimensions } from 'react-native';
+import MessageCircle from 'lucide-react-native/icons/message-circle';
+import { ReportCommentsSheet } from './report-comments-sheet';
 import MessageSquarePlus from 'lucide-react-native/icons/message-square-plus';
 import Ellipsis from 'lucide-react-native/icons/ellipsis';
 import Flag from 'lucide-react-native/icons/flag';
@@ -33,6 +35,7 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
   const styles = useStyles();
   const color = useThemeColor();
   const location = useReportLocation(report);
+  const [commentsOpen, setCommentsOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [menu, setMenu] = useState<{ top: number; left: number } | null>(null);
   const menuAnchor = useRef<View>(null);
@@ -62,7 +65,7 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
   const sending = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [share, setShare] = useState<ReportShare | null>(null);
-  const active = updating || flagging || !!share || !!menu || confirmation.pending;
+  const active = commentsOpen || updating || flagging || !!share || !!menu || confirmation.pending;
   useEffect(() => {
     if (!active) return;
     setCardActive(true);
@@ -113,6 +116,9 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
           <Text translate={false} style={styles.countText}>{confirmation.value ? (confirmation.value.count > 999 ? '999+' : confirmation.value.count) : '–'}</Text>
         </View>
       </AnimatedPressable>
+      <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button" accessibilityLabel="Ouvrir les commentaires" onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setCommentsOpen(true); }} style={styles.comments}>
+        <MessageCircle size={21} color={color('#296957', 'success')} />
+      </AnimatedPressable>
     </View>
     {(confirmation.error || (error && !flagging)) && <Text accessibilityRole="alert" style={styles.error}>{confirmation.error || error}</Text>}
   </>;
@@ -121,6 +127,7 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
     {updating && <TestimonyContext value={report}>
       <ReportSheet visible reportType={report.report_kind} onSelectType={() => {}} onBackToTypes={closeUpdate} onClose={closeUpdate} />
     </TestimonyContext>}
+    {commentsOpen && <ReportCommentsSheet report={report} onClose={() => setCommentsOpen(false)} />}
     {share && <ReportShareSheet report={share} onClose={() => setShare(null)} />}
     <Modal visible={flagging || !!menu} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { if (!busy) { setFlagging(false); setMenu(null); } }}>
       {flagging ? <View style={styles.overlay}>
@@ -162,6 +169,7 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   count: { minWidth: 23, paddingHorizontal: 5, height: 23, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: color('#FFFFFF', 'surface') },
   countSelected: { backgroundColor: color('#F2FAEF', 'surface') },
   countText: { fontSize: 11, fontWeight: '800', fontVariant: ['tabular-nums'], color: color('#296957', 'success') },
+  comments: { width: 46, minHeight: 46, borderRadius: 16, borderWidth: 1, borderColor: color('#D7E3D1', 'border'), backgroundColor: color('#EDF3E9', 'elevated'), justifyContent: 'center', alignItems: 'center' },
   actions: { flexDirection: 'row', gap: 8, marginTop: 16, alignItems: 'center' },
   update: { flex: 1, minHeight: 46, borderRadius: 16, paddingHorizontal: 13, paddingVertical: 12, backgroundColor: '#296957', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   updateText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700', flexShrink: 1 },

@@ -23,6 +23,7 @@ export type Coordinates = {
   accuracy: number | null;
 };
 export type CapturedPhoto = {
+  source?: 'camera' | 'library';
   id: string;
   uri: string;
   base64: string;
@@ -81,10 +82,6 @@ export function validateStep(draft: ReportDraft, step: number): string | null {
   }
   if (locationDescription(draft).length > 500)
     return "Le lieu et son repère doivent contenir au maximum 500 caractères.";
-  if (step === 1 && !draft.accidentType)
-    return "Choisissez le type d’accident.";
-  if (step === 2 && !draft.severity)
-    return "Indiquez la gravité, ou choisissez « Je ne sais pas ».";
   if (step === 3) {
     for (const value of [draft.registrations, draft.identities]) {
       const items = splitIdentifiers(value);

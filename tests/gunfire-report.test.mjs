@@ -33,7 +33,7 @@ const draft = {
   details: "",
 };
 
-test("gunfire accepts estimates and unknowns, rejects missing or invalid observations", () => {
+test("gunfire accepts estimates and unknowns, accepts missing observations and rejects invalid values", () => {
   assert.equal(model.validateGunfireStep(draft, 0), null);
   assert.ok(model.validateGunfireStep({ ...draft, coordinates: null }, 0));
   assert.ok(
@@ -56,8 +56,8 @@ test("gunfire accepts estimates and unknowns, rejects missing or invalid observa
     null,
   );
   for (const field of ["shotCount", "proximity", "cadence"]) {
-    for (const value of ["", "invalid"])
-      assert.ok(model.validateGunfireStep({ ...draft, [field]: value }, 1));
+    assert.equal(model.validateGunfireStep({ ...draft, [field]: "" }, 1), null);
+    assert.ok(model.validateGunfireStep({ ...draft, [field]: "invalid" }, 1));
   }
   assert.equal(model.validateGunfireStep(draft, 2), null);
   assert.equal(

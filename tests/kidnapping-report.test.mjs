@@ -49,8 +49,8 @@ test('kidnapping report starts with a precise GPS location', () => {
   );
 });
 
-test('vehicle clues and direction are both required before person clues', () => {
-  assert.ok(validateKidnappingStep({ ...draft, vehicleClues: 'SUV noir' }, 1));
+test('vehicle clues, direction and person clues may be omitted independently', () => {
+  assert.equal(validateKidnappingStep({ ...draft, vehicleClues: 'SUV noir' }, 1), null);
   assert.equal(
     validateKidnappingStep(
       {
@@ -62,7 +62,7 @@ test('vehicle clues and direction are both required before person clues', () => 
     ),
     null,
   );
-  assert.ok(validateKidnappingStep(draft, 2));
+  assert.equal(validateKidnappingStep(draft, 2), null);
   assert.equal(
     validateKidnappingStep(
       { ...draft, abductedPersonClues: 'Chemise bleue, sac rouge' },

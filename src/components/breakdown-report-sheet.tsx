@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -25,7 +27,6 @@ import { reusableAppLocation } from '@/features/location/app-location-model';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { randomUUID } from 'expo-crypto';
-import { Image, type ImageSource } from 'expo-image';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
 import Check from 'lucide-react-native/icons/check';
@@ -36,11 +37,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 const stepLabels = ['Emplacement', 'Véhicule', 'Circulation'];
-const stepIllustrations = {
-  1: require('../../assets/images/breakdown-report/position.png'),
-  2: require('../../assets/images/breakdown-report/vehicle-types.png'),
-  3: require('../../assets/images/breakdown-report/traffic-impact.png'),
-} satisfies Record<number, ImageSource>;
 
 const makeDraft = (): BreakdownReportDraft => ({
   id: randomUUID(),
@@ -107,21 +103,6 @@ function Action({
   );
 }
 
-function QuestionIllustration({ step }: { step: 1 | 2 | 3 }) {
-  const styles = useStyles();
-
-  return (
-    <View style={styles.questionArt}>
-      <Image
-        source={stepIllustrations[step]}
-        style={styles.questionImage}
-        contentFit="contain"
-        accessible={false}
-        alt=""
-      />
-    </View>
-  );
-}
 
 function OptionCard({
   label,
@@ -236,6 +217,7 @@ export function BreakdownReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -340,9 +322,9 @@ export function BreakdownReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateBreakdownStep(draft, step);
+    const validation = skip ? null : validateBreakdownStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -352,16 +334,19 @@ export function BreakdownReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveBreakdownReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveBreakdownReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== breakdownLocationDescription(draft)
       ) {
         await saveBreakdownReportStep(draft, 0, setProgress);
         savedLocation.current = breakdownLocationDescription(draft);
       }
-      const id = await saveBreakdownReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveBreakdownReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 3) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -464,9 +449,9 @@ export function BreakdownReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -542,7 +527,7 @@ export function BreakdownReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <QuestionIllustration step={1} />
+                    <ReportScene kind="breakdown" step={1} value={draft.breakdownPosition} />
                     <Text style={styles.sectionTitle}>
                       Où se trouve le véhicule en panne ?
                     </Text>
@@ -564,7 +549,7 @@ export function BreakdownReportSheet({
                 )}
                 {step === 2 && (
                   <>
-                    <QuestionIllustration step={2} />
+                    <ReportScene kind="breakdown" step={2} value={draft.vehicleType} />
                     <Text style={styles.sectionTitle}>
                       Quel type de véhicule est en panne ?
                     </Text>
@@ -606,7 +591,7 @@ export function BreakdownReportSheet({
                 )}
                 {step === 3 && (
                   <>
-                    <QuestionIllustration step={3} />
+                    <ReportScene kind="breakdown" step={3} value={draft.trafficImpact} />
                     <Text style={styles.sectionTitle}>
                       Quel est l’impact sur la circulation ?
                     </Text>
@@ -623,17 +608,19 @@ export function BreakdownReportSheet({
                       ))}
                     </View>
                     <Text style={styles.label}>Précisions utiles</Text>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions facultatives sur la panne"
-                      placeholder="Ex. : voie de droite bloquée, dépannage en cours…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) => update('details', value)}
-                      maxLength={2000}
-                      multiline
-                      style={[styles.input, styles.notes]}
-                    />
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions facultatives sur la panne"
+                        placeholder="Ex. : voie de droite bloquée, dépannage en cours…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) => update('details', value)}
+                        maxLength={2000}
+                        multiline
+                        style={[styles.input, styles.notes]}
+                      />
+                    </OptionalReportDetails>
                     <Text style={styles.optional}>Facultatif</Text>
                   </>
                 )}
@@ -650,6 +637,10 @@ export function BreakdownReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -676,7 +667,7 @@ export function BreakdownReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 3 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

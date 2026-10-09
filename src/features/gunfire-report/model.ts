@@ -78,11 +78,11 @@ export function validateGunfireStep(
   }
   if (step < 0 || step > 2 || !Number.isInteger(step)) return "Étape inconnue.";
   if (step === 1) {
-    if (!PROXIMITY_OPTIONS.some((option) => option.value === draft.proximity))
+    if (draft.proximity && !PROXIMITY_OPTIONS.some((option) => option.value === draft.proximity))
       return "Précisez la proximité perçue des tirs.";
-    if (!SHOT_COUNT_OPTIONS.some((option) => option.value === draft.shotCount))
+    if (draft.shotCount && !SHOT_COUNT_OPTIONS.some((option) => option.value === draft.shotCount))
       return "Indiquez la quantité approximative de tirs.";
-    if (!CADENCE_OPTIONS.some((option) => option.value === draft.cadence))
+    if (draft.cadence && !CADENCE_OPTIONS.some((option) => option.value === draft.cadence))
       return "Précisez le rythme des tirs ou choisissez « Indéterminé ».";
   }
   if (step === 2) {

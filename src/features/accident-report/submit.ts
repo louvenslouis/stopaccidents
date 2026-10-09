@@ -69,7 +69,7 @@ export async function saveAccidentReportStep(
       const savedPaths = new Set<string>(
         (savedPhotos ?? []).map((photo) => photo.storage_path),
       );
-      const photos: { storage_path: string; captured_at: string }[] = [];
+      const photos: { storage_path: string; captured_at: string; source?: string }[] = [];
       for (const [index, photo] of draft.photos.entries()) {
         const path = `${userId}/${draft.id}/${photo.id}.jpg`;
         if (!savedPaths.has(path)) {
@@ -93,7 +93,7 @@ export async function saveAccidentReportStep(
               'Une photo n’a pas pu être envoyée. Les étapes précédentes restent enregistrées ; réessayez.',
             );
         }
-        photos.push({ storage_path: path, captured_at: photo.capturedAt });
+        photos.push({ storage_path: path, captured_at: photo.capturedAt, ...(photo.source ? { source: photo.source } : {}) });
       }
       obsoletePaths = [...savedPaths].filter(
         (path) => !photos.some((photo) => photo.storage_path === path),

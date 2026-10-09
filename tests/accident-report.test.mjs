@@ -31,7 +31,7 @@ const draft = {
 test('location alone can be saved before choosing the accident subtype', () => {
   assert.ok(validateStep(draft, 0));
   assert.ok(validateStep({ ...draft, location: 'Un carrefour' }, 0));
-  assert.ok(validateStep(draft, 1));
+  assert.equal(validateStep(draft, 1), null);
   assert.equal(validateStep({ ...draft, accidentType: 'other' }, 1), null);
   assert.equal(
     validateStep(
@@ -46,7 +46,7 @@ test('location alone can be saved before choosing the accident subtype', () => {
   );
 });
 test('unknown severity is an explicit valid choice, not an implicit default', () => {
-  assert.ok(validateStep(draft, 2));
+  assert.equal(validateStep(draft, 2), null);
   assert.equal(validateStep({ ...draft, severity: 'unknown' }, 2), null);
 });
 test('all supplementary fields and photos are optional', () => {

@@ -52,23 +52,14 @@ export function validateKidnappingStep(
     return 'Le lieu et son repère doivent contenir au maximum 500 caractères.';
   }
   if (step === 1) {
-    if (draft.vehicleClues.trim().length < 3) {
-      return 'Décrivez le ou les véhicules impliqués.';
-    }
     if (draft.vehicleClues.trim().length > MAX_VEHICLE_CLUES_LENGTH) {
       return `Les indices sur les véhicules doivent contenir au maximum ${MAX_VEHICLE_CLUES_LENGTH} caractères.`;
-    }
-    if (draft.directionTaken.trim().length < 3) {
-      return 'Indiquez la direction prise par le ou les véhicules.';
     }
     if (draft.directionTaken.trim().length > MAX_DIRECTION_LENGTH) {
       return `La direction doit contenir au maximum ${MAX_DIRECTION_LENGTH} caractères.`;
     }
   }
   if (step === 2) {
-    if (draft.abductedPersonClues.trim().length < 3) {
-      return 'Ajoutez des indices sur la personne enlevée.';
-    }
     if (draft.abductedPersonClues.trim().length > MAX_PERSON_CLUES_LENGTH) {
       return `Les indices sur la personne doivent contenir au maximum ${MAX_PERSON_CLUES_LENGTH} caractères.`;
     }

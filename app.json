@@ -69,8 +69,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Autorisez Stop Accidents à enregistrer une photo de votre carte d’identité.",
-          "cameraPermission": "Autorisez Stop Accidents à photographier votre carte d’identité.",
+          "photosPermission": "Autorisez Stop Accidents à sélectionner des images pour vos signalements et votre profil.",
+          "cameraPermission": "Autorisez Stop Accidents à prendre des photos pour vos signalements et votre profil.",
           "microphonePermission": false
         }
       ]

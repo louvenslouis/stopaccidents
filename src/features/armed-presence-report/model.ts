@@ -52,14 +52,8 @@ export function validateArmedPresenceStep(
     return 'Le lieu et son repère doivent contenir au maximum 500 caractères.';
   }
   if (step === 1) {
-    if (draft.presence.trim().length < 1) {
-      return 'Indiquez le nombre approximatif de personnes ou « inconnu ».';
-    }
     if (draft.presence.trim().length > MAX_PRESENCE_LENGTH) {
       return `La présence observée doit contenir au maximum ${MAX_PRESENCE_LENGTH} caractères.`;
-    }
-    if (draft.activity.trim().length < 3) {
-      return 'Décrivez l’activité observée ou indiquez « inconnue ».';
     }
     if (draft.activity.trim().length > MAX_ACTIVITY_LENGTH) {
       return `L’activité doit contenir au maximum ${MAX_ACTIVITY_LENGTH} caractères.`;

@@ -13,7 +13,7 @@ async function compile(path, dependencies = {}) {
   return exports;
 }
 const identifiers = await compile('features/safety-profile/model');
-const model = await compile('features/suspicious-vehicle-report/model', { '@/features/safety-profile/model': identifiers });
+const model = await compile('features/suspicious-vehicle-report/model', { '@/features/safety-profile/model': identifiers, '@/features/accident-report/model': await compile('features/accident-report/model') });
 const draft = {
   id: 'vehicle-id', location: 'Delmas', locationHint: 'Près du carrefour',
   coordinates: { latitude: 18.55, longitude: -72.3, accuracy: 9 },
@@ -21,16 +21,17 @@ const draft = {
   vehicleDescription: '  Berline bleue  ', observedBehavior: '  Passages répétés  ', details: '',
 };
 
-test('suspicious vehicle requires a vehicle description and observed facts, with optional details', () => {
+test('suspicious vehicle accepts optional vehicle description, observed facts and details', () => {
   assert.equal(model.validateSuspiciousVehicleStep(draft, 0), null);
   assert.ok(model.validateSuspiciousVehicleStep({ ...draft, coordinates: null }, 0));
   assert.equal(model.validateSuspiciousVehicleStep(draft, 1), null);
-  for (const patch of [{ color: '' }, { vehicleType: null }, { windowTint: null }, { registration: 'x'.repeat(81) }]) assert.ok(model.validateSuspiciousVehicleStep({ ...draft, ...patch }, 1));
+  for (const patch of [{ color: '' }, { vehicleType: null }, { windowTint: null }]) assert.equal(model.validateSuspiciousVehicleStep({ ...draft, ...patch }, 1), null);
+  assert.ok(model.validateSuspiciousVehicleStep({ ...draft, registration: 'x'.repeat(81) }, 1));
   assert.equal(model.validateSuspiciousVehicleStep({ ...draft, vehicleDescription: '', windowTint: 'unknown', registration: '' }, 1), null);
-  assert.ok(model.validateSuspiciousVehicleStep({ ...draft, observedBehavior: 'ab' }, 1));
+  assert.equal(model.validateSuspiciousVehicleStep({ ...draft, observedBehavior: 'ab' }, 1), null);
   assert.equal(model.validateSuspiciousVehicleStep(draft, 2), null);
   for (const [field, limit, step] of [['observedBehavior', 1000, 1], ['details', 2000, 2]]) {
-    if (field !== 'details') assert.ok(model.validateSuspiciousVehicleStep({ ...draft, [field]: '  ' }, step));
+    assert.equal(model.validateSuspiciousVehicleStep({ ...draft, [field]: '  ' }, step), null);
     assert.ok(model.validateSuspiciousVehicleStep({ ...draft, [field]: 'x'.repeat(limit + 1) }, step));
     assert.equal(model.validateSuspiciousVehicleStep({ ...draft, [field]: 'x'.repeat(limit) }, step), null);
   }
@@ -140,4 +141,18 @@ test('photo signing errors preserve readable vehicle details', async () => {
   const result = await read.readSuspiciousVehicleReport('vehicle-id', new AbortController().signal);
   assert.equal(result.vehicle_description, 'Bleu');
   assert.equal(result.photos[0].url, null);
+});
+
+test('vehicle photo batches append, preserve source, and retry only missing uploads', async () => {
+  const second = { ...photoDraft.photo, id: 'second', source: 'library' };
+  const batch = { ...photoDraft, photos: [photoDraft.photo, second], photo: null };
+  assert.equal(model.validateSuspiciousVehicleStep(batch, 2), null);
+  assert.ok(model.validateSuspiciousVehicleStep({ ...batch, photos: Array(5).fill(second) }, 2));
+  const f = await photoFixture({ saved: [photoPath] });
+  await f.complete(batch);
+  assert.equal(f.calls.uploads.length, 1);
+  assert.equal(f.calls.rpc[0].payload.p_photos.length, 2);
+  assert.equal(f.calls.rpc[0].payload.p_photos[1].source, 'library');
+  assert.deepEqual(model.vehiclePhotos(photoDraft), [photoDraft.photo]);
+  assert.deepEqual(model.vehiclePhotos({ ...photoDraft, photos: [] }), []);
 });

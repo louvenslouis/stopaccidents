@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -206,6 +208,7 @@ export function GunfireReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -310,9 +313,9 @@ export function GunfireReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateGunfireStep(draft, step);
+    const validation = skip ? null : validateGunfireStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -322,16 +325,19 @@ export function GunfireReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveGunfireReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveGunfireReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== gunfireLocationDescription(draft)
       ) {
         await saveGunfireReportStep(draft, 0, setProgress);
         savedLocation.current = gunfireLocationDescription(draft);
       }
-      const id = await saveGunfireReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveGunfireReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 2) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -427,9 +433,9 @@ export function GunfireReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -529,6 +535,7 @@ export function GunfireReportSheet({
                       La position enregistrée correspond au lieu d’écoute ; elle
                       ne localise pas l’origine des tirs.
                     </Text>
+                    <ReportScene kind="gunfire" value={draft.shotCount} />
                     <Choices
                       title="Les tirs semblent…"
                       options={PROXIMITY_OPTIONS}
@@ -541,15 +548,15 @@ export function GunfireReportSheet({
                       options={SHOT_COUNT_OPTIONS}
                       value={draft.shotCount}
                       disabled={sending}
-                      onChange={(value) => update("shotCount", value)}
+                      onChange={(value) => { update("shotCount", value); update("cadence", ""); }}
                     />
-                    <Choices
+                    {draft.shotCount !== "one" && <Choices
                       title="Rythme des tirs"
                       options={CADENCE_OPTIONS}
                       value={draft.cadence}
                       disabled={sending}
                       onChange={(value) => update("cadence", value)}
-                    />
+                    />}
                     <View style={styles.warning}>
                       <AppIcon icon={ShieldAlert} size={20} color={themeColor("#B63838", 'accent')} />
                       <Text style={styles.warningText}>
@@ -601,17 +608,19 @@ export function GunfireReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions facultatives"
-                      placeholder="Ex. : entendus vers 14 h, depuis environ 2 minutes, tirs encore en cours ou arrêtés…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) => update("details", value)}
-                      maxLength={MAX_DETAILS_LENGTH}
-                      multiline
-                      style={[styles.input, styles.personNotes]}
-                    />
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions facultatives"
+                        placeholder="Ex. : entendus vers 14 h, depuis environ 2 minutes, tirs encore en cours ou arrêtés…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) => update("details", value)}
+                        maxLength={MAX_DETAILS_LENGTH}
+                        multiline
+                        style={[styles.input, styles.personNotes]}
+                      />
+                    </OptionalReportDetails>
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -637,6 +646,10 @@ export function GunfireReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -664,7 +677,7 @@ export function GunfireReportSheet({
                               : "Suivant"
                         }
                         icon={step === 2 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

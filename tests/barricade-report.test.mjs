@@ -26,7 +26,7 @@ test('barricade validation enforces precise GPS and field limits', () => {
   assert.ok(model.validateBarricadeStep({ ...draft, coordinates: null }, 0));
   assert.ok(model.validateBarricadeStep({ ...draft, coordinates: { ...draft.coordinates, accuracy: 31 } }, 0));
   for (const [field, limit, step] of [['passage', 1000, 1], ['details', 2000, 2]]) {
-    assert.ok(model.validateBarricadeStep({ ...draft, [field]: '  ' }, step));
+    assert.equal(model.validateBarricadeStep({ ...draft, [field]: '  ' }, step), null);
     assert.ok(model.validateBarricadeStep({ ...draft, [field]: 'x'.repeat(limit + 1) }, step));
     assert.equal(model.validateBarricadeStep({ ...draft, [field]: 'x'.repeat(limit) }, step), null);
   }
@@ -77,13 +77,13 @@ test('barricade markers route to their details and reject invalid coordinates', 
 });
 
 
-test('multiple illustrated types are required and saved in stable catalog order', () => {
-  assert.ok(model.validateBarricadeStep({ ...draft, barricadeTypes: [] }, 1));
+test('illustrated types are optional and saved in stable catalog order', () => {
+  assert.equal(model.validateBarricadeStep({ ...draft, barricadeTypes: [] }, 1), null);
   assert.ok(model.validateBarricadeStep({ ...draft, barricadeTypes: ['unknown'] }, 1));
   const selected = { ...draft, barricadeTypes: ['tree-trunks', 'stones', 'stones'], obstacles: '' };
   assert.equal(model.validateBarricadeStep(selected, 1), null);
   assert.equal(model.barricadeObstaclesDescription(selected), 'Pierres, Troncs d’arbres');
-  assert.ok(model.validateBarricadeStep({ ...draft, barricadeTypes: ['other'], obstacles: ' ' }, 1));
+  assert.equal(model.validateBarricadeStep({ ...draft, barricadeTypes: ['other'], obstacles: ' ' }, 1), null);
   assert.equal(model.validateBarricadeStep({ ...draft, barricadeTypes: ['other'], obstacles: 'Barrière métallique' }, 1), null);
   const prefixLength = model.barricadeObstaclesDescription({ ...draft, obstacles: '' }).length + 3;
   assert.equal(model.validateBarricadeStep({ ...draft, obstacles: 'x'.repeat(1500 - prefixLength) }, 1), null);

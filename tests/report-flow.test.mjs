@@ -315,3 +315,33 @@ test('closing during acquisition prevents a late position from creating a report
    const f = fixture(); f.pick(); f.context().onCancel(); await flush();
    assert.equal(f.calls.closed, 1); assert.equal(f.calls.locate, 0); assert.equal(f.calls.save.length, 0);
  });
+
+test('skipping details preserves the draft, permits returning, and saves a later stage independently', async () => {
+  const f = fixture({ coordinates: { latitude: 18.54, longitude: -72.31, accuracy: 9 }, location: 'Delmas', capturedAt: Date.now() });
+  f.pick();
+  f.publish();
+  await flush();
+  f.firstSave.resolve('stable-report-id');
+  await flush();
+  f.render();
+  f.chooseType('two_cars');
+  f.render();
+  await f.button('Passer').props.onPress();
+  f.render();
+  assert.equal(f.calls.save.length, 1, 'skipping does not publish the draft answer');
+  await f.button('Passer').props.onPress();
+  f.render();
+  assert.equal(f.calls.save.length, 1);
+  await f.button('Retour').props.onPress();
+  f.render();
+  const details = f.button('Étape 3 : Détails');
+  assert.equal(details.props.disabled, false, 'a visited skipped stage stays accessible');
+  details.props.onPress();
+  f.render();
+  const finish = f.button('Enregistrer les compléments');
+  assert.ok(finish);
+  await finish.props.onPress();
+  f.render();
+  assert.deepEqual(f.calls.save.map(call => call.step), [0, 3]);
+  assert.equal(f.calls.save[1].draft.accidentType, 'two_cars', 'unsent answer remains in the draft');
+});

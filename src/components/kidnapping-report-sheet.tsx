@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -156,6 +158,7 @@ export function KidnappingReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -260,9 +263,9 @@ export function KidnappingReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateKidnappingStep(draft, step);
+    const validation = skip ? null : validateKidnappingStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -272,16 +275,19 @@ export function KidnappingReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveKidnappingReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveKidnappingReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== kidnappingLocationDescription(draft)
       ) {
         await saveKidnappingReportStep(draft, 0, setProgress);
         savedLocation.current = kidnappingLocationDescription(draft);
       }
-      const id = await saveKidnappingReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveKidnappingReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 2) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -372,9 +378,9 @@ export function KidnappingReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -419,6 +425,7 @@ export function KidnappingReportSheet({
                 )}
                 {step === 1 && (
                   <>
+                    <ReportScene kind="kidnapping" value={draft.vehicleClues} />
                     {!draft.sourceReportId && (<View style={styles.locationCard}>
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
@@ -544,19 +551,21 @@ export function KidnappingReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Indices sur la personne enlevée"
-                      placeholder="Nom si connu, âge approximatif, vêtements, apparence, signe distinctif, état observé…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.abductedPersonClues}
-                      onChangeText={(value) =>
-                        update('abductedPersonClues', value)
-                      }
-                      maxLength={MAX_PERSON_CLUES_LENGTH}
-                      multiline
-                      style={[styles.input, styles.personNotes]}
-                    />
+                    <OptionalReportDetails key="abductedPersonClues" hasValue={Boolean(draft.abductedPersonClues)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Indices sur la personne enlevée"
+                        placeholder="Nom si connu, âge approximatif, vêtements, apparence, signe distinctif, état observé…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.abductedPersonClues}
+                        onChangeText={(value) =>
+                          update('abductedPersonClues', value)
+                        }
+                        maxLength={MAX_PERSON_CLUES_LENGTH}
+                        multiline
+                        style={[styles.input, styles.personNotes]}
+                      />
+                    </OptionalReportDetails>
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -582,6 +591,10 @@ export function KidnappingReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -609,7 +622,7 @@ export function KidnappingReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 2 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

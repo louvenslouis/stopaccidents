@@ -86,6 +86,7 @@ export function validateFireStep(
   }
   if (
     step === 1 &&
+    draft.fireTarget !== null &&
     !fireTargets.some(
       (option) => option.value === draft.fireTarget,
     )
@@ -94,12 +95,14 @@ export function validateFireStep(
   }
   if (
     step === 2 &&
+    draft.fireState !== null &&
     !fireStates.some((option) => option.value === draft.fireState)
   ) {
     return 'Indiquez l’état du feu.';
   }
   if (
     step === 3 &&
+    draft.peopleDanger !== null &&
     !peopleDangerOptions.some((option) => option.value === draft.peopleDanger)
   ) {
     return 'Indiquez si des personnes sont en danger.';

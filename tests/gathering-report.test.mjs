@@ -30,12 +30,12 @@ test('gathering validates location, type, situation and traffic impact', () => {
   assert.ok(model.validateGatheringStep({ ...draft, coordinates: null }, 0));
   assert.ok(model.validateGatheringStep({ ...draft, coordinates: { ...draft.coordinates, accuracy: 31 } }, 0));
   assert.equal(model.validateGatheringStep(draft, 1), null);
-  assert.ok(model.validateGatheringStep({ ...draft, gatheringType: null }, 1));
+  assert.equal(model.validateGatheringStep({ ...draft, gatheringType: null }, 1), null);
   assert.ok(model.validateGatheringStep({ ...draft, gatheringType: 'invalid' }, 1));
   assert.equal(model.validateGatheringStep(draft, 2), null);
-  assert.ok(model.validateGatheringStep({ ...draft, gatheringState: null }, 2));
+  assert.equal(model.validateGatheringStep({ ...draft, gatheringState: null }, 2), null);
   assert.equal(model.validateGatheringStep(draft, 3), null);
-  assert.ok(model.validateGatheringStep({ ...draft, trafficImpact: null }, 3));
+  assert.equal(model.validateGatheringStep({ ...draft, trafficImpact: null }, 3), null);
   assert.equal(model.validateGatheringStep({ ...draft, details: 'x'.repeat(2000) }, 3), null);
   assert.ok(model.validateGatheringStep({ ...draft, details: 'x'.repeat(2001) }, 3));
   assert.equal(model.gatheringLocationDescription(draft), 'Delmas — Près du carrefour');

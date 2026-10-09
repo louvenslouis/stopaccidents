@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -25,7 +27,6 @@ import { reusableAppLocation } from '@/features/location/app-location-model';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { randomUUID } from 'expo-crypto';
-import { Image, type ImageSource } from 'expo-image';
 
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -37,21 +38,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
 const stepLabels = ['Type', 'Situation', 'Circulation'];
-const stepIllustrations = {
-  1: require('../../assets/images/gathering-report/types.png'),
-  2: require('../../assets/images/gathering-report/situation.png'),
-  3: require('../../assets/images/gathering-report/traffic.png'),
-} satisfies Record<number, ImageSource>;
 
-function QuestionIllustration({ step }: { step: 1 | 2 | 3 }) {
-  const styles = useStyles();
-  return (
-    <View style={styles.questionArt}>
-      <Image source={stepIllustrations[step]} style={styles.questionImage}
-        contentFit="contain" accessible={false} alt="" />
-    </View>
-  );
-}
 
 const makeDraft = (): GatheringReportDraft => ({
   id: randomUUID(),
@@ -231,6 +218,7 @@ export function GatheringReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -335,9 +323,9 @@ export function GatheringReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateGatheringStep(draft, step);
+    const validation = skip ? null : validateGatheringStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -347,16 +335,19 @@ export function GatheringReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveGatheringReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveGatheringReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== gatheringLocationDescription(draft)
       ) {
         await saveGatheringReportStep(draft, 0, setProgress);
         savedLocation.current = gatheringLocationDescription(draft);
       }
-      const id = await saveGatheringReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveGatheringReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 3) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -459,9 +450,9 @@ export function GatheringReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -537,7 +528,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 1 && (
                   <>
-                    <QuestionIllustration step={1} />
+                    <ReportScene kind="gathering" step={1} value={draft.gatheringType} />
                     <Text style={styles.sectionTitle}>
                       Quel type de rassemblement ?
                     </Text>
@@ -558,7 +549,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 2 && (
                   <>
-                    <QuestionIllustration step={2} />
+                    <ReportScene kind="gathering" step={2} value={draft.gatheringState} />
                     <Text style={styles.sectionTitle}>
                       Quelle est la situation ?
                     </Text>
@@ -600,7 +591,7 @@ export function GatheringReportSheet({
                 )}
                 {step === 3 && (
                   <>
-                    <QuestionIllustration step={3} />
+                    <ReportScene kind="gathering" step={3} value={draft.trafficImpact} />
                     <Text style={styles.sectionTitle}>
                       Quel impact sur la circulation ?
                     </Text>
@@ -616,17 +607,19 @@ export function GatheringReportSheet({
                       ))}
                     </View>
                     <Text style={styles.label}>Précisions utiles</Text>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions facultatives sur le rassemblement"
-                      placeholder="Précisions (facultatif)"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) => update('details', value)}
-                      maxLength={2000}
-                      multiline
-                      style={[styles.input, styles.notes]}
-                    />
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions facultatives sur le rassemblement"
+                        placeholder="Précisions (facultatif)"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) => update('details', value)}
+                        maxLength={2000}
+                        multiline
+                        style={[styles.input, styles.notes]}
+                      />
+                    </OptionalReportDetails>
 
                   </>
                 )}
@@ -643,6 +636,10 @@ export function GatheringReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -669,7 +666,7 @@ export function GatheringReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 3 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

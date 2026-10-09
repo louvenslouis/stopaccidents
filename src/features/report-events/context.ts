@@ -1,6 +1,7 @@
 import type { Coordinates } from '@/features/accident-report/model';
 
 export type ReportContext = {
+  visitedStep?: number;
   sourceReportId?: string;
   locationSource?: 'device' | 'manual';
   occurredAt?: string;

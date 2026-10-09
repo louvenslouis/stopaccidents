@@ -14,7 +14,7 @@ test('gathering reports persist stages, protect ownership, support manual contex
       select set_config('request.jwt.claims','{"sub":"${owner}"}',false);
       select public.prepare_report_event('gathering','${id}',null,18.55,-72.3,9);
       select public.save_gathering_report_step('${id}',1,'Delmas',18.55,-72.3,9);`);
-    await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',3,p_gathering_state=>'stationary')`));
+    await db.exec(`select public.save_gathering_report_step('${id}',3,p_gathering_state=>'stationary')`);
     await assert.rejects(db.exec(`select public.save_gathering_report_step('${id}',2,p_gathering_type=>'invalid')`));
     await db.exec(`select public.save_gathering_report_step('${id}',2,p_gathering_type=>'demonstration');
       select public.save_gathering_report_step('${id}',3,p_gathering_state=>'stationary');

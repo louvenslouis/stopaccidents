@@ -1,3 +1,5 @@
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -159,6 +161,7 @@ export function BarricadeReportSheet({
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -263,9 +266,9 @@ export function BarricadeReportSheet({
     }
   }
 
-  async function next() {
+  async function next(skip = false) {
     if (submitting.current) return;
-    const validation = validateBarricadeStep(draft, step);
+    const validation = skip ? null : validateBarricadeStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -275,16 +278,19 @@ export function BarricadeReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveBarricadeReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveBarricadeReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== barricadeLocationDescription(draft)
       ) {
         await saveBarricadeReportStep(draft, 0, setProgress);
         savedLocation.current = barricadeLocationDescription(draft);
       }
-      const id = await saveBarricadeReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveBarricadeReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 2) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -375,9 +381,9 @@ export function BarricadeReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -473,6 +479,7 @@ export function BarricadeReportSheet({
                         </Text>
                       </View>
                     </View>
+                    <ReportScene kind="barricade" value={draft.barricadeTypes.join(",")} />
                     <BarricadeTypePicker
                       selected={draft.barricadeTypes}
                       disabled={sending}
@@ -481,20 +488,22 @@ export function BarricadeReportSheet({
                     <View style={styles.sectionHeading}>
                       <Text style={styles.label}>Précisions sur les obstacles</Text>
                       <Text style={styles.optional}>
-                        {draft.barricadeTypes.includes('other') ? 'REQUIS POUR AUTRE' : 'FACULTATIF'}
+                        FACULTATIF
                       </Text>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions sur les obstacles"
-                      placeholder="Ex. : plusieurs grosses pierres sur toute la chaussée…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.obstacles}
-                      onChangeText={(value) => update('obstacles', value)}
-                      maxLength={MAX_OBSTACLES_LENGTH}
-                      multiline
-                      style={[styles.input, styles.notes]}
-                    />
+                    <OptionalReportDetails key="obstacles" hasValue={Boolean(draft.obstacles)} expanded={draft.barricadeTypes.includes('other')}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions sur les obstacles"
+                        placeholder="Ex. : plusieurs grosses pierres sur toute la chaussée…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.obstacles}
+                        onChangeText={(value) => update('obstacles', value)}
+                        maxLength={MAX_OBSTACLES_LENGTH}
+                        multiline
+                        style={[styles.input, styles.notes]}
+                      />
+                    </OptionalReportDetails>
                     <View style={styles.sectionHeading}>
                       <View style={styles.sectionIcon}>
                         <AppIcon icon={Route} color={themeColor("#D94235", 'accent')} size={23} />
@@ -558,19 +567,21 @@ export function BarricadeReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Informations complémentaires"
-                      placeholder="Ex. : depuis quand la route est bloquée, étendue du blocage, dangers observés…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) =>
-                        update('details', value)
-                      }
-                      maxLength={MAX_DETAILS_LENGTH}
-                      multiline
-                      style={[styles.input, styles.personNotes]}
-                    />
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Informations complémentaires"
+                        placeholder="Ex. : depuis quand la route est bloquée, étendue du blocage, dangers observés…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) =>
+                          update('details', value)
+                        }
+                        maxLength={MAX_DETAILS_LENGTH}
+                        multiline
+                        style={[styles.input, styles.personNotes]}
+                      />
+                    </OptionalReportDetails>
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -596,6 +607,10 @@ export function BarricadeReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -623,7 +638,7 @@ export function BarricadeReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 2 ? CheckCheck : ArrowRight}
-                        onPress={next}
+                        onPress={() => next()}
                         disabled={sending || locating}
                         busy={sending}
                       />

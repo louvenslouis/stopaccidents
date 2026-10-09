@@ -18,12 +18,7 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.prepare_report_event('gathering',device_id,null,18.55,-72.3,9);
   perform public.save_gathering_report_step(device_id,1,'TEST TRANSACTION Rassemblement',18.55,-72.3,9);
-  rejected := false;
-  begin
-    perform public.save_gathering_report_step(device_id,3,p_gathering_state=>'moving');
-  exception when raise_exception then rejected := true;
-  end;
-  if not rejected then raise exception 'QA: out-of-order stage accepted'; end if;
+  perform public.save_gathering_report_step(device_id,3,p_gathering_state=>'moving');
   rejected := false;
   begin
     perform public.save_gathering_report_step(device_id,2,p_gathering_type=>'invalid');

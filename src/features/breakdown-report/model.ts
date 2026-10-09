@@ -129,6 +129,7 @@ export function validateBreakdownStep(
   }
   if (
     step === 1 &&
+    draft.breakdownPosition !== null &&
     !breakdownPositions.some(
       (option) => option.value === draft.breakdownPosition,
     )
@@ -137,12 +138,14 @@ export function validateBreakdownStep(
   }
   if (
     step === 2 &&
+    draft.vehicleType !== null &&
     !breakdownVehicleTypes.some((option) => option.value === draft.vehicleType)
   ) {
     return 'Choisissez le type de véhicule en panne.';
   }
   if (
     step === 3 &&
+    draft.trafficImpact !== null &&
     !trafficImpacts.some((option) => option.value === draft.trafficImpact)
   ) {
     return 'Indiquez l’impact sur la circulation.';

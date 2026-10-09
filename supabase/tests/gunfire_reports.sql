@@ -22,15 +22,11 @@ do $$ begin
       and shot_count = ''
       and status = 'received'
   ) = 1, 'Location-only gunfire report was not saved';
-  begin
+  -- A later answer can be recorded without the preceding details.
     perform public.save_gunfire_report_step(
       'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 3,
       p_details => 'Observation'
     );
-    raise exception 'Skipped shot_count step accepted';
-  exception when raise_exception then
-    if sqlerrm <> 'Save the previous step first' then raise; end if;
-  end;
 end $$;
 
 select public.save_gunfire_report_step(
@@ -97,8 +93,9 @@ do $$ begin
   assert (select count(*) = 1 from public.report_rewards where report_kind = 'gunfire'), 'Retries duplicated rewards';
   begin
     perform public.save_gunfire_report_step('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, p_shot_count => 'one', p_proximity => 'near');
-    raise exception 'Missing cadence accepted';
-  exception when check_violation then null; end;
+    assert (select cadence = '' from public.gunfire_reports where id = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'), 'Omitted cadence was invented';
+    perform public.save_gunfire_report_step('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 2, p_shot_count => 'two_to_five', p_proximity => 'near', p_cadence => 'bursts');
+  end;
   begin
     perform public.save_gunfire_report_step('cccccccc-cccc-4ccc-8ccc-cccccccccccc', 1, 'Delmas', 18.55, -72.3, 100);
     raise exception 'Imprecise location accepted';

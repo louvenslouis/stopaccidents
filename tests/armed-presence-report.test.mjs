@@ -26,7 +26,7 @@ test('armed presence accepts an approximate count, unknown activity and optional
   assert.equal(model.validateArmedPresenceStep({ ...draft, presence: 'inconnu', activity: 'inconnue' }, 1), null);
   assert.equal(model.validateArmedPresenceStep(draft, 2), null);
   for (const [field, limit, step] of [['presence', 1500, 1], ['activity', 1000, 1], ['details', 2000, 2]]) {
-    if (field !== 'details') assert.ok(model.validateArmedPresenceStep({ ...draft, [field]: '  ' }, step));
+    assert.equal(model.validateArmedPresenceStep({ ...draft, [field]: '  ' }, step), null);
     assert.ok(model.validateArmedPresenceStep({ ...draft, [field]: 'x'.repeat(limit + 1) }, step));
     assert.equal(model.validateArmedPresenceStep({ ...draft, [field]: 'x'.repeat(limit) }, step), null);
   }

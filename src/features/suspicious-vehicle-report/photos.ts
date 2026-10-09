@@ -1,6 +1,6 @@
 import { decode } from 'base64-arraybuffer';
 import { supabase } from '@/lib/supabase';
-import { MAX_VEHICLE_PHOTO_BYTES, type SuspiciousVehicleReportDraft } from './model';
+import { MAX_VEHICLE_PHOTO_BYTES, vehiclePhotos, type SuspiciousVehicleReportDraft } from './model';
 
 export const VEHICLE_PHOTO_BUCKET = 'suspicious-vehicle-photos';
 
@@ -23,20 +23,20 @@ export async function completeSuspiciousVehicleReport(
     .from('suspicious_vehicle_report_photos').select('storage_path').eq('report_id', draft.id);
   if (readError) throw new Error('Impossible de vérifier la photo. Les étapes précédentes restent enregistrées. Réessayez.');
   const savedPaths = (existing ?? []).map((photo) => photo.storage_path as string);
-  const photos: { storage_path: string; captured_at: string }[] = [];
+  const photos: { storage_path: string; captured_at: string; source?: string }[] = [];
   const attempted: string[] = [];
   try {
-    if (draft.photo) {
-      const path = `${userId}/${draft.id}/${draft.photo.id}.jpg`;
+    for (const photo of vehiclePhotos(draft)) {
+      const path = `${userId}/${draft.id}/${photo.id}.jpg`;
       if (!savedPaths.includes(path)) {
-        const bytes = decode(draft.photo.base64);
+        const bytes = decode(photo.base64);
         if (bytes.byteLength > MAX_VEHICLE_PHOTO_BYTES) throw new Error('La photo dépasse 6 Mo. Retirez-la et reprenez-la.');
         onProgress('Envoi de la photo…');
         attempted.push(path);
         const { error } = await supabase.storage.from(VEHICLE_PHOTO_BUCKET).upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
         if (error) throw new Error('La photo n’a pas pu être envoyée. Réessayez ou retirez-la pour terminer sans photo.');
       }
-      photos.push({ storage_path: path, captured_at: draft.photo.capturedAt });
+      photos.push({ storage_path: path, captured_at: photo.capturedAt, ...(photo.source ? { source: photo.source } : {}) });
     }
     onProgress('Enregistrement des compléments…');
     const { data, error } = await supabase.rpc('complete_suspicious_vehicle_report', {

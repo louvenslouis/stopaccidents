@@ -1,6 +1,6 @@
 import { normalizeIdentifier } from '@/features/safety-profile/model';
 import { validManualContext, type ReportContext } from '@/features/report-events/context';
-import type { CapturedPhoto } from '@/features/accident-report/model';
+import { MAX_PHOTOS, type CapturedPhoto } from '@/features/accident-report/model';
 
 export const vehicleTypes = [
   { id: 'sedan', label: 'Berline' }, { id: 'suv', label: 'SUV / 4×4' },
@@ -51,11 +51,16 @@ export type SuspiciousVehicleReportDraft = ReportContext & {
   vehicleType: VehicleType | null;
   windowTint: WindowTint | null;
   registration: string;
-  photo: CapturedPhoto | null;
+  photo: CapturedPhoto | null; // Legacy drafts.
+  photos?: CapturedPhoto[];
   vehicleDescription: string;
   observedBehavior: string;
   details: string;
 };
+
+export function vehiclePhotos(draft: SuspiciousVehicleReportDraft): CapturedPhoto[] {
+  return draft.photos ?? (draft.photo ? [draft.photo] : []);
+}
 
 export function suspiciousVehicleLocationDescription(draft: SuspiciousVehicleReportDraft) {
   return [draft.location.trim(), draft.locationHint.trim()]
@@ -66,9 +71,9 @@ export function suspiciousVehicleLocationDescription(draft: SuspiciousVehicleRep
 // Preserve explicit answers in the existing public description, including older reports.
 export function suspiciousVehicleDescription(draft: SuspiciousVehicleReportDraft) {
   return [
-    `Couleur : ${draft.color.trim()}`,
-    `Type : ${vehicleTypes.find((type) => type.id === draft.vehicleType)?.label ?? ''}`,
-    `Vitres teintées : ${windowTintOptions.find((option) => option.id === draft.windowTint)?.label ?? ''}`,
+    draft.color.trim() ? `Couleur : ${draft.color.trim()}` : '',
+    draft.vehicleType ? `Type : ${vehicleTypes.find((type) => type.id === draft.vehicleType)?.label ?? ''}` : '',
+    draft.windowTint ? `Vitres teintées : ${windowTintOptions.find((option) => option.id === draft.windowTint)?.label ?? ''}` : '',
     draft.registration.trim() ? `Immatriculation : ${draft.registration.trim()}` : '',
     draft.vehicleDescription.trim(),
   ].filter(Boolean).join('\n');
@@ -89,22 +94,20 @@ export function validateSuspiciousVehicleStep(
       const registration = normalizeIdentifier(draft.registration);
       if (!registration || registration.length < 3 || registration.length > 32) return 'Saisissez une immatriculation complète et lisible.';
     }
-    if (draft.color.trim().length < 2 || draft.color.trim().length > 80) return 'Indiquez la couleur (2 à 80 caractères), ou « inconnue ».';
-    if (!vehicleTypes.some((type) => type.id === draft.vehicleType)) return 'Choisissez le type de véhicule.';
-    if (!windowTintOptions.some((option) => option.id === draft.windowTint)) return 'Précisez si les vitres sont teintées.';
+    if (draft.color.trim().length > 80) return 'Indiquez la couleur (2 à 80 caractères), ou « inconnue ».';
+    if (draft.vehicleType !== null && !vehicleTypes.some((type) => type.id === draft.vehicleType)) return 'Choisissez le type de véhicule.';
+    if (draft.windowTint !== null && !windowTintOptions.some((option) => option.id === draft.windowTint)) return 'Précisez si les vitres sont teintées.';
     if (draft.registration.trim().length > 80) return 'L’immatriculation doit contenir au maximum 80 caractères.';
     if (suspiciousVehicleDescription(draft).length > MAX_VEHICLE_DESCRIPTION_LENGTH) {
       return `La description du véhicule doit contenir au maximum ${MAX_VEHICLE_DESCRIPTION_LENGTH} caractères.`;
-    }
-    if (draft.observedBehavior.trim().length < 3) {
-      return 'Décrivez les faits observés qui motivent ce signalement.';
     }
     if (draft.observedBehavior.trim().length > MAX_OBSERVED_BEHAVIOR_LENGTH) {
       return `La description des faits doit contenir au maximum ${MAX_OBSERVED_BEHAVIOR_LENGTH} caractères.`;
     }
   }
   if (step === 2) {
-    if (draft.photo && (!draft.photo.base64 || draft.photo.base64.length * 0.75 > MAX_VEHICLE_PHOTO_BYTES)) return 'La photo est vide ou dépasse 6 Mo. Retirez-la et reprenez-la.';
+    if (vehiclePhotos(draft).length > MAX_PHOTOS) return 'Vous pouvez ajouter jusqu’à 4 photos.';
+    if (vehiclePhotos(draft).some(photo => !photo.base64 || photo.base64.length * 0.75 > MAX_VEHICLE_PHOTO_BYTES)) return 'La photo est vide ou dépasse 6 Mo. Retirez-la et reprenez-la.';
     if (draft.details.trim().length > MAX_DETAILS_LENGTH) {
       return `Les précisions doivent contenir au maximum ${MAX_DETAILS_LENGTH} caractères.`;
     }

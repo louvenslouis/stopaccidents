@@ -81,6 +81,7 @@ export function validateGatheringStep(
   }
   if (
     step === 1 &&
+    draft.gatheringType !== null &&
     !gatheringTypes.some(
       (option) => option.value === draft.gatheringType,
     )
@@ -89,12 +90,14 @@ export function validateGatheringStep(
   }
   if (
     step === 2 &&
+    draft.gatheringState !== null &&
     !gatheringStates.some((option) => option.value === draft.gatheringState)
   ) {
     return 'Indiquez la situation du rassemblement.';
   }
   if (
     step === 3 &&
+    draft.trafficImpact !== null &&
     !trafficImpactOptions.some((option) => option.value === draft.trafficImpact)
   ) {
     return 'Indiquez l’impact sur la circulation.';

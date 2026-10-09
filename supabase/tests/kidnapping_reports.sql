@@ -22,15 +22,11 @@ do $$ begin
       and vehicle_clues = ''
       and status = 'received'
   ) = 1, 'Location-only kidnapping report was not saved';
-  begin
+  -- A later answer can be recorded without the preceding details.
     perform public.save_kidnapping_report_step(
       'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 3,
       p_abducted_person_clues => 'Chemise bleue'
     );
-    raise exception 'Skipped vehicle step accepted';
-  exception when raise_exception then
-    if sqlerrm <> 'Save the previous step first' then raise; end if;
-  end;
 end $$;
 
 select public.save_kidnapping_report_step(

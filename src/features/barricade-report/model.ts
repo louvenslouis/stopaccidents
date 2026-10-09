@@ -71,28 +71,19 @@ export function validateBarricadeStep(
     return 'Le lieu et son repère doivent contenir au maximum 500 caractères.';
   }
   if (step === 1) {
-    if (!draft.barricadeTypes.length || draft.barricadeTypes.some(
+    if (draft.barricadeTypes.some(
       (id) => !barricadeTypes.some((type) => type.id === id),
     )) {
       return 'Choisissez au moins un type de barricade.';
     }
-    if (draft.barricadeTypes.includes('other') && draft.obstacles.trim().length < 3) {
-      return 'Précisez le type de barricade pour « Autre ».';
-    }
     if (barricadeObstaclesDescription(draft).length > MAX_OBSTACLES_LENGTH) {
       return `Les obstacles doivent contenir au maximum ${MAX_OBSTACLES_LENGTH} caractères.`;
-    }
-    if (draft.passage.trim().length < 3) {
-      return 'Indiquez si le passage est bloqué ou encore possible.';
     }
     if (draft.passage.trim().length > MAX_PASSAGE_LENGTH) {
       return `Le passage doit contenir au maximum ${MAX_PASSAGE_LENGTH} caractères.`;
     }
   }
   if (step === 2) {
-    if (draft.details.trim().length < 3) {
-      return 'Ajoutez des informations utiles sur la route barricadée.';
-    }
     if (draft.details.trim().length > MAX_DETAILS_LENGTH) {
       return `Les informations complémentaires doivent contenir au maximum ${MAX_DETAILS_LENGTH} caractères.`;
     }

@@ -19,11 +19,13 @@ export function ReportModalSheet({
   visible,
   onRequestClose,
   dismissDisabled = false,
+  closeLabel,
   children,
 }: {
   visible: boolean;
   onRequestClose: () => void;
   dismissDisabled?: boolean;
+  closeLabel?: string;
   children: ReactNode;
 }) {
   const themeColor = useThemeColor();
@@ -101,7 +103,7 @@ export function ReportModalSheet({
         />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Fermer le formulaire, les informations sont conservées"
+          accessibilityLabel={closeLabel ?? "Fermer le formulaire, les informations sont conservées"}
           disabled={dismissDisabled}
           onPress={close}
           style={StyleSheet.absoluteFill}
@@ -130,7 +132,7 @@ export function ReportModalSheet({
               disabled={dismissDisabled}
               accessible
               accessibilityRole="button"
-              accessibilityLabel="Fermer le signalement"
+              accessibilityLabel={closeLabel ?? "Fermer le signalement"}
               accessibilityState={{ disabled: dismissDisabled }}
               accessibilityActions={[{ name: 'activate' }]}
               onAccessibilityAction={close}

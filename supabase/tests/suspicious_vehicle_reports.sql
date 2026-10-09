@@ -22,15 +22,11 @@ do $$ begin
       and vehicle_description = ''
       and status = 'received'
   ) = 1, 'Location-only suspicious_vehicle report was not saved';
-  begin
+  -- A later answer can be recorded without the preceding details.
     perform public.save_suspicious_vehicle_report_step(
       'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 3,
       p_details => 'Observation'
     );
-    raise exception 'Skipped vehicle_description step accepted';
-  exception when raise_exception then
-    if sqlerrm <> 'Save the previous step first' then raise; end if;
-  end;
 end $$;
 
 select public.save_suspicious_vehicle_report_step(

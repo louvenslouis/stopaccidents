@@ -1,3 +1,7 @@
+import { vehiclePhotos } from '@/features/suspicious-vehicle-report/model';
+import { ReportPhotos } from '@/components/report-photos';
+import { OptionalReportDetails } from '@/components/optional-report-details';
+import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
 import { ReportContextStep } from '@/components/report-context-step';
 import type { ManualReportContext } from '@/features/report-events/context';
@@ -9,8 +13,6 @@ import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { ReportReward } from '@/components/report-reward';
 import { ReportCamera } from '@/components/report-camera';
-import Camera from 'lucide-react-native/icons/camera';
-import { Image } from 'expo-image';
 import { randomUUID } from 'expo-crypto';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -38,7 +40,7 @@ import {
 } from '@/features/suspicious-vehicle-report/model';
 import { acquirePreciseLocation } from '@/features/accident-report/precise-location';
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
-import { isPreciseLocation } from '@/features/accident-report/model';
+import { MAX_PHOTOS, isPreciseLocation } from '@/features/accident-report/model';
 import { saveSuspiciousVehicleReportStep } from '@/features/suspicious-vehicle-report/submit';
 import { useAppLocation } from '@/features/location/app-location';
 import { reusableAppLocation } from '@/features/location/app-location-model';
@@ -54,6 +56,7 @@ const makeDraft = (): SuspiciousVehicleReportDraft => ({
   windowTint: null,
   registration: '',
   photo: null,
+  photos: [],
   vehicleDescription: '',
   observedBehavior: '',
   details: '',
@@ -133,6 +136,7 @@ export function SuspiciousVehicleReportSheet({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
@@ -161,19 +165,20 @@ export function SuspiciousVehicleReportSheet({
     key: K,
     value: SuspiciousVehicleReportDraft[K],
   ) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
 
   function changeStep(next: number) {
+    setDraft((current) => ({ ...current, visitedStep: Math.max(current.visitedStep ?? 0, next) }));
     setStep(next);
     setError(null);
     scroll.current?.scrollTo({ y: 0, animated: false });
   }
 
   function pause() {
-    if (submitting.current) return false;
+    if (submitting.current || selectingPhotos) return false;
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -272,9 +277,9 @@ export function SuspiciousVehicleReportSheet({
     }
   }
 
-  async function next() {
-    if (submitting.current) return;
-    const validation = validateSuspiciousVehicleStep(draft, step);
+  async function next(skip = false) {
+    if (submitting.current || selectingPhotos) return;
+    const validation = skip ? null : validateSuspiciousVehicleStep(draft, step);
     if (validation) {
       setError(validation);
       return;
@@ -284,16 +289,19 @@ export function SuspiciousVehicleReportSheet({
     setError(null);
     try {
       await checkpoint(draft);
-      if (draft.sourceReportId && savedSteps === 0) await saveSuspiciousVehicleReportStep(draft, 0, setProgress);
+      if (draft.sourceReportId && savedSteps === 0) {
+        await saveSuspiciousVehicleReportStep(draft, 0, setProgress);
+        setSavedSteps(1);
+      }
       if (
-        step === 1 && !draft.sourceReportId &&
+        !skip && step === 1 && !draft.sourceReportId &&
         savedLocation.current !== suspiciousVehicleLocationDescription(draft)
       ) {
         await saveSuspiciousVehicleReportStep(draft, 0, setProgress);
         savedLocation.current = suspiciousVehicleLocationDescription(draft);
       }
-      const id = await saveSuspiciousVehicleReportStep(draft, step, setProgress);
-      setSavedSteps((current) => Math.max(current, step + 1));
+      const id = skip ? draft.id : await saveSuspiciousVehicleReportStep(draft, step, setProgress);
+      if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
       if (step === 2) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
@@ -309,7 +317,7 @@ export function SuspiciousVehicleReportSheet({
   }
 
   function done() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
     setCameraOpen(false);
@@ -338,7 +346,7 @@ export function SuspiciousVehicleReportSheet({
               key={draft.id}
               initialContext={draft}
               active={visible}
-              busy={locating || sending}
+              busy={locating || sending || selectingPhotos}
               cancelDisabled={sending}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
@@ -351,7 +359,7 @@ export function SuspiciousVehicleReportSheet({
               }}
             />
           ) : cameraOpen && visible ? (
-            <ReportCamera subject="la voiture" onClose={() => setCameraOpen(false)} onCapture={(photo) => { update('photo', photo); setCameraOpen(false); }} />
+            <ReportCamera subject="la voiture" onClose={() => setCameraOpen(false)} onCapture={(photo) => { setDraft(current => ({ ...current, photo: null, photos: [...vehiclePhotos(current), photo].slice(0, MAX_PHOTOS) })); setCameraOpen(false); }} />
           ) : receipt ? (
             <ReportReward reportId={receipt} reportKind="suspicious_vehicle" onDone={done} visible={visible} />
           ) : (
@@ -367,7 +375,7 @@ export function SuspiciousVehicleReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -387,9 +395,9 @@ export function SuspiciousVehicleReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > savedSteps || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > savedSteps || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -434,6 +442,7 @@ export function SuspiciousVehicleReportSheet({
                 )}
                 {step === 1 && (
                   <>
+                    <ReportScene kind="vehicle" value={draft.vehicleType} />
                     {!draft.sourceReportId && (<View style={styles.locationCard}>
                       <View style={styles.inline}>
                         <AppIcon icon={MapPin} size={22} color={themeColor("#267E70", 'success')} />
@@ -490,7 +499,7 @@ export function SuspiciousVehicleReportSheet({
                     <Text style={styles.label}>Type de véhicule</Text>
                     <View style={styles.choices}>
                       {vehicleTypes.map((type) => (
-                        <Pressable key={type.id} accessibilityRole="radio" accessibilityLabel={type.label} accessibilityState={{ checked: draft.vehicleType === type.id, disabled: sending }} disabled={sending} onPress={() => update('vehicleType', type.id)} style={[styles.choice, draft.vehicleType === type.id && styles.choiceSelected]}>
+                        <Pressable key={type.id} accessibilityRole="radio" accessibilityLabel={type.label} accessibilityState={{ checked: draft.vehicleType === type.id, disabled: sending }} disabled={sending || selectingPhotos} onPress={() => update('vehicleType', type.id)} style={[styles.choice, draft.vehicleType === type.id && styles.choiceSelected]}>
                           <Text style={styles.choiceText}>{type.label}</Text>
                         </Pressable>
                       ))}
@@ -498,7 +507,7 @@ export function SuspiciousVehicleReportSheet({
                     <Text style={styles.label}>Vitres teintées ?</Text>
                     <View style={styles.choices}>
                       {windowTintOptions.map((option) => (
-                        <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={`Vitres teintées : ${option.label}`} accessibilityState={{ checked: draft.windowTint === option.id, disabled: sending }} disabled={sending} onPress={() => update('windowTint', option.id)} style={[styles.choice, draft.windowTint === option.id && styles.choiceSelected]}>
+                        <Pressable key={option.id} accessibilityRole="radio" accessibilityLabel={`Vitres teintées : ${option.label}`} accessibilityState={{ checked: draft.windowTint === option.id, disabled: sending }} disabled={sending || selectingPhotos} onPress={() => update('windowTint', option.id)} style={[styles.choice, draft.windowTint === option.id && styles.choiceSelected]}>
                           <Text style={styles.choiceText}>{option.label}</Text>
                         </Pressable>
                       ))}
@@ -580,29 +589,24 @@ export function SuspiciousVehicleReportSheet({
                         </Text>
                       </View>
                     </View>
-                    <TextInput keyboardAppearance={scheme}
-                      editable={!sending}
-                      accessibilityLabel="Précisions facultatives"
-                      placeholder="Ex. : heure de l’observation, durée, direction déjà observée…"
-                      placeholderTextColor={themeColor("#89919E", 'muted')}
-                      value={draft.details}
-                      onChangeText={(value) =>
-                        update('details', value)
-                      }
-                      maxLength={MAX_DETAILS_LENGTH}
-                      multiline
-                      style={[styles.input, styles.personNotes]}
-                    />
-                    <Text style={styles.label}>Photo du véhicule · facultative</Text>
-                    <Text style={styles.small}>Vous pouvez terminer sans photo. Ne vous approchez pas pour la prendre.</Text>
-                    {draft.photo ? (
-                      <View style={{ gap: 12 }}>
-                        <Image source={{ uri: draft.photo.uri }} style={{ width: '100%', height: 200, borderRadius: 16 }} contentFit="contain" accessibilityLabel="Photo du véhicule" />
-                        <Action secondary label="Retirer la photo" disabled={sending} onPress={() => update('photo', null)} />
-                      </View>
-                    ) : (
-                      <Action secondary label="Prendre une photo" icon={Camera} disabled={sending} onPress={() => setCameraOpen(true)} />
-                    )}
+                    <OptionalReportDetails key="details" hasValue={Boolean(draft.details)}>
+                      <TextInput keyboardAppearance={scheme}
+                        editable={!sending}
+                        accessibilityLabel="Précisions facultatives"
+                        placeholder="Ex. : heure de l’observation, durée, direction déjà observée…"
+                        placeholderTextColor={themeColor("#89919E", 'muted')}
+                        value={draft.details}
+                        onChangeText={(value) =>
+                          update('details', value)
+                        }
+                        maxLength={MAX_DETAILS_LENGTH}
+                        multiline
+                        style={[styles.input, styles.personNotes]}
+                      />
+                    </OptionalReportDetails>
+                    <ReportPhotos photos={vehiclePhotos(draft)} context={draft} disabled={sending}
+                      onChange={(photos) => setDraft(current => ({ ...current, photo: null, photos }))}
+                      onCamera={() => setCameraOpen(true)} onBusyChange={setSelectingPhotos} />
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -628,6 +632,10 @@ export function SuspiciousVehicleReportSheet({
                       {progress}
                     </Text>
                   )}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
+                    style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={styles.small}>Passer</Text>
+                  </Pressable>
                   <View style={styles.footerActions}>
                     <Action
                       label={step === 1 ? (draft.sourceReportId ? 'Fermer' : 'Types') : 'Retour'}
@@ -643,7 +651,7 @@ export function SuspiciousVehicleReportSheet({
                           changeStep(step - 1);
                         }
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
@@ -655,8 +663,8 @@ export function SuspiciousVehicleReportSheet({
                               : 'Suivant'
                         }
                         icon={step === 2 ? CheckCheck : ArrowRight}
-                        onPress={next}
-                        disabled={sending || locating}
+                        onPress={() => next()}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

@@ -6,12 +6,8 @@ select set_config('request.jwt.claims','{"sub":"11111111-1111-4111-8111-11111111
 select public.save_accident_report_step('33333333-3333-4333-8333-333333333333',1,'Lieu de test',18.5,-72.3,12);
 do $$ begin
   assert (select count(*) from public.accident_reports where id='33333333-3333-4333-8333-333333333333' and status='received' and completed_step=1 and accident_type is null and severity='unknown') = 1, 'Step one was not received';
-  begin
+  -- A later answer can be recorded without the preceding details.
     perform public.save_accident_report_step('33333333-3333-4333-8333-333333333333',3,p_severity=>'serious');
-    raise exception 'Skipped step accepted';
-  exception when raise_exception then
-    if sqlerrm <> 'Save the previous step first' then raise; end if;
-  end;
 end $$;
 -- Same UUID retries update the location without a duplicate.
 select public.save_accident_report_step('33333333-3333-4333-8333-333333333333',1,'Lieu corrigé',18.6,-72.2,8);
