@@ -8,12 +8,14 @@ export function UserAvatar({ avatar, size = 96 }: { avatar: AvatarConfig; size?:
   const fill = (name: string) => `url(#${prefix}${name})`;
   const skin = avatarOptions.skin.find(({ id }) => id === avatar.skin)!.color;
   const hair = avatarOptions.hairColor.find(({ id }) => id === avatar.hairColor)!.color;
-  const background = avatarOptions.background.find(({ id }) => id === avatar.background)!.color;
   const longHair = avatar.hair === 'long' || avatar.hair === 'bob';
   const curls = [[65, 56, 15], [82, 43, 17], [103, 40, 17], [124, 44, 17], [141, 57, 14], [59, 73, 10], [147, 75, 10], [73, 64, 12], [94, 57, 14], [116, 59, 13], [134, 66, 11]];
   return (
     <Svg width={size} height={size} viewBox="0 0 200 200" accessible={false}>
       <Defs>
+        <RadialGradient id={`${prefix}shadow`} cx="50%" cy="50%" rx="50%" ry="50%">
+          <Stop offset="0" stopColor="#272033" stopOpacity="0.28" /><Stop offset="1" stopColor="#272033" stopOpacity="0" />
+        </RadialGradient>
         <RadialGradient id={`${prefix}skin`} cx="37%" cy="28%" r="78%">
           <Stop offset="0" stopColor="#FFFFFF" /><Stop offset="0.19" stopColor={skin} />
           <Stop offset="0.72" stopColor={skin} /><Stop offset="1" stopColor="#402218" />
@@ -30,9 +32,7 @@ export function UserAvatar({ avatar, size = 96 }: { avatar: AvatarConfig; size?:
           <Stop offset="1" stopColor="#653326" stopOpacity="0.55" />
         </RadialGradient>
       </Defs>
-      <Circle cx="100" cy="100" r="100" fill={background} />
-      <Circle cx="100" cy="100" r="98" fill={fill('shine')} />
-      <Ellipse cx="101" cy="173" rx="37" ry="7" fill="#272033" opacity="0.1" />
+      <Ellipse cx="101" cy="184" rx="43" ry="10" fill={fill('shadow')} />
       {avatar.hair === 'afro' && <Path d="M45 118C26 110 29 89 34 79C22 65 38 47 48 43C44 26 67 22 77 25C87 11 110 15 118 22C140 13 153 29 154 38C178 39 181 60 172 73C185 92 173 112 158 118Z" fill={fill('hair')} />}
       {longHair && <Path d={avatar.hair === 'long' ? 'M46 87Q39 33 99 29Q165 28 157 98L168 163Q155 183 133 166L67 170Q39 179 35 155Z' : 'M45 87Q42 31 100 30Q159 30 157 92L161 146Q149 165 127 153H71Q47 166 40 146Z'} fill={fill('hair')} />}
       {avatar.hair === 'bun' && <><Circle cx="104" cy="37" r="25" fill={fill('hair')} /><Path d="M47 96Q42 41 100 42Q158 40 155 101Z" fill={fill('hair')} /></>}

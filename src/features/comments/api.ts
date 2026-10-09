@@ -1,7 +1,9 @@
+import type { AvatarConfig } from '@/features/profile/avatar';
 import { supabase } from '@/lib/supabase';
 import type { SafetyReportSummary } from '@/features/safety-report/read';
 
 export type Comment = {
+  avatar?: AvatarConfig | null;
   id: string; parent_id: string | null; root_id: string | null; alias: string | null;
   reply_to: string | null; body: string | null; created_at: string; edited_at: string | null;
   deleted: boolean; hidden: boolean; mine: boolean; likes: number; liked: boolean;

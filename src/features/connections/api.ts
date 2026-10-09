@@ -1,6 +1,8 @@
+import type { AvatarConfig } from '@/features/profile/avatar';
 import { supabase } from '@/lib/supabase';
 
 export type Connection = {
+  avatar?: AvatarConfig | null;
   id: string;
   alias: string;
   email: string | null;

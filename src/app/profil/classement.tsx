@@ -1,3 +1,5 @@
+import { UserAvatar } from '@/components/user-avatar';
+import { parseAvatar } from '@/features/profile/avatar';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
@@ -31,8 +33,8 @@ function Podium({ entries }: { entries: LeaderboardEntry[] }) {
   return <View style={s.podium}>
     {podium.map((entry) => <View key={entry.alias} style={s.podiumColumn}>
       <View style={s.crownSlot}>{entry.rank === 1 && <AppIcon icon={Crown} color={c('#B17D2D', 'warning')} size={25} fill={c('#F3D28A', 'warningSoft')} />}</View>
-      <View style={[s.avatar, entry.rank === 1 ? s.goldAvatar : entry.rank === 2 ? s.silverAvatar : s.bronzeAvatar]}>
-        <Text translate={false} style={s.initial}>{entry.alias.slice(0, 1)}</Text>
+      <View style={s.avatar}>
+        <UserAvatar avatar={parseAvatar(entry.avatar)} size={64} />
         <View style={s.medal}><Text translate={false} style={s.medalText}>{entry.rank}</Text></View>
       </View>
       <Text translate={false} numberOfLines={2} style={s.podiumAlias}>{entry.alias}</Text>
@@ -140,11 +142,7 @@ const useStyles = createThemedStyles((c) => StyleSheet.create({
   podium: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 7, paddingHorizontal: 1 },
   podiumColumn: { flex: 1, maxWidth: 170, minWidth: 0, alignItems: 'center' },
   crownSlot: { height: 31, justifyContent: 'center' },
-  avatar: { ...surfaceDepth(c, 'raised'), width: 58, height: 58, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: c('#FFFFFF', 'border'), marginBottom: 15 },
-  goldAvatar: { backgroundColor: c('#F3D38D', 'warningSoft'), transform: [{ rotate: '-5deg' }] },
-  silverAvatar: { backgroundColor: c('#DEE5E7', 'infoSoft') },
-  bronzeAvatar: { backgroundColor: c('#E8CCB2', 'accentSoft') },
-  initial: { fontSize: 27, fontWeight: '800', color: c('#635638', 'text') },
+  avatar: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
   medal: { position: 'absolute', bottom: -11, alignSelf: 'center', width: 23, height: 23, borderRadius: 9, backgroundColor: c('#FFFFFF', 'elevated'), alignItems: 'center', justifyContent: 'center', ...surfaceDepth(c, 'control') },
   medalText: { fontSize: 11, fontWeight: '800', color: c('#746340', 'text') },
   podiumAlias: { width: '100%', minHeight: 32, textAlign: 'center', fontSize: 11, lineHeight: 15, fontWeight: '700', color: c('#3D4937', 'text') },

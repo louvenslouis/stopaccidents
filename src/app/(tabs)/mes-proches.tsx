@@ -1,3 +1,5 @@
+import { UserAvatar } from '@/components/user-avatar';
+import { parseAvatar } from '@/features/profile/avatar';
 import { SafetyAlertsCard } from '@/features/safety-profile/alerts-card';
 import { AppScreen } from '@/components/app-screen';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -14,7 +16,6 @@ import { useRouter } from 'expo-router';
 import Copy from 'lucide-react-native/icons/copy';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import Share2 from 'lucide-react-native/icons/share-2';
-import UserRound from 'lucide-react-native/icons/user-round';
 import UsersRound from 'lucide-react-native/icons/users-round';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Share, StyleSheet } from 'react-native';
@@ -100,7 +101,7 @@ function ConnectionsContent() {
     const incoming = item.direction === 'incoming';
     return <View key={item.id} style={styles.person}>
       <View style={styles.personIdentity}>
-        <View style={styles.avatar}><UserRound size={20} color={color('#267E70', 'success')} /></View>
+        <UserAvatar avatar={parseAvatar(item.avatar)} size={42} />
         <Text translate={false} selectable style={styles.personAlias}>{item.status === 'accepted' ? (item.email || item.alias) : item.alias}</Text>
         {busy === item.id && <ActivityIndicator size="small" color={color('#267E70', 'success')} />}
       </View>
@@ -206,7 +207,6 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   grow: { flex: 1 },
   person: { gap: 12, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color('#E8E8EA', 'border') },
   personIdentity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: color('#E8F3F0', 'successSoft') },
   personAlias: { flex: 1, fontSize: 16, fontWeight: '600', color: color('#171719', 'text') },
   actions: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' },
   empty: { alignItems: 'center', paddingVertical: 28, gap: 14 },

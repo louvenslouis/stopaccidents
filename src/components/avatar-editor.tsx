@@ -18,7 +18,6 @@ const categories: { id: AvatarFeature; label: string }[] = [
   { id: 'skin', label: 'Teint' }, { id: 'hair', label: 'Coiffure' },
   { id: 'hairColor', label: 'Couleur' }, { id: 'expression', label: 'Expression' },
   { id: 'beard', label: 'Barbe' }, { id: 'glasses', label: 'Lunettes' },
-  { id: 'background', label: 'Fond' },
 ];
 
 export function AvatarEditor({ userId, initial, onClose, onSaved, onboarding = false, embedded = false, onSave }: {

@@ -1,3 +1,5 @@
+import { UserAvatar } from '@/components/user-avatar';
+import { parseAvatar } from '@/features/profile/avatar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, FlatList, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
@@ -147,7 +149,7 @@ export function ReportCommentsSheet({ report, onClose }: { report: SafetyReportS
   function renderComment(comment: Comment, reply = false) {
     const unavailable = comment.deleted || comment.hidden;
     return <View key={comment.id} style={[styles.comment, reply && styles.reply]}>
-      <View style={[styles.avatar, reply && styles.smallAvatar]}><Text translate={false} style={styles.initial}>{(comment.alias ?? '·').slice(0, 1).toUpperCase()}</Text></View>
+      <View style={[styles.avatar, reply && styles.smallAvatar]}><UserAvatar avatar={parseAvatar(comment.avatar)} size={reply ? 28 : 36} /></View>
       <View style={styles.commentContent}>
         <View style={styles.meta}>
           <Text translate={false} style={styles.alias}>{comment.alias ?? '—'}</Text>
@@ -219,8 +221,8 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   close: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 21, backgroundColor: color('#F0F4F1', 'elevated') },
   list: { flex: 1 }, listContent: { padding: 20, paddingBottom: 30, flexGrow: 1 },
   comment: { flexDirection: 'row', gap: 10, marginBottom: 16 }, commentContent: { flex: 1, minWidth: 0 }, reply: { marginBottom: 10 },
-  avatar: { width: 36, height: 36, borderRadius: 13, backgroundColor: color('#E5EEE7', 'successSoft'), alignItems: 'center', justifyContent: 'center', marginTop: 3 },
-  smallAvatar: { width: 28, height: 28, borderRadius: 10 }, initial: { color: color('#37654D', 'success'), fontWeight: '800', fontSize: 14 },
+  avatar: { width: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginTop: 3 },
+  smallAvatar: { width: 28, height: 28, borderRadius: 10 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 32 }, alias: { fontWeight: '700', fontSize: 13, color: color('#243B32', 'text'), flexShrink: 1 },
   you: { fontSize: 10, fontWeight: '700', color: color('#718378', 'muted') }, icon: { marginLeft: 'auto', minWidth: 36, minHeight: 36, alignItems: 'center', justifyContent: 'center' },
   bubble: { borderRadius: 17, borderTopLeftRadius: 4, padding: 13, backgroundColor: color('#F2F5F2', 'elevated'), gap: 6 },

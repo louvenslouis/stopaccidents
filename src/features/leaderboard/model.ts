@@ -1,6 +1,8 @@
+import type { AvatarConfig } from '@/features/profile/avatar';
 export type LeaderboardPeriod = 'all' | 'week' | 'month';
 export type LeaderboardScope = 'country' | 'commune';
 export type LeaderboardEntry = {
+  avatar?: AvatarConfig | null;
   alias: string;
   points: number;
   rank: number;

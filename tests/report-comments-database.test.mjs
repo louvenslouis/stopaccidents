@@ -22,9 +22,13 @@ const write = async (db, action, id = randomUUID(), body = 'Un commentaire', par
 test('comments enforce registered ownership, preserve threads, hide identities and support idempotent likes/reports/moderation', async () => {
  const db = await setup();
  try {
+  await db.exec('reset role');
+  await db.query('update auth.users set raw_user_meta_data=$1 where id=$2', [{ avatar: { version: 1, hair: 'curls', secret: 'hidden' } }, owner]);
+  await db.exec(login(owner));
   const id = randomUUID(), reply = randomUUID(), nested = randomUUID();
   await write(db,'create',id); await write(db,'create',id); await write(db,'create');
   assert.equal((await read(db)).total,2);
+  assert.deepEqual((await read(db)).items[0].avatar, { version: 1, hair: 'curls' });
   await assert.rejects(write(db,'create',randomUUID(),'  '));
   await assert.rejects(write(db,'create',randomUUID(),'x'.repeat(2001)));
   await assert.rejects(write(db,'create',randomUUID(),'Hello',null,draft));

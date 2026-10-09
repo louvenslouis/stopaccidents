@@ -34,6 +34,7 @@ test('leaderboard: periods, commune, merges, ordering, top 100, personal rank an
 
     const owner = randomUUID(), other = randomUUID(), empty = randomUUID();
     for (const id of [owner, other, empty]) await db.query('insert into auth.users(id) values ($1)', [id]);
+    await db.query(`update auth.users set raw_user_meta_data = $1 where id = $2`, [{ avatar: { version: 1, hair: 'long', secret: 'private' }, email: 'private' }, owner]);
     const codes = (await db.query('select code from private.report_communes order by code limit 2')).rows.map(r => r.code);
     const bounds = (await db.query(`select
       date_trunc('week', now() at time zone 'America/Port-au-Prince') at time zone 'America/Port-au-Prince' as week,
@@ -59,11 +60,13 @@ test('leaderboard: periods, commune, merges, ordering, top 100, personal rank an
       (await db.query('select public.read_leaderboard($1,$2,$3) as board', [period, commune, offset])).rows[0].board;
     await db.exec('set role anon');
     const all = await read();
+    assert.deepEqual(all.entries[0].avatar, { version: 1, hair: 'long' });
+    assert.equal(all.entries[1].avatar, null);
     assert.equal(all.total, 2);
     assert.deepEqual(all.entries.map(e => e.points), [100,50]);
     assert.deepEqual(all.entries.map(e => e.rank), [1,2]);
     assert.equal(all.me, null);
-    for (const entry of all.entries) assert.deepEqual(Object.keys(entry).sort(), ['alias','is_me','points','rank']);
+    for (const entry of all.entries) assert.deepEqual(Object.keys(entry).sort(), ['alias','avatar','is_me','points','rank']);
     assert.ok(!JSON.stringify(all).includes(owner));
     await assert.rejects(db.query('select * from public.report_rewards'), e => e.code === '42501');
     await assert.rejects(db.query('select * from public.user_aliases'), e => e.code === '42501');
