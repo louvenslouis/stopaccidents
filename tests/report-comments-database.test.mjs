@@ -32,7 +32,13 @@ test('comments enforce registered ownership, preserve threads, hide identities a
   await assert.rejects(write(db,'create',randomUUID(),'  '));
   await assert.rejects(write(db,'create',randomUUID(),'x'.repeat(2001)));
   await assert.rejects(write(db,'create',randomUUID(),'Hello',null,draft));
-  await assert.rejects(write(db,'like',id));
+  await write(db,'like',id); await write(db,'like',id);
+  let own = (await read(db)).items.find(c=>c.id===id);
+  assert.equal(own.likes,1); assert.equal(own.liked,true);
+  await assert.rejects(write(db,'flag',id),'owners cannot flag their own comments');
+  await write(db,'unlike',id); await write(db,'unlike',id);
+  own = (await read(db)).items.find(c=>c.id===id);
+  assert.equal(own.likes,0); assert.equal(own.liked,false);
   await db.exec(login(other));
   await assert.rejects(write(db,'edit',id)); await assert.rejects(write(db,'delete',id));
   await assert.rejects(write(db,'create',id));

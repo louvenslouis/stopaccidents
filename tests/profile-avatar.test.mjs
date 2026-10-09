@@ -91,7 +91,7 @@ async function editor(saveAvatar) {
       useRef(initial) { const i = index++; return values[i] ??= { current: initial }; },
     },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
-    'react-native': { Modal: 'Modal', StyleSheet: { create: (styles) => styles } },
+    'react-native': { Modal: 'Modal', StyleSheet: { create: (styles) => styles }, useWindowDimensions: () => ({ width: 390, height: 844 }) },
     '@/features/language/native': { Text: 'Text', View: 'View', ScrollView: 'ScrollView' },
     '@/features/appearance/theme-provider': { createThemedStyles: (factory) => () => factory((c) => c), useThemeColor: () => (c) => c },
     '@/features/profile/avatar': model,
@@ -140,4 +140,109 @@ test('failed saves preserve the draft, allow retry, and block duplicate requests
   await flush();
   assert.ok(screen.closed);
   assert.equal(screen.saved.skin, 'fair');
+});
+
+test('legacy avatars keep every existing choice and new layers survive a serialization round trip', () => {
+  const legacy = { version: 1, skin: 'fair', hair: 'bob', hairColor: 'silver', expression: 'wink', beard: 'none', glasses: 'square', background: 'rose' };
+  const restored = model.parseAvatar(legacy);
+  for (const [key, value] of Object.entries(legacy)) assert.equal(restored[key], value);
+  assert.equal(restored.clothing, 'tee');
+  assert.equal(restored.face, 'oval');
+  for (const { avatar } of model.avatarPresets) {
+    assert.deepEqual(model.parseAvatar(JSON.parse(JSON.stringify(avatar))), avatar);
+  }
+  for (const [key, options] of Object.entries(model.avatarOptions)) {
+    for (const { id } of options) assert.equal(model.parseAvatar({ ...restored, [key]: id })[key], id);
+    assert.equal(model.parseAvatar({ ...restored, [key]: { injected: true } })[key], model.defaultAvatar[key]);
+  }
+});
+
+test('combining presets, accessories, outfits and backgrounds can be undone and saved together', async () => {
+  const screen = await editor(async (_user, avatar) => avatar);
+  screen.button('Styles').props.onPress();
+  screen.button('Brise').props.onPress();
+  assert.equal(screen.preview().hair, 'braids');
+  screen.button('Accessoires').props.onPress();
+  screen.button('Perles').props.onPress();
+  screen.button('Monture').props.onPress();
+  screen.button('Or').props.onPress();
+  assert.equal(screen.preview().glasses, 'round');
+  assert.equal(screen.preview().glassesColor, 'gold');
+  screen.button('Annuler la dernière modification').props.onPress();
+  assert.equal(screen.preview().glasses, 'none');
+  screen.button('Tenue').props.onPress();
+  screen.button('Sweat à capuche').props.onPress();
+  screen.button('Fond').props.onPress();
+  screen.button('Lavande').props.onPress();
+  screen.button('Motif').props.onPress();
+  screen.button('Confettis').props.onPress();
+  screen.button('Enregistrer mon avatar').props.onPress();
+  await flush();
+  assert.equal(screen.saved.hair, 'braids');
+  assert.equal(screen.saved.earrings, 'pearl');
+  assert.equal(screen.saved.clothing, 'hoodie');
+  assert.equal(screen.saved.background, 'lavender');
+  assert.equal(screen.saved.backgroundPattern, 'dots');
+});
+
+test('random suggestions are reversible without writing the profile', async () => {
+  let writes = 0;
+  const screen = await editor(async () => { writes++; });
+  screen.button('Avatar aléatoire').props.onPress();
+  const draft = screen.preview();
+  assert.deepEqual(model.parseAvatar(draft), draft);
+  screen.button('Annuler la dernière modification').props.onPress();
+  assert.deepEqual(screen.preview(), model.defaultAvatar);
+  assert.equal(writes, 0);
+});
+
+test('each appearance option renders a distinct vector portrait, including every background', async () => {
+  const React = await import('react');
+  const runtime = await import('react/jsx-runtime');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const svg = { default: 'svg', __esModule: true };
+  for (const name of ['Circle', 'ClipPath', 'Defs', 'Ellipse', 'G', 'LinearGradient', 'Path', 'RadialGradient', 'Rect', 'Stop']) {
+    svg[name] = name[0].toLowerCase() + name.slice(1);
+  }
+  const { UserAvatar } = await load('src/components/user-avatar.tsx', {
+    react: React, 'react/jsx-runtime': runtime, 'react-native-svg': svg, 'react-native': { Platform: { OS: 'web' } },
+    '@/features/profile/avatar': model,
+  });
+  for (const [key, options] of Object.entries(model.avatarOptions)) {
+    const variants = options.map(({ id }) => renderToStaticMarkup(React.createElement(UserAvatar, {
+      avatar: { ...model.defaultAvatar, glasses: key === 'glassesColor' ? 'round' : 'none', headwear: key === 'headwearColor' ? 'straw' : 'none', [key]: id },
+    })));
+    assert.equal(new Set(variants).size, options.length, `Each ${key} option must be visible`);
+    for (const result of variants) {
+      assert.ok(!result.includes('NaN'));
+      assert.ok(!result.includes('undefined'));
+    }
+  }
+});
+
+test('rural styles keep hair choices when headwear is changed, removed, undone and saved', async () => {
+  const screen = await editor(async (_user, avatar) => avatar);
+  screen.button('Styles').props.onPress();
+  screen.button('Récolte').props.onPress();
+  assert.equal(screen.preview().headwear, 'headscarf');
+  assert.equal(screen.preview().hair, 'braids');
+  assert.equal(screen.preview().clothing, 'blouse');
+  screen.button('Accessoires').props.onPress();
+  screen.button('Coiffe').props.onPress();
+  screen.button('Sans coiffe').props.onPress();
+  assert.equal(screen.preview().headwear, 'none');
+  assert.equal(screen.preview().hair, 'braids');
+  screen.button('Couleur coiffe').props.onPress();
+  screen.button('Indigo').props.onPress();
+  assert.equal(screen.preview().headwear, 'straw');
+  assert.equal(screen.preview().headwearColor, 'indigo');
+  screen.button('Annuler la dernière modification').props.onPress();
+  assert.equal(screen.preview().headwear, 'none');
+  screen.button('Coiffe').props.onPress();
+  screen.button('Grand chapeau').props.onPress();
+  screen.button('Enregistrer mon avatar').props.onPress();
+  await flush();
+  assert.equal(screen.saved.headwear, 'wideStraw');
+  assert.equal(screen.saved.hair, 'braids');
+  assert.equal(screen.saved.clothing, 'blouse');
 });

@@ -6,6 +6,7 @@ import { startSupabaseAuthLifecycle } from '@/lib/supabase';
 import { useEffect } from 'react';
 import { ThemeProvider, useThemeColor } from '@/features/appearance/theme-provider';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ReportPreferencesProvider } from '@/features/report-preferences/provider';
 
 export const unstable_settings = {
@@ -26,18 +27,20 @@ export default function RootLayout() {
   useEffect(() => startSupabaseAuthLifecycle(), []);
 
   return (
-    <LanguageProvider>
-      <ThemeProvider>
-        <AppLocationProvider>
-          <LiveLocationProvider>
-            <SafetyAlertsProvider>
-              <ReportPreferencesProvider>
-                <RootNavigator />
-              </ReportPreferencesProvider>
-            </SafetyAlertsProvider>
-          </LiveLocationProvider>
-        </AppLocationProvider>
-      </ThemeProvider>
-    </LanguageProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LanguageProvider>
+        <ThemeProvider>
+          <AppLocationProvider>
+            <LiveLocationProvider>
+              <SafetyAlertsProvider>
+                <ReportPreferencesProvider>
+                  <RootNavigator />
+                </ReportPreferencesProvider>
+              </SafetyAlertsProvider>
+            </LiveLocationProvider>
+          </AppLocationProvider>
+        </ThemeProvider>
+      </LanguageProvider>
+    </GestureHandlerRootView>
   );
 }

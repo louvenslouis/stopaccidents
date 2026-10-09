@@ -168,8 +168,8 @@ export function ReportCommentsSheet({ report, onClose }: { report: SafetyReportS
           {comment.edited_at && !unavailable && <Text style={styles.date}>Modifié</Text>}
           {!unavailable && <>
             <Pressable accessibilityRole="button" disabled={busy} onPress={() => begin('reply', comment)} style={styles.tool}><Text style={styles.toolText}>Répondre</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={comment.liked ? 'Retirer mon like' : 'Aimer ce commentaire'} accessibilityState={{ selected: comment.liked, disabled: busy || comment.mine }} disabled={busy || comment.mine} onPress={() => void mutate(comment.liked ? 'unlike' : 'like', comment)} style={styles.tool}>
-              <Heart size={15} color={comment.liked ? '#C65358' : color('#75837C', 'muted')} fill={comment.liked ? '#C65358' : 'none'} /><Text translate={false} style={styles.toolText}>{comment.likes || ''}</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel={comment.liked ? 'Retirer mon like' : 'Aimer ce commentaire'} accessibilityState={{ selected: comment.liked, disabled: busy || loading }} disabled={busy || loading} onPress={() => void mutate(comment.liked ? 'unlike' : 'like', comment)} style={styles.likeButton}>
+              <Heart size={18} color={comment.liked ? '#C65358' : color('#75837C', 'muted')} fill={comment.liked ? '#C65358' : 'none'} /><Text translate={false} style={styles.toolText}>{comment.likes}</Text>
             </Pressable>
           </>}
         </View>
@@ -228,6 +228,7 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   bubble: { borderRadius: 17, borderTopLeftRadius: 4, padding: 13, backgroundColor: color('#F2F5F2', 'elevated'), gap: 6 },
   body: { fontSize: 15, lineHeight: 22, color: color('#2B3B33', 'text') }, unavailable: { fontSize: 13, fontStyle: 'italic', color: color('#7A867F', 'muted') },
   tools: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }, date: { fontSize: 10, color: color('#7A867F', 'muted') },
+  likeButton: { minWidth: 44, minHeight: 44, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   tool: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 5 }, toolText: { fontSize: 12, fontWeight: '600', color: color('#65776C', 'secondary') },
   threadButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7 }, threadText: { fontSize: 12, fontWeight: '700', color: color('#296957', 'success') },
   thread: { marginLeft: 17, paddingLeft: 15, borderLeftWidth: 2, borderColor: color('#DDE9DF', 'border'), marginBottom: 18 },

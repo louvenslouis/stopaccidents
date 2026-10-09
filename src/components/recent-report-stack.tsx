@@ -1,12 +1,31 @@
-import * as Haptics from 'expo-haptics';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, PanResponder, Platform, StyleSheet } from 'react-native';
-import Reanimated, { LinearTransition, ReduceMotion, useReducedMotion } from 'react-native-reanimated';
+import { useState, type ReactNode } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { LinearTransition, ReduceMotion, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 import { View } from '@/features/language/native';
 import { createThemedStyles } from '@/features/appearance/theme-provider';
 import type { SafetyReportSummary } from '@/features/safety-report/read';
 import { stackReportKey } from '@/features/home/report-stack';
+import { useReportStackGesture } from '@/features/home/use-report-stack-gesture';
 import { LatestAccidentCard } from './latest-accident-card';
+
+function StackCard({ index, current, position, width, children }: {
+  index: number;
+  current: boolean;
+  position: SharedValue<number>;
+  width: SharedValue<number>;
+  children: ReactNode;
+}) {
+  const animatedStyle = useAnimatedStyle(() => ({
+    // Absolute page coordinates survive the React selection commit unchanged.
+    transform: [{ translateX: (index - position.value) * width.value }],
+  }));
+  return <Animated.View
+    pointerEvents={current ? 'auto' : 'none'} aria-hidden={!current}
+    style={[!current && { position: 'absolute', top: 0, left: 0, right: 0 }, animatedStyle]}>
+    {children}
+  </Animated.View>;
+}
 
 export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }: {
   reports: SafetyReportSummary[];
@@ -16,99 +35,38 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
   onOpen: (id: string) => void;
 }) {
   const styles = useStyles();
-  const reducedMotion = useReducedMotion();
   const [selected, setSelected] = useState<string | null>(null);
-  const [moving, setMoving] = useState(false);
-  const busy = useRef(false);
-  const gestureUntil = useRef(0);
-  const width = useRef(360);
-  const [offset] = useState(() => new Animated.Value(0));
-  const [cardWidth, setCardWidth] = useState(360);
-  const handoff = useRef(false);
-  const index = Math.max(0, reports.findIndex(report => stackReportKey(report) === selected));
-  // Commit the already mounted incoming card before resetting its translation.
-  useLayoutEffect(() => {
-    if (!handoff.current) return;
-    offset.setValue(0);
-    handoff.current = false;
-    busy.current = false;
-    setMoving(false);
-  }, [selected, offset]);
-  const canOlder = index < reports.length - 1;
-  const canNewer = index > 0;
+  const keys = reports.map(stackReportKey);
+  const index = Math.max(0, keys.indexOf(selected ?? ''));
+  const { gesture, position, width, canInteract } = useReportStackGesture(keys, index, setSelected);
+  const backStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: 1 }, { translateY: 4 },
+      { rotate: `${-1.1 + Math.abs(position.value - Math.round(position.value)) * 1.4}deg` },
+    ],
+  }));
 
-  const settle = useCallback(() => {
-    if (reducedMotion) { offset.setValue(0); busy.current = false; setMoving(false); return; }
-    Animated.spring(offset, { toValue: 0, useNativeDriver: true, stiffness: 280, damping: 28, mass: 0.8 }).start(() => {
-      busy.current = false;
-      setMoving(false);
-    });
-  }, [offset, reducedMotion]);
-  const navigate = useCallback((direction: number) => {
-    const next = reports[index + direction];
-    if (!next) { settle(); return; }
-    busy.current = true;
-    setMoving(true);
-    if (Platform.OS !== 'web') void Haptics.selectionAsync().catch(() => {});
-    Animated.timing(offset, {
-      toValue: -direction * cardWidth,
-      duration: reducedMotion ? 0 : 260,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) { settle(); return; }
-      handoff.current = true;
-      setSelected(stackReportKey(next));
-    });
-  }, [index, reports, offset, reducedMotion, settle, cardWidth]);
-  // PanResponder stores these callbacks; ref reads happen only during gestures.
-  // eslint-disable-next-line react-hooks/refs
-  const responder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, gesture) => !busy.current && reports.length > 1 && Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.5,
-    // Gesture callbacks run on input, never during render.
-    // eslint-disable-next-line react-hooks/purity
-    onPanResponderGrant: () => { gestureUntil.current = Date.now() + 1000; busy.current = true; setMoving(true); offset.stopAnimation(); },
-    onPanResponderMove: (_, gesture) => {
-      const allowed = gesture.dx < 0 ? canOlder : canNewer;
-      offset.setValue(gesture.dx * (allowed ? 1 : 0.18));
-    },
-    onPanResponderRelease: (_, gesture) => {
-      // eslint-disable-next-line react-hooks/purity
-      gestureUntil.current = Date.now() + 400;
-      if (Math.abs(gesture.dx) > width.current * 0.2 || (Math.abs(gesture.dx) > 24 && Math.abs(gesture.vx) > 0.5)) navigate(gesture.dx < 0 ? 1 : -1);
-      else settle();
-    },
-    onPanResponderTerminate: settle,
-    onPanResponderTerminationRequest: () => false,
-  }), [reports.length, canOlder, canNewer, offset, navigate, settle]);
   return <View style={styles.section}>
-    <View style={reports.length > 1 && styles.deck} onLayout={event => { width.current = event.nativeEvent.layout.width;
-      setCardWidth(previous => Math.abs(previous - event.nativeEvent.layout.width) > 1 ? event.nativeEvent.layout.width : previous); }}>
+    <View style={reports.length > 1 && styles.deck} onLayout={({ nativeEvent }) => {
+      width.value = Math.max(1, nativeEvent.layout.width);
+    }}>
       {reports.length > 2 && <View pointerEvents="none" aria-hidden style={[styles.backCard, styles.farCard]} />}
-      {reports.length > 1 && <Animated.View pointerEvents="none" aria-hidden style={[styles.backCard, { transform: [{ translateX: 1 }, { translateY: 4 }, { rotate: offset.interpolate({ inputRange: [-360, 0, 360], outputRange: ['-0.4deg', '-1.1deg', '-0.4deg'], extrapolate: 'clamp' }) }] }]} />}
-      <Reanimated.View {...responder.panHandlers} layout={LinearTransition.duration(220).reduceMotion(ReduceMotion.System)} style={{ overflow: 'hidden', borderRadius: 26, zIndex: 2 }}>
-        {reports.length ? reports.map((item, itemIndex) => {
-          const distance = itemIndex - index;
-          if (Math.abs(distance) > 1) return null;
-          const current = distance === 0;
-          return <Animated.View key={stackReportKey(item)}
-            pointerEvents={current && !moving ? 'auto' : 'none'} aria-hidden={!current}
-            style={[
-              !current && { position: 'absolute', top: 0, left: 0, right: 0 },
-              { opacity: offset.interpolate({
-                inputRange: [-(distance + 1) * cardWidth, -distance * cardWidth, -(distance - 1) * cardWidth],
-                outputRange: [0, 1, 0], extrapolate: 'clamp',
-              }), transform: [{ translateX: Animated.add(offset, distance * cardWidth) }] },
-            ]}>
-            <LatestAccidentCard canInteract={() => !busy.current && Date.now() > gestureUntil.current} report={item} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />
-          </Animated.View>;
-        }) : <LatestAccidentCard report={null} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />}
-      </Reanimated.View>
+      {reports.length > 1 && <Animated.View pointerEvents="none" aria-hidden style={[styles.backCard, backStyle]} />}
+      <GestureDetector gesture={gesture} touchAction="pan-y">
+        <Animated.View collapsable={false} layout={LinearTransition.duration(220).reduceMotion(ReduceMotion.System)} style={styles.viewport}>
+          {reports.length ? reports.map((item, itemIndex) => Math.abs(itemIndex - index) <= 1 && (
+            <StackCard key={stackReportKey(item)} index={itemIndex} current={itemIndex === index} position={position} width={width}>
+              <LatestAccidentCard canInteract={canInteract} report={item} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />
+            </StackCard>
+          )) : <LatestAccidentCard report={null} loading={loading} error={error} onRefresh={onRefresh} onOpen={onOpen} hideHeader />}
+        </Animated.View>
+      </GestureDetector>
     </View>
   </View>;
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
   section: { marginTop: 16, width: '100%', maxWidth: 640, alignSelf: 'center' },
+  viewport: { overflow: 'hidden', borderRadius: 26, zIndex: 2 },
   deck: { marginTop: 8, marginHorizontal: 10, marginBottom: 12, transform: [{ translateX: -2.5 }, { translateY: -8 }] },
   backCard: {
     position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 1,
