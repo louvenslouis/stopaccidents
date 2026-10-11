@@ -125,9 +125,10 @@ function FloatingTabList({ blurTarget, ...props }: TabListProps & {
     indicatorX.value = previousWidth.current !== buttonWidth
       ? destination
       : withSpring(destination, {
-          damping: 24,
+          // Double the settling time while preserving the spring's motion curve.
+          damping: 48,
           stiffness: 650,
-          mass: 0.5,
+          mass: 2,
           reduceMotion: ReduceMotion.System,
         });
     previousWidth.current = buttonWidth;
