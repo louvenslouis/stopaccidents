@@ -7,7 +7,7 @@ import Merge from 'lucide-react-native/icons/merge';
 import Undo2 from 'lucide-react-native/icons/undo-2';
 import { AnimatedPressable } from './ui/animated-pressable';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode, type ComponentProps } from 'react';
 import { ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
 import RefreshCw from 'lucide-react-native/icons/refresh-cw';
 import Check from 'lucide-react-native/icons/check';
@@ -50,7 +50,6 @@ export function ReportCardActions({ report, onUpdated, canInteract, overlay = fa
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [menu, setMenu] = useState<{ top: number; left: number } | null>(null);
-  const menuAnchor = useRef<View>(null);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const confirmation = useReportConfirmation(report);
@@ -60,14 +59,12 @@ export function ReportCardActions({ report, onUpdated, canInteract, overlay = fa
     const subscription = Dimensions.addEventListener('change', () => setMenu(null));
     return () => subscription.remove();
   }, []);
-  function openMenu() {
+  function openMenu(x: number, y: number, anchorWidth: number, anchorHeight: number) {
     if (canInteract && !canInteract()) return;
-    menuAnchor.current?.measureInWindow((x, y, anchorWidth, anchorHeight) => {
-      const below = y + anchorHeight + 8;
-      setMenu({
-        left: Math.max(insets.left + 12, Math.min(x + anchorWidth - 205, width - insets.right - 217)),
-        top: Math.max(insets.top + 8, below + (canModerate ? 196 : 58) > height - insets.bottom ? y - (canModerate ? 204 : 66) : below),
-      });
+    const below = y + anchorHeight + 8;
+    setMenu({
+      left: Math.max(insets.left + 12, Math.min(x + anchorWidth - 205, width - insets.right - 217)),
+      top: Math.max(insets.top + 8, below + (canModerate ? 196 : 58) > height - insets.bottom ? y - (canModerate ? 204 : 66) : below),
     });
   }
   const [flagging, setFlagging] = useState(false);
@@ -104,30 +101,26 @@ export function ReportCardActions({ report, onUpdated, canInteract, overlay = fa
     }} style={[styles.headerIcon, overlay && styles.glassIcon]}>
       <Share2 size={19} color={overlay ? '#FFFFFF' : '#182C2A'} />
     </AnimatedPressable>
-    <View ref={menuAnchor} collapsable={false}>
-      <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded: !!menu }} onPress={openMenu} style={[styles.headerIcon, overlay && styles.glassIcon]}>
-        <Ellipsis size={23} color={overlay ? '#FFFFFF' : '#182C2A'} />
-      </AnimatedPressable>
-    </View>
+    <ReportOptionsButton overlay={overlay} expanded={!!menu} onOpen={openMenu} />
   </View>;
   const footer = <>
     <View style={[styles.actions, overlay && styles.overlayActions]}>
-      <AnimatedPressable haptic="selection" pressedScale={0.97} accessibilityRole="button" accessibilityLabel="Mettre à jour l’info" accessibilityState={{ disabled: !canUpdate }} disabled={!canUpdate}
-        onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setUpdating(true); }} style={[styles.update, overlay && [styles.glassAction, width < 400 && styles.glassNarrow], !canUpdate && styles.dimmed]}>
+      <ResponsiveReportAction overlay={overlay} label="Mettre à jour" haptic="selection" pressedScale={0.97} accessibilityRole="button" accessibilityLabel="Mettre à jour l’info" accessibilityState={{ disabled: !canUpdate }} disabled={!canUpdate}
+        onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setUpdating(true); }} style={[overlay ? styles.glassAction : styles.update, !canUpdate && styles.dimmed]}>
         {overlay ? <RefreshCw size={16} color="#FFFFFF" /> : <MessageSquarePlus size={18} color="#FFFFFF" />}
-        <Text numberOfLines={1} style={[styles.updateText, overlay && styles.glassText]}>{overlay ? "Mise à jour" : "Mettre à jour"}</Text>
-      </AnimatedPressable>
-      <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button"
+        <Text numberOfLines={1} style={[styles.updateText, overlay && styles.glassText]}>Mettre à jour</Text>
+      </ResponsiveReportAction>
+      <ResponsiveReportAction overlay={overlay} label={confirmed ? "Confirmé" : "Confirmer"} haptic="selection" pressedScale={0.94} accessibilityRole="button"
         accessibilityLabel={confirmed ? 'Retirer ma confirmation' : 'Confirmer cette information'}
         accessibilityHint={confirmationDisabled && !confirmation.pending ? 'Vous avez déjà témoigné sur cet événement ou il est clos' : undefined}
         accessibilityState={{ selected: confirmed, busy: confirmation.pending, disabled: confirmationDisabled }} disabled={confirmationDisabled}
-        onPress={() => { if (!canInteract || canInteract()) void confirmation.toggle(); }} style={[styles.confirm, confirmed && styles.confirmed, overlay && [styles.glassAction, width < 400 && styles.glassNarrow], overlay && confirmed && styles.glassSelected, confirmationDisabled && !confirmation.pending && styles.dimmed]}>
+        onPress={() => { if (!canInteract || canInteract()) void confirmation.toggle(); }} style={[overlay ? styles.glassAction : styles.confirm, !overlay && confirmed && styles.confirmed, overlay && confirmed && styles.glassSelected, confirmationDisabled && !confirmation.pending && styles.dimmed]}>
         {confirmation.pending ? <ActivityIndicator size="small" color={overlay ? '#FFFFFF' : color('#296957', 'success')} /> : overlay ? <Check size={16} color="#FFFFFF" /> : <ThumbsUp size={18} color={overlay ? '#FFFFFF' : color('#296957', 'success')} fill={confirmed ? (overlay ? '#FFFFFF' : color('#296957', 'success')) : 'none'} />}
         <Text numberOfLines={1} style={[styles.confirmText, overlay && styles.glassText]}>{confirmed ? 'Confirmé' : 'Confirmer'}</Text>
         {!overlay && <View style={[styles.count, confirmed && styles.countSelected, overlay && styles.glassCount]}>
           <Text translate={false} style={[styles.countText, overlay && styles.glassText]}>{confirmation.value ? (confirmation.value.count > 999 ? '999+' : confirmation.value.count) : '–'}</Text>
         </View>}
-      </AnimatedPressable>
+      </ResponsiveReportAction>
       <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button" accessibilityLabel="Ouvrir les commentaires" onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setCommentsOpen(true); }} style={[styles.comments, overlay && styles.glassIcon]}>
         <MessageCircle size={21} color={overlay ? '#FFFFFF' : color('#296957', 'success')} />
 
@@ -193,11 +186,47 @@ export function ReportCardActions({ report, onUpdated, canInteract, overlay = fa
     </Modal>
   </>;
 }
+function ResponsiveReportAction({ overlay, label, children, style, ...props }: ComponentProps<typeof AnimatedPressable> & {
+  overlay: boolean;
+  label: string;
+}) {
+  const styles = useStyles();
+  const [buttonWidth, setButtonWidth] = useState(0);
+  const [labelWidth, setLabelWidth] = useState(0);
+  // Spend the spare horizontal padding before putting the icon above the text.
+  const tight = labelWidth > 0 && buttonWidth > 0 && labelWidth + 16 + 4 + 14 > buttonWidth;
+  const stacked = tight && labelWidth + 16 + 4 + 6 > buttonWidth;
+  return <AnimatedPressable {...props} style={[style, overlay && tight && { paddingHorizontal: 2, paddingVertical: stacked ? 3 : 8 }]} onLayout={event => setButtonWidth(event.nativeEvent.layout.width)}>
+    {overlay ? <>
+      <View style={[styles.responsiveContent, stacked && styles.stackedContent]}>{children}</View>
+      <ScrollView horizontal scrollEnabled={false} pointerEvents="none" aria-hidden accessible={false} style={styles.labelMeasure}>
+        <Text accessible={false} style={styles.measureText} onLayout={event => setLabelWidth(event.nativeEvent.layout.width)}>{label}</Text>
+      </ScrollView>
+    </> : children}
+  </AnimatedPressable>;
+}
+// Each rendered header owns its anchor, including the expanded card's header.
+function ReportOptionsButton({ overlay, expanded, onOpen }: {
+  overlay: boolean;
+  expanded: boolean;
+  onOpen: (x: number, y: number, width: number, height: number) => void;
+}) {
+  const anchor = useRef<View>(null);
+  const styles = useStyles();
+  return <View ref={anchor} collapsable={false}>
+    <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded }} onPress={() => anchor.current?.measureInWindow(onOpen)} style={[styles.headerIcon, overlay && styles.glassIcon]}>
+      <Ellipsis size={23} color={overlay ? '#FFFFFF' : '#182C2A'} />
+    </AnimatedPressable>
+  </View>;
+}
 const useStyles = createThemedStyles(color => StyleSheet.create({
   overlayActions: { marginTop: 0, gap: 5 },
-  glassAction: { flex: 1, width: undefined, minHeight: 42, paddingHorizontal: 6, paddingVertical: 8, borderRadius: 24, flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: '#FFFFFF80', backgroundColor: '#14202B88', alignItems: 'center', justifyContent: 'center' },
+  glassAction: { flex: 1, minWidth: 0, height: 42, paddingHorizontal: 6, paddingVertical: 8, borderRadius: 24, flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: '#FFFFFF80', backgroundColor: '#14202B88', alignItems: 'center', justifyContent: 'center' },
   glassIcon: { width: 44, height: 44, minHeight: 44, borderRadius: 22, borderColor: '#FFFFFF80', backgroundColor: '#14202B88' },
-  glassNarrow: { flexDirection: 'column', paddingHorizontal: 3, paddingVertical: 4, gap: 3 },
+  responsiveContent: { width: '100%', flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' },
+  stackedContent: { flexDirection: 'column', gap: 3 },
+  labelMeasure: { position: 'absolute', left: 0, right: 0, top: 0, height: 0, opacity: 0 },
+  measureText: { color: '#FFFFFF', fontSize: 10, fontWeight: '600', flexShrink: 0 },
   glassText: { color: '#FFFFFF', fontSize: 10, fontWeight: '600', flexShrink: 1 },
   glassCount: { minWidth: 15, height: 18, paddingHorizontal: 2, backgroundColor: '#FFFFFF22', borderRadius: 9 },
   glassSelected: { backgroundColor: '#226B5799', borderColor: '#D6FFE6' },

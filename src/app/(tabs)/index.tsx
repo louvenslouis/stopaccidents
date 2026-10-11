@@ -21,7 +21,7 @@ import { AppIcon } from '@/components/ui/app-icon';
 import Bell from 'lucide-react-native/icons/bell';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -57,7 +57,11 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width: initialWidth } = useWindowDimensions();
   const [webWidth, setWebWidth] = useState(0);
-  const [cardActive, setCardActive] = useState(false);
+  const [cardActivities, setCardActivities] = useState(0);
+  const cardActive = cardActivities > 0;
+  const setCardActive = useCallback((active: boolean) => {
+    setCardActivities(count => Math.max(0, count + (active ? 1 : -1)));
+  }, []);
   const [reportOpen, setReportOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
   const [reportType, setReportType] = useState<ReportType | null>(null);

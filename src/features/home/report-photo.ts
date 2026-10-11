@@ -23,12 +23,17 @@ export async function readReportCardPhotos(report: SafetyReportSummary, signal: 
     report.event_id ? readReportEvent(report.report_kind, report.id, signal) : Promise.resolve(null),
   ]);
   if (signal.aborted) return [];
+  if (detailResult.status === 'rejected' && eventResult.status === 'rejected') throw detailResult.reason;
   const photos: Photo[] = detailResult.status === 'fulfilled' ? [...(detailResult.value?.photos ?? [])] : [];
   const event = eventResult.status === 'fulfilled' ? eventResult.value : null;
-  if (!event || event.event_id !== report.event_id) return rankReportPhotos(photos);
+  if (!event || event.event_id !== report.event_id) {
+    if (!photos.length && (detailResult.status === 'rejected' || eventResult.status === 'rejected')) throw new Error('Photos indisponibles.');
+    return rankReportPhotos(photos);
+  }
   const candidates = event.contributions
     .filter((item) => item.id !== report.id && item.report_kind === report.report_kind)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  let failedRead = detailResult.status === 'rejected';
   // Bound concurrent reads while collecting photos from every testimony of this event.
   for (let offset = 0; offset < candidates.length; offset += 4) {
     if (signal.aborted) return [];
@@ -36,7 +41,9 @@ export async function readReportCardPhotos(report: SafetyReportSummary, signal: 
     if (signal.aborted) return [];
     for (const result of results) {
       if (result.status === 'fulfilled') photos.push(...(result.value?.photos ?? []));
+      else failedRead = true;
     }
   }
+  if (!photos.length && failedRead) throw new Error('Photos indisponibles.');
   return rankReportPhotos(photos);
 }

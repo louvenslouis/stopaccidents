@@ -16,6 +16,12 @@ Use `<Text translate={false}>` for user contributions, addresses and names;
 translate fallback application labels separately. Input values are never translated.
 For animated text and browser titles, use `useLanguage().t` explicitly.
 
+Both interface languages use left-to-right writing. The presentation components
+remove invisible Unicode direction controls from displayed text and form input,
+including restored values, so pasted text cannot reverse letters or words.
+Accents, punctuation, line breaks and emoji remain intact. Existing stored
+contributions are normalized only when displayed.
+
 `documents.ts` localizes fixed map labels and the exported share description,
 while preserving public URLs and user-provided locations. French calendar month
 labels have explicit Creole equivalents because Intl support for `ht` varies.

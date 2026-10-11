@@ -23,7 +23,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return () => { active = false; };
   }, []);
   useEffect(() => {
-    if (Platform.OS === 'web') document.documentElement.lang = language;
+    if (Platform.OS === 'web') {
+      document.documentElement.lang = language;
+      document.documentElement.dir = 'ltr';
+    }
   }, [language]);
   const setLanguage = useCallback((next: Language) => {
     if (!ready) return;

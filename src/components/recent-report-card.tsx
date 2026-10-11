@@ -39,7 +39,6 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   const location = useReportLocation(report);
   const severity = report.report_kind === 'accident' ? accidentSeverity(report) : null;
   const ref = useRef<NativeView>(null);
-  const [photoWidth, setPhotoWidth] = useState(0);
   const [origin, setOrigin] = useState<Origin | null>(null);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -75,12 +74,12 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   }, [origin, setCardActive]);
   function content(header: ReactNode, footer: ReactNode, expanded: boolean) {
     return <>
-      <View onLayout={expanded ? undefined : event => setPhotoWidth(event.nativeEvent.layout.width)} style={[styles.photo, expanded && { height: Math.max(270, Math.min(420, targetHeight * 0.51)) }]}>
-        {photo ? <Image recyclingKey={photo} source={{ uri: photo }} cachePolicy="memory-disk" contentFit="cover" onError={() => setFailedPhotos(old => [...old, photo])} style={StyleSheet.absoluteFill} /> : <View pointerEvents="none" style={styles.noPhoto}><View style={styles.orbit} /><ReportIllustration kind={report.report_kind} size={80} /><Text style={styles.fallbackTitle}>{labels[report.report_kind]}</Text></View>}
+      <View style={[styles.photo, expanded && { flexGrow: 0, flexShrink: 0, height: Math.max(270, Math.min(420, targetHeight * 0.51)) }]}>
+        {photo ? <Image recyclingKey={`${report.report_kind}:${report.event_id || report.id}`} source={{ uri: photo, cacheKey: photo.split('?')[0] }} cachePolicy="memory-disk" transition={180} contentFit="cover" onError={() => setFailedPhotos(old => [...old, photo])} style={StyleSheet.absoluteFill} /> : <View pointerEvents="none" style={styles.noPhoto}><View style={styles.orbit} /><ReportIllustration kind={report.report_kind} size={80} /><Text style={styles.fallbackTitle}>{labels[report.report_kind]}</Text></View>}
         <View pointerEvents="none" style={styles.shade} />
         {!expanded && <AnimatedPressable accessibilityRole="button" accessibilityLabel={`Ouvrir : ${labels[report.report_kind]}`} onPress={open} style={StyleSheet.absoluteFill}><View /></AnimatedPressable>}
         <View style={styles.top}>
-          {expanded ? <View style={styles.closePlaceholder} /> : <AnimatedPressable accessibilityRole="button" accessibilityLabel="Voir plus" onPress={open} style={[styles.expandButton, photoWidth > 0 && { width: (photoWidth - 70) / 2 }]}><ArrowUpRight size={16} color="#FFFFFF" /><Text numberOfLines={1} style={styles.expandLabel}>Voir plus</Text></AnimatedPressable>}
+          {expanded ? <View style={styles.closePlaceholder} /> : <AnimatedPressable accessibilityRole="button" accessibilityLabel="Ouvrir" onPress={open} style={styles.expandButton}><ArrowUpRight size={16} color="#FFFFFF" /><Text numberOfLines={1} style={styles.expandLabel}>Ouvrir</Text></AnimatedPressable>}
           {header}
         </View>
         <View style={styles.photoBottom}>
@@ -144,8 +143,8 @@ function ScrollingAddress({ address, active }: { address: string; active: boolea
   </ScrollView>;
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
-  card: { borderRadius: 28, overflow: 'hidden', borderWidth: 1.5, borderColor: '#FFFFFFCC', backgroundColor: color('#FFFFFF', 'surface'), boxShadow: '0px 12px 28px rgba(45,65,100,0.16)' },
-  photo: { height: 250, backgroundColor: '#274355', justifyContent: 'space-between' },
+  card: { aspectRatio: 307 / 361, borderRadius: 28, overflow: 'hidden', borderWidth: 1.5, borderColor: '#FFFFFFCC', backgroundColor: color('#FFFFFF', 'surface'), boxShadow: '0px 12px 28px rgba(45,65,100,0.16)' },
+  photo: { flexGrow: 1, flexShrink: 1, backgroundColor: '#274355', justifyContent: 'space-between' },
   noPhoto: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 16, overflow: 'hidden' },
   orbit: { position: 'absolute', width: 320, height: 320, borderRadius: 160, borderWidth: 48, borderColor: '#FFFFFF0B', top: -90, right: -100 },
   fallbackTitle: { color: '#D2E5F5', fontSize: 22, fontWeight: '600', textAlign: 'center', paddingHorizontal: 20 },
@@ -155,7 +154,7 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   openScroll: { flex: 1 },
   closePlaceholder: { width: 42, height: 42 },
   circle: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#10232DC0', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FFFFFF60' },
-  expandButton: { height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 6, paddingVertical: 8, borderRadius: 24, borderWidth: 1, borderColor: '#FFFFFF80', backgroundColor: '#14202B88', flexShrink: 0 },
+  expandButton: { width: 'auto', height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 24, borderWidth: 1, borderColor: '#FFFFFF80', backgroundColor: '#14202B88', flexShrink: 0 },
   expandLabel: { color: '#FFFFFF', fontSize: 10, fontWeight: '600', flexShrink: 1 },
   photoBottom: { paddingHorizontal: 8, paddingBottom: 27 },
   photoTitle: { paddingHorizontal: 6, marginBottom: 16 },

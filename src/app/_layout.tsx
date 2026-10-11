@@ -27,7 +27,7 @@ export default function RootLayout() {
   useEffect(() => startSupabaseAuthLifecycle(), []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, direction: 'ltr' }}>
       <LanguageProvider>
         <ThemeProvider>
           <AppLocationProvider>

@@ -112,7 +112,7 @@ function photoHookFixture() {
     react: {
       useState(initial) {
         const index = cursor++;
-        if (!(index in values)) values[index] = initial;
+        if (!(index in values)) values[index] = typeof initial === 'function' ? initial() : initial;
         return [values[index], value => { values[index] = value; }];
       },
       useEffect(fn, dependencies) {
@@ -125,7 +125,7 @@ function photoHookFixture() {
         }
       },
     },
-    './report-photo': { readReportCardPhotos: (report, signal) => new Promise(resolve => { requests.push({ report, signal, resolve }); }) },
+    './report-photo': { readReportCardPhotos: (report, signal) => new Promise((resolve, reject) => { requests.push({ report, signal, resolve, reject }); }) },
   };
   const exports = {};
   new Function('require', 'exports', ts.transpileModule(hookSource, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(name => deps[name], exports);
@@ -138,6 +138,11 @@ function photoHookFixture() {
       return urls;
     },
     dispose() { for (const effect of effects) effect?.cleanup?.(); },
+    remount() {
+      for (const effect of effects) effect?.cleanup?.();
+      values.length = 0;
+      effects.length = 0;
+    },
   };
 }
 const flushPhotos = () => new Promise(resolve => setImmediate(resolve));
@@ -212,4 +217,46 @@ test('photo-ready and failed states keep the hero dimensions, title, actions and
   const failed = render(['first.jpg', 'second.jpg']);
   assert.equal(find(failed, 'Image'), null);
   assert.deepEqual(failed.props.style, base.props.style);
+});
+
+test('summary updates and transient refresh failures keep the current event photo visible', async () => {
+  const f = photoHookFixture();
+  try {
+    f.render();
+    f.requests[0].resolve(['original.jpg']);
+    await flushPhotos();
+    const updated = { ...report, last_observed_at: '2026-10-10', testimony_count: 4 };
+    assert.deepEqual(f.render(updated), ['original.jpg']);
+    assert.deepEqual(f.render(updated, true), ['original.jpg']);
+    assert.deepEqual(f.render(updated, false), ['original.jpg']);
+    f.requests.at(-1).reject(new Error('offline'));
+    await flushPhotos();
+    assert.deepEqual(f.render(updated), ['original.jpg']);
+    f.render(updated, false, 1);
+    f.requests.at(-1).resolve(['new.jpg', 'original.jpg']);
+    await flushPhotos();
+    assert.deepEqual(f.render(updated, false, 1), ['new.jpg', 'original.jpg']);
+  } finally { f.dispose(); }
+});
+
+test('returning to a card restores its cached photo while unrelated events stay empty', async () => {
+  const f = photoHookFixture();
+  try {
+    f.render();
+    f.requests[0].resolve(['original.jpg']);
+    await flushPhotos();
+    f.remount();
+    assert.deepEqual(f.render(), ['original.jpg']);
+    assert.deepEqual(f.render({ ...report, id: 'other', event_id: 'other' }), []);
+    assert.deepEqual(f.render({ ...report, id: 'latest-testimony' }), ['original.jpg']);
+  } finally { f.dispose(); }
+});
+
+test('failed reads stay distinguishable from a report that genuinely has no photos', async () => {
+  const offline = fixture({ current: new Error('offline') }, [], new Error('offline'));
+  await assert.rejects(offline.readReportCardPhotos(report, new AbortController().signal));
+  const withoutEvent = fixture({ current: new Error('offline') }, [], null);
+  await assert.rejects(withoutEvent.readReportCardPhotos({ ...report, event_id: undefined }, new AbortController().signal));
+  const empty = fixture();
+  assert.deepEqual(await empty.readReportCardPhotos(report, new AbortController().signal), []);
 });

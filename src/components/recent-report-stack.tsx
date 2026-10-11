@@ -37,7 +37,6 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
   return <View style={styles.section}>
     {reports.length ? <>
       <View style={styles.stage}>
-        <View pointerEvents="none" style={styles.glow} />
         <GestureDetector gesture={gesture} touchAction="pan-y">
           <Animated.View collapsable={false} style={styles.deck} onLayout={({ nativeEvent }) => { width.value = Math.max(1, nativeEvent.layout.width); }}>
             {reports.map((item, itemIndex) => itemIndex >= index - 1 && itemIndex <= index + 2 && <StackCard key={stackReportKey(item)} index={itemIndex} current={itemIndex === index} position={position} width={width}>
@@ -52,8 +51,7 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
   section: { marginTop: 8, width: '100%', maxWidth: 640, alignSelf: 'center' },
-  stage: { paddingTop: 8, paddingBottom: 36, overflow: 'hidden' },
-  deck: { marginHorizontal: 24 },
-  glow: { position: 'absolute', left: '5%', right: '5%', top: 40, bottom: 12, borderRadius: 90, backgroundColor: color('#E4EAF8', 'elevated') },
+  stage: { paddingTop: 16, paddingBottom: 36, overflow: 'visible' },
+  deck: { marginHorizontal: 8, overflow: 'visible' },
   error: { color: color('#A53930', 'accent'), fontSize: 12, marginTop: 8 },
 }));

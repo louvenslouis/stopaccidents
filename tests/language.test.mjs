@@ -39,14 +39,63 @@ test('catalog has no empty translations or invented interpolation parameters', (
     for (const parameter of target.match(/\{\d+\}/g) ?? []) assert.ok(source.includes(parameter), source);
   }
 });
+const direction = await compile('src/features/language/text-direction.ts');
 const native = await compile('src/features/language/native.tsx', {
   react: React, 'react/jsx-runtime': jsxRuntime,
-  'react-native': { Text: 'span', TextInput: 'input', View: 'div', Pressable: 'button', ScrollView: 'div', Image: 'img' },
+  'react-native': { Text: ({ style, ...props }) => React.createElement('span', props), TextInput: 'input', View: 'div', Pressable: 'button', ScrollView: 'div', Image: 'img' },
   './language-provider': { useLanguage: () => ({ t: (value) => t(value, 'ht') }) },
+  './text-direction': direction,
 });
 test('text rendering translates full sentences and preserves explicitly marked user content', () => {
   assert.equal(renderToStaticMarkup(React.createElement(native.Text, null, 'Étape ', 2, ' : Gravité')), '<span>Etap 2: Gravite</span>');
   assert.equal(renderToStaticMarkup(React.createElement(native.Text, { translate: false }, 'Travail')), '<span>Travail</span>');
+});
+test('direction controls cannot reverse displayed testimony letters or nested text', () => {
+  const testimony = '\u202EVéhicule rouge — AB-123\u202C';
+  assert.equal(renderToStaticMarkup(React.createElement(native.Text, { translate: false }, testimony)), '<span>Véhicule rouge — AB-123</span>');
+  const children = React.createElement(React.Fragment, null,
+    'Repère : ', React.createElement(native.Text, { translate: false }, '\u2067Delmas 33\u2069'), ' — ', '\u202E2 véhicules\u202C');
+  assert.equal(renderToStaticMarkup(React.createElement(native.Text, { translate: false }, children)), '<span>Repère : <span>Delmas 33</span> — 2 véhicules</span>');
+  assert.equal(renderToStaticMarkup(React.createElement(native.Text, null, '\u202EÉtape ', 2, ' : Gravité\u202C')), '<span>Etap 2: Gravite</span>');
+});
+test('normalization preserves accents, whitespace, punctuation, emoji and natural script order', () => {
+  const content = '  Pétion-Ville, Kreyòl ayisyen : é e\u0301 — AB-123 (2)\n👩\u200D🚒 שלום العربية  ';
+  assert.equal(direction.normalizeTextDirection(content), content);
+  assert.equal(direction.normalizeTextDirection('\u061C\u200E\u200F\u202A\u202B\u202C\u202D\u202E\u2066\u2067\u2068\u2069' + content), content);
+});
+test('form input removes reversal controls from restored values and newly typed or pasted text', () => {
+  const changes = [];
+  const style = { textAlign: 'center', fontSize: 17, textAlignVertical: 'top' };
+  const props = {
+    value: '\u202ETravail — Pétion-Ville\u202C',
+    placeholder: '\u202EAutres informations\u202C',
+    accessibilityLabel: '\u202EAutres informations\u202C',
+    multiline: true, maxLength: 500, selection: { start: 4, end: 4 }, style,
+    onChangeText: value => changes.push(value),
+  };
+  const ref = { current: null };
+  const input = native.TextInput.render(props, ref).props;
+  assert.equal(input.value, 'Travail — Pétion-Ville');
+  assert.equal(input.placeholder, 'Lòt enfòmasyon');
+  assert.equal(input.accessibilityLabel, 'Lòt enfòmasyon');
+  assert.equal(input.ref, ref);
+  assert.deepEqual(input.style, [style, direction.leftToRightText]);
+  assert.equal(input.multiline, true);
+  assert.equal(input.maxLength, 500);
+  assert.deepEqual(input.selection, props.selection);
+  input.onChangeText('\u202EVoiture rouge\u202C\nAB-123');
+  input.onChangeText('Kreyòl 👩\u200D🚒');
+  assert.deepEqual(changes, ['Voiture rouge\nAB-123', 'Kreyòl 👩\u200D🚒']);
+  const uncontrolled = native.TextInput.render({ defaultValue: '\u202EDelmas 33\u202C' }, null).props;
+  assert.equal(uncontrolled.defaultValue, 'Delmas 33');
+  assert.equal(uncontrolled.value, undefined);
+  assert.equal(uncontrolled.onChangeText, undefined);
+});
+test('read-only text keeps its alignment while using left-to-right writing', () => {
+  const style = { textAlign: 'right', fontWeight: '700' };
+  const text = native.Text.render({ translate: false, children: '\u202EAB-123\u202C', style }, null);
+  assert.deepEqual(text.props.style, [style, direction.leftToRightText]);
+  assert.equal(text.props.children, 'AB-123');
 });
 const documents = await compile('src/features/language/documents.ts', { './translate': model });
 test('shared descriptions are translated without changing the location or public URL', () => {
