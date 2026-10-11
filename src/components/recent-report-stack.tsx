@@ -40,7 +40,7 @@ export function RecentReportStack({ reports, loading, error, onRefresh, onOpen }
         <GestureDetector gesture={gesture} touchAction="pan-y">
           <Animated.View collapsable={false} style={styles.deck} onLayout={({ nativeEvent }) => { width.value = Math.max(1, nativeEvent.layout.width); }}>
             {reports.map((item, itemIndex) => itemIndex >= index - 1 && itemIndex <= index + 2 && <StackCard key={stackReportKey(item)} index={itemIndex} current={itemIndex === index} position={position} width={width}>
-              <RecentReportCard report={item} active={itemIndex === index} loading={loading} canInteract={canInteract} onRefresh={onRefresh} onOpen={onOpen} />
+              <RecentReportCard report={item} active={itemIndex === index} loading={loading} canInteract={canInteract} stackGesture={gesture} onRefresh={onRefresh} onOpen={onOpen} />
             </StackCard>)}
           </Animated.View>
         </GestureDetector>

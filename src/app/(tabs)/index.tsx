@@ -144,6 +144,10 @@ export default function HomeScreen() {
         title="Accueil"
         hideIntro
         headerStyle={styles.homeHeader}
+        headerSeparatorStyle={[
+          styles.homeHeaderSeparator,
+          { width: width || initialWidth, transform: [{ translateX: -(width || initialWidth) / 2 }] },
+        ]}
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerLeft={
@@ -289,8 +293,14 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
   },
   homeHeader: {
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: themeColor('#FFFFFF', 'border'),
+  },
+  homeHeaderSeparator: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    height: 1,
+    backgroundColor: themeColor('#FFFFFF', 'border'),
+    opacity: 0.45,
   },
   homeContent: {
     paddingTop: 16,

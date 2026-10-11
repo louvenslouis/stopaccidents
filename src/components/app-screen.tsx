@@ -17,6 +17,7 @@ type AppScreenProps = {
   headerLeft?: ReactNode;
   headerRight?: ReactNode;
   headerStyle?: StyleProp<ViewStyle>;
+  headerSeparatorStyle?: StyleProp<ViewStyle>;
   children?: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -30,6 +31,7 @@ export function AppScreen({
   headerLeft,
   headerRight,
   headerStyle,
+  headerSeparatorStyle,
   children,
   contentContainerStyle,
   onScroll,
@@ -63,6 +65,7 @@ export function AppScreen({
             <Text style={styles.title}>{title}</Text>
           </View>}
           {headerRight}
+          {headerSeparatorStyle && <View pointerEvents="none" style={headerSeparatorStyle} />}
         </Animated.View>
         {!hideIntro && description && <Animated.Text
           entering={FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System)}

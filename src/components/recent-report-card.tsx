@@ -3,7 +3,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { Modal, StyleSheet, useWindowDimensions, type View as NativeView } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, type GestureType } from 'react-native-gesture-handler';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Clock3 from 'lucide-react-native/icons/clock-3';
@@ -27,8 +27,9 @@ const labels: Record<SafetyReportSummary['report_kind'], string> = {
 const timing = { duration: 340, easing: Easing.out(Easing.cubic), reduceMotion: ReduceMotion.System };
 type Origin = { x: number; y: number; width: number; height: number };
 
-export function RecentReportCard({ report, active, loading, canInteract, onRefresh }: {
+export function RecentReportCard({ report, active, loading, canInteract, stackGesture, onRefresh }: {
   report: SafetyReportSummary; active: boolean; loading: boolean; canInteract: () => boolean; onRefresh: () => void; onOpen: (id: string) => void;
+  stackGesture: GestureType;
 }) {
   const styles = useStyles();
   const setCardActive = useContext(ReportCardActivityContext);
@@ -36,7 +37,9 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   const [detailRevision, setDetailRevision] = useState(0);
   const photos = useReportCardPhotos(report, loading, detailRevision);
   const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
-  const photo = photos.find(url => !failedPhotos.includes(url));
+  const usablePhotos = photos.filter(url => !failedPhotos.includes(url));
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const photo = usablePhotos.find(url => url.split('?')[0] === selectedPhoto?.split('?')[0]) ?? usablePhotos[0];
   const location = useReportLocation(report);
   const severity = report.report_kind === 'accident' ? accidentSeverity(report) : null;
   const ref = useRef<NativeView>(null);
@@ -76,8 +79,9 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   function content(header: ReactNode, footer: ReactNode, expanded: boolean) {
     return <>
       <View style={[styles.photo, expanded && { flexGrow: 0, flexShrink: 0, height: Math.max(270, Math.min(420, targetHeight * 0.51)) }]}>
-        <ReportCardPhoto photo={photo} identity={`${report.report_kind}:${report.event_id || report.id}`} enabled={active && (expanded || !origin)}
-          canInteract={expanded ? () => true : canInteract} onError={() => { if (photo) setFailedPhotos(old => [...old, photo]); }}
+        <ReportCardPhoto photo={photo} photos={usablePhotos} carousel={expanded} stackGesture={stackGesture} onPhotoChange={setSelectedPhoto}
+          identity={`${report.report_kind}:${report.event_id || report.id}`} enabled={active && (expanded || !origin)}
+          canInteract={expanded ? () => true : canInteract} onError={uri => setFailedPhotos(old => [...old, uri])}
           fallback={<View pointerEvents="none" style={styles.noPhoto}><View style={styles.orbit} /><ReportIllustration kind={report.report_kind} size={80} /><Text style={styles.fallbackTitle}>{labels[report.report_kind]}</Text></View>}>
         {controls => <>
         {controls(<View pointerEvents="box-none" style={styles.top}>
