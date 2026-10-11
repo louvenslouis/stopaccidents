@@ -18,22 +18,25 @@ export async function readReportCardPhotos(report: SafetyReportSummary, signal: 
     : report.report_kind === 'suspicious_vehicle' ? readSuspiciousVehicleReport
     : async (id: string, request: AbortSignal) => ({ photos: await readReportPhotos(report.report_kind, id, request) });
   if (signal.aborted) return [];
-  const detail = await read(report.id, signal);
-  if (signal.aborted || !detail) return [];
-  const own = rankReportPhotos(detail.photos ?? []);
-  if (own.length) return own;
-  if (!report.event_id || (report.testimony_count ?? 1) < 2) return [];
-  const event = await readReportEvent(report.report_kind, report.id, signal);
-  if (signal.aborted || !event || event.event_id !== report.event_id) return [];
+  const [detailResult, eventResult] = await Promise.allSettled([
+    read(report.id, signal),
+    report.event_id ? readReportEvent(report.report_kind, report.id, signal) : Promise.resolve(null),
+  ]);
+  if (signal.aborted) return [];
+  const photos: Photo[] = detailResult.status === 'fulfilled' ? [...(detailResult.value?.photos ?? [])] : [];
+  const event = eventResult.status === 'fulfilled' ? eventResult.value : null;
+  if (!event || event.event_id !== report.event_id) return rankReportPhotos(photos);
   const candidates = event.contributions
     .filter((item) => item.id !== report.id && item.report_kind === report.report_kind)
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
-  for (const candidate of candidates) {
+  // Bound concurrent reads while collecting photos from every testimony of this event.
+  for (let offset = 0; offset < candidates.length; offset += 4) {
     if (signal.aborted) return [];
-    const contribution = await read(candidate.id, signal);
+    const results = await Promise.allSettled(candidates.slice(offset, offset + 4).map(candidate => read(candidate.id, signal)));
     if (signal.aborted) return [];
-    const photos = rankReportPhotos(contribution?.photos ?? []);
-    if (photos.length) return photos;
+    for (const result of results) {
+      if (result.status === 'fulfilled') photos.push(...(result.value?.photos ?? []));
+    }
   }
-  return [];
+  return rankReportPhotos(photos);
 }

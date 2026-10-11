@@ -3,13 +3,21 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import ts from 'typescript';
 const source = await readFile('src/features/home/report-photo.ts', 'utf8');
-function fixture(details = {}, contributions = []) {
+function fixture(details = {}, contributions = [], event = { event_id: 'event', contributions }) {
   const calls = [];
-  const read = async (id) => { calls.push(id); return details[id] ?? { photos: [] }; };
+  const read = async (id) => {
+    calls.push(id);
+    const detail = details[id];
+    if (detail instanceof Error) throw detail;
+    return typeof detail === 'function' ? detail() : detail ?? { photos: [] };
+  };
   const deps = {
     '@/features/accident-report/read': { readAccident: read },
     '@/features/safety-report/read': { readSuspiciousVehicleReport: read },
-    '@/features/report-events/api': { readReportEvent: async () => ({ event_id: 'event', contributions }) },
+    '@/features/report-events/api': { readReportEvent: async () => {
+      if (event instanceof Error) throw event;
+      return event;
+    } },
     '@/features/report-events/photos': { readReportPhotos: async (_kind, id) => (await read(id)).photos },
   };
   const exports = {};
@@ -18,20 +26,26 @@ function fixture(details = {}, contributions = []) {
 }
 const report = { id: 'current', report_kind: 'accident', event_id: 'event', testimony_count: 3 };
 const photo = (url, day) => ({ url, storage_path: url ?? 'missing', captured_at: `2026-10-0${day}T10:00:00Z` });
-test('photo state prefers usable photos of the displayed report, newest first', async () => {
+test('a single report keeps its usable photos, newest first', async () => {
   const f = fixture({ current: { photos: [photo('old.jpg', 1), photo(null, 3), photo('new.jpg', 2)] } });
   assert.deepEqual(await f.readReportCardPhotos(report, new AbortController().signal), ['new.jpg', 'old.jpg']);
   assert.deepEqual(f.calls, ['current']);
 });
-test('photo fallback uses only the most recent matching testimony in the same event', async () => {
+test('card photos include all matching testimonies with the newest image first', async () => {
   const contributions = [
+    { ...report, created_at: '2026-10-01' },
     { id: 'old', report_kind: 'accident', created_at: '2026-10-01' },
     { id: 'unrelated-kind', report_kind: 'suspicious_vehicle', created_at: '2026-10-04' },
     { id: 'new', report_kind: 'accident', created_at: '2026-10-03' },
   ];
-  const f = fixture({ new: { photos: [photo('testimony.jpg', 3)] } }, contributions);
-  assert.deepEqual(await f.readReportCardPhotos(report, new AbortController().signal), ['testimony.jpg']);
-  assert.deepEqual(f.calls, ['current', 'new']);
+  const f = fixture({
+    current: { photos: [photo('original.jpg', 1)] },
+    new: { photos: [photo('testimony.jpg', 3)] },
+    old: { photos: [photo('updated-older-testimony.jpg', 4), photo(null, 5)] },
+    'unrelated-kind': { photos: [photo('unrelated.jpg', 5)] },
+  }, contributions);
+  assert.deepEqual(await f.readReportCardPhotos(report, new AbortController().signal), ['updated-older-testimony.jpg', 'testimony.jpg', 'original.jpg']);
+  assert.deepEqual(f.calls, ['current', 'new', 'old']);
 });
 test('all report types can display images while canceled reads never borrow another image', async () => {
   const f = fixture();
@@ -44,11 +58,121 @@ test('all report types can display images while canceled reads never borrow anot
 
 test('new photo collections supply cards and matching testimonies for all seven kinds', async () => {
   for (const kind of ['fire', 'gathering', 'breakdown', 'gunfire', 'kidnapping', 'armed_presence', 'barricade']) {
-    const f = fixture({ witness: { photos: [photo(`${kind}.jpg`, 3)] } }, [
+    const f = fixture({ current: { photos: [photo('original.jpg', 1)] }, witness: { photos: [photo(`${kind}.jpg`, 3)] } }, [
       { id: 'witness', report_kind: kind, created_at: '2026-10-03' },
     ]);
-    assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: kind }, new AbortController().signal), [`${kind}.jpg`]);
+    assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: kind }, new AbortController().signal), [`${kind}.jpg`, 'original.jpg']);
   }
+});
+
+test('photos added by Mise à jour appear even before the testimony count refreshes', async () => {
+  for (const kind of ['accident', 'suspicious_vehicle']) {
+    const f = fixture({ current: { photos: [photo('original.jpg', 1)] }, witness: { photos: [photo('update.jpg', 3)] } }, [
+      { id: 'witness', report_kind: kind, created_at: '2026-10-03' },
+    ]);
+    assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: kind, testimony_count: 1 }, new AbortController().signal), ['update.jpg', 'original.jpg']);
+  }
+});
+
+test('another event or a missing event ID cannot supply a card image', async () => {
+  const details = { current: { photos: [photo('own.jpg', 1)] }, witness: { photos: [photo('other-event.jpg', 3)] } };
+  const contributions = [{ id: 'witness', report_kind: 'accident', created_at: '2026-10-03' }];
+  for (const changes of [{ event_id: 'another-event' }, { event_id: undefined }]) {
+    const f = fixture(details, contributions);
+    assert.deepEqual(await f.readReportCardPhotos({ ...report, ...changes }, new AbortController().signal), ['own.jpg']);
+    assert.deepEqual(f.calls, ['current']);
+  }
+});
+
+test('a failed photo read does not hide photos from the other testimonies', async () => {
+  const contributions = [
+    { id: 'broken', report_kind: 'accident', created_at: '2026-10-04' },
+    { id: 'witness', report_kind: 'accident', created_at: '2026-10-03' },
+  ];
+  const f = fixture({ current: new Error('offline'), broken: new Error('unavailable'), witness: { photos: [photo('update.jpg', 3)] } }, contributions);
+  assert.deepEqual(await f.readReportCardPhotos(report, new AbortController().signal), ['update.jpg']);
+  const offlineEvent = fixture({ current: { photos: [photo('own.jpg', 1)] } }, contributions, new Error('offline'));
+  assert.deepEqual(await offlineEvent.readReportCardPhotos(report, new AbortController().signal), ['own.jpg']);
+});
+
+test('canceling while testimony photos load discards the obsolete card images', async () => {
+  const controller = new AbortController();
+  const f = fixture({
+    current: { photos: [photo('original.jpg', 1)] },
+    witness: () => { controller.abort(); return { photos: [photo('update.jpg', 3)] }; },
+  }, [{ id: 'witness', report_kind: 'accident', created_at: '2026-10-03' }]);
+  assert.deepEqual(await f.readReportCardPhotos(report, controller.signal), []);
+});
+
+const hookSource = await readFile('src/features/home/use-report-card-photos.ts', 'utf8');
+function photoHookFixture() {
+  let cursor = 0;
+  const values = [], effects = [], pending = [], requests = [];
+  const deps = {
+    react: {
+      useState(initial) {
+        const index = cursor++;
+        if (!(index in values)) values[index] = initial;
+        return [values[index], value => { values[index] = value; }];
+      },
+      useEffect(fn, dependencies) {
+        const index = cursor++;
+        if (!effects[index] || dependencies.some((value, i) => value !== effects[index].dependencies[i])) {
+          pending.push(() => {
+            effects[index]?.cleanup?.();
+            effects[index] = { dependencies, cleanup: fn() };
+          });
+        }
+      },
+    },
+    './report-photo': { readReportCardPhotos: (report, signal) => new Promise(resolve => { requests.push({ report, signal, resolve }); }) },
+  };
+  const exports = {};
+  new Function('require', 'exports', ts.transpileModule(hookSource, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(name => deps[name], exports);
+  return {
+    requests,
+    render(selected = report, refreshing = false, revision = 0) {
+      cursor = 0;
+      const urls = exports.useReportCardPhotos(selected, refreshing, revision);
+      for (const effect of pending.splice(0)) effect();
+      return urls;
+    },
+    dispose() { for (const effect of effects) effect?.cleanup?.(); },
+  };
+}
+const flushPhotos = () => new Promise(resolve => setImmediate(resolve));
+test('closing Mise à jour reloads photos when the event summary is unchanged', async () => {
+  const f = photoHookFixture();
+  try {
+    assert.deepEqual(f.render(), []);
+    f.requests[0].resolve(['original.jpg']);
+    await flushPhotos();
+    assert.deepEqual(f.render(), ['original.jpg']);
+    f.render(report, false, 1);
+    assert.equal(f.requests.length, 2);
+    f.requests[1].resolve(['update.jpg', 'original.jpg']);
+    await flushPhotos();
+    assert.deepEqual(f.render(report, false, 1), ['update.jpg', 'original.jpg']);
+  } finally { f.dispose(); }
+});
+test('refreshing and switching cards cannot restore images from an obsolete request', async () => {
+  const f = photoHookFixture();
+  try {
+    f.render();
+    f.render(report, true);
+    assert.equal(f.requests[0].signal.aborted, true);
+    f.render(report, false);
+    assert.equal(f.requests.length, 2);
+    const other = { ...report, id: 'other', event_id: 'other-event' };
+    assert.deepEqual(f.render(other), []);
+    assert.equal(f.requests[1].signal.aborted, true);
+    f.requests[2].resolve(['other.jpg']);
+    await flushPhotos();
+    f.requests[0].resolve(['stale-first.jpg']);
+    f.requests[1].resolve(['stale-refresh.jpg']);
+    await flushPhotos();
+    assert.deepEqual(f.render(other), ['other.jpg']);
+  } finally { f.dispose(); }
 });
 
 const heroSource = await readFile('src/components/report-ticket-design.tsx', 'utf8');

@@ -81,6 +81,7 @@ export function LatestAccidentCard({
   const themeColor = useThemeColor();
 
   const [expanded, setExpanded] = useState(false);
+  const [photoRevision, setPhotoRevision] = useState(0);
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: withTiming(expanded ? '180deg' : '0deg', disclosureTiming) }],
   }));
@@ -92,7 +93,7 @@ export function LatestAccidentCard({
   const isBreakdown = report?.report_kind === 'breakdown';
   const severity = report?.report_kind === 'accident' ? accidentSeverity(report) : null;
   const location = useReportLocation(report);
-  const photos = useReportCardPhotos(report, loading);
+  const photos = useReportCardPhotos(report, loading, photoRevision);
   const reportLabel = report?.report_kind === 'gathering' ? 'Rassemblement' : report?.report_kind === 'fire' ? 'Incendie' : isGunfire ? 'Tirs entendus' : isSuspiciousVehicle ? 'Vehicule Suspect' : isArmedPresence ? 'Présence d’hommes armés' : isBarricade ? 'Route barricadée' : isBreakdown ? 'Véhicule en panne' : isKidnapping
     ? 'Enlèvement'
     : report?.report_kind === 'accident'
@@ -120,7 +121,7 @@ export function LatestAccidentCard({
         </Pressable>
       </View>}
       {report ? (
-        <ReportCardActions key={reportSelection(report)} report={report} onUpdated={onRefresh} canInteract={canInteract}>
+        <ReportCardActions key={reportSelection(report)} report={report} onUpdated={() => { setPhotoRevision(value => value + 1); onRefresh(); }} canInteract={canInteract}>
           {({ header, footer }) => <ContrastSurface style={[styles.card, styles.compactCard]}>
             <ReportTicketHero kind={report.report_kind} title={reportLabel} actions={header} photos={photos}
               expanded={expanded} accessibilityLabel={`${expanded ? 'Réduire' : 'Déployer'} le signalement : ${reportLabel}`}

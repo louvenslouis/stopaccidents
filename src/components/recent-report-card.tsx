@@ -32,13 +32,13 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   const styles = useStyles();
   const setCardActive = useContext(ReportCardActivityContext);
   const color = useThemeColor();
-  const photos = useReportCardPhotos(report, loading);
+  const [detailRevision, setDetailRevision] = useState(0);
+  const photos = useReportCardPhotos(report, loading, detailRevision);
   const [failedPhotos, setFailedPhotos] = useState<string[]>([]);
   const photo = photos.find(url => !failedPhotos.includes(url));
   const location = useReportLocation(report);
   const severity = report.report_kind === 'accident' ? accidentSeverity(report) : null;
   const ref = useRef<NativeView>(null);
-  const [detailRevision, setDetailRevision] = useState(0);
   const [photoWidth, setPhotoWidth] = useState(0);
   const [origin, setOrigin] = useState<Origin | null>(null);
   const { width, height } = useWindowDimensions();
