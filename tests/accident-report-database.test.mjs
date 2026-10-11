@@ -1,18 +1,19 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('PostgreSQL: atomic submission, validation, ownership and storage isolation', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   try {
     // Minimal Supabase system schemas; the real migration and RLS policies are unmodified.
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin;
       create role authenticated nologin;
       create schema auth;
       create schema storage;
-      create table auth.users (id uuid primary key, is_anonymous boolean not null default false);
+      create table auth.users (id uuid primary key, is_anonymous boolean not null default false, email text, raw_user_meta_data jsonb not null default '{}'::jsonb);
       create function auth.uid() returns uuid language sql stable as $$
         select (nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'sub')::uuid
       $$;

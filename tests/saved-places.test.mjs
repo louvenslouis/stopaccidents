@@ -6,22 +6,14 @@ import ts from 'typescript';
 const source = await readFile('src/features/profile/saved-places.ts', 'utf8');
 
 function fixture({ row = null, readError = null, writeError = null } = {}) {
-  const calls = { tables: [], selects: [], upserts: [] };
+  const calls = { reads: [], writes: [] };
   const supabase = {
-    from(table) {
-      calls.tables.push(table);
-      return {
-        select(columns) {
-          calls.selects.push(columns);
-          return {
-            maybeSingle: async () => ({ data: row, error: readError }),
-          };
-        },
-        async upsert(value, options) {
-          calls.upserts.push({ value, options });
-          return { error: writeError };
-        },
-      };
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'user-1', is_anonymous: false } } }, error: null }) },
+    async rpc(name, args) {
+      if (name === 'read_saved_places') { calls.reads.push(name); return { data: row, error: readError }; }
+      assert.equal(name, 'save_saved_places');
+      calls.writes.push(args.p_places);
+      return { error: writeError };
     },
   };
   const { outputText } = ts.transpileModule(source, {
@@ -118,13 +110,11 @@ test('reading returns the private row or an empty form when none exists', async 
     home: null,
     work: null,
   });
-  assert.deepEqual(populated.calls.selects, [
-    'home_address,home_latitude,home_longitude,work_address,work_latitude,work_longitude',
-  ]);
+  assert.deepEqual(populated.calls.reads, ['read_saved_places']);
   await assert.rejects(fixture({ readError: { message: 'offline' } }).readSavedPlaces(), /charger/);
 });
 
-test('saving upserts normalized addresses against the signed-in user id', async () => {
+test('saving sends normalized addresses to the owner-checked encryption RPC', async () => {
   const f = fixture();
   const saved = await f.saveSavedPlaces('user-1', {
     home: { address: '  Rue   Capois ', latitude: 18.54, longitude: -72.33 },
@@ -134,15 +124,9 @@ test('saving upserts normalized addresses against the signed-in user id', async 
     home: { address: 'Rue Capois', latitude: 18.54, longitude: -72.33 },
     work: null,
   });
-  assert.equal(f.calls.tables[0], 'user_saved_places');
-  assert.equal(f.calls.upserts[0].value.user_id, 'user-1');
-  assert.equal(f.calls.upserts[0].value.home_address, 'Rue Capois');
-  assert.equal(f.calls.upserts[0].value.home_latitude, 18.54);
-  assert.equal(f.calls.upserts[0].value.home_longitude, -72.33);
-  assert.equal(f.calls.upserts[0].value.work_address, '');
-  assert.equal(f.calls.upserts[0].value.work_latitude, null);
-  assert.deepEqual(f.calls.upserts[0].options, { onConflict: 'user_id' });
-  assert.ok(!Number.isNaN(Date.parse(f.calls.upserts[0].value.updated_at)));
+  assert.deepEqual(f.calls.writes[0], { home_address: 'Rue Capois', home_latitude: 18.54, home_longitude: -72.33, work_address: '', work_latitude: null, work_longitude: null });
+  await assert.rejects(f.saveSavedPlaces('other-user', { home: saved.home, work: null }), /session a changé/);
+  assert.equal(f.calls.writes.length, 1);
 
   const failed = fixture({ writeError: { message: 'offline' } });
   await assert.rejects(

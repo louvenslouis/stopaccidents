@@ -1,109 +1,32 @@
+-- Owner-only RPCs encrypt locations before persistence; all fixture data is rolled back.
 begin;
-insert into auth.users(id) values
-  ('dddddddd-dddd-4ddd-8ddd-dddddddddddd'),
-  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee');
-
+insert into auth.users(id) values('11111111-1111-4111-8111-111111111111'),('22222222-2222-4222-8222-222222222222');
 set local role authenticated;
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"dddddddd-dddd-4ddd-8ddd-dddddddddddd","role":"authenticated"}',
-  true
-);
-
-insert into public.user_saved_places(
-  user_id,
-  home_address,
-  home_latitude,
-  home_longitude,
-  work_address,
-  work_latitude,
-  work_longitude,
-  updated_at
-) values (
-  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-  '12, Rue Capois, Port-au-Prince',
-  18.5432,
-  -72.3350,
-  'Delmas 33, Port-au-Prince',
-  18.5510,
-  -72.3020,
-  now()
-) on conflict (user_id) do update set
-  home_address = excluded.home_address,
-  home_latitude = excluded.home_latitude,
-  home_longitude = excluded.home_longitude,
-  work_address = excluded.work_address,
-  work_latitude = excluded.work_latitude,
-  work_longitude = excluded.work_longitude,
-  updated_at = now();
-
-insert into public.user_saved_places(
-  user_id,
-  home_address,
-  home_latitude,
-  home_longitude,
-  work_address,
-  work_latitude,
-  work_longitude,
-  updated_at
-) values (
-  'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
-  '12, Rue Capois, Port-au-Prince',
-  18.5432,
-  -72.3350,
-  'Pétion-Ville, Ouest',
-  18.5125,
-  -72.2853,
-  now()
-) on conflict (user_id) do update set
-  home_address = excluded.home_address,
-  home_latitude = excluded.home_latitude,
-  home_longitude = excluded.home_longitude,
-  work_address = excluded.work_address,
-  work_latitude = excluded.work_latitude,
-  work_longitude = excluded.work_longitude,
-  updated_at = now();
-
+select set_config('request.jwt.claims','{"sub":"11111111-1111-4111-8111-111111111111"}',true);
+select public.save_saved_places('{"home_address":"Maison test","work_address":"","home_latitude":18.55,"home_longitude":-72.31}');
 do $$ begin
-  assert (
-    select home_address = '12, Rue Capois, Port-au-Prince'
-      and home_latitude = 18.5432
-      and home_longitude = -72.3350
-      and work_address = 'Pétion-Ville, Ouest'
-      and work_latitude = 18.5125
-      and work_longitude = -72.2853
-    from public.user_saved_places
-  ), 'Owner could not save and update both precise places';
-
-  begin
-    update public.user_saved_places set home_latitude = 21.0;
-    raise exception 'Out-of-bounds home point allowed';
-  exception when check_violation then null; end;
-
-  begin
-    insert into public.user_saved_places(user_id, home_address)
-    values ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'Adresse étrangère');
-    raise exception 'Cross-user insert allowed';
-  exception when insufficient_privilege then null; end;
+ assert public.read_saved_places()->>'home_address'='Maison test';
+ assert (select home_address='' and home_latitude is null and encrypted_payload like 'enc:1:%' from public.user_saved_places);
+ begin
+ perform public.save_saved_places('{"home_address":"Hors zone","work_address":"","home_latitude":95,"home_longitude":-72.31}');
+ raise exception 'Invalid coordinates accepted';
+ exception when check_violation then null; end;
+ begin
+ insert into public.user_saved_places(user_id,home_address) values('22222222-2222-4222-8222-222222222222','Forbidden');
+ raise exception 'Direct plaintext write accepted';
+ exception when insufficient_privilege then null; end;
 end $$;
-
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee","role":"authenticated"}',
-  true
-);
-do $$ declare affected integer; begin
-  assert (
-    select count(*) from public.user_saved_places
-    where user_id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'
-  ) = 0, 'Cross-user read allowed';
-
-  update public.user_saved_places
-  set home_address = 'Adresse attaquante'
-  where user_id = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
-  get diagnostics affected = row_count;
-  assert affected = 0, 'Cross-user update allowed';
+select public.save_saved_places('{"home_address":"Nouvelle maison","work_address":"Bureau","home_latitude":18.56,"home_longitude":-72.30,"work_latitude":18.54,"work_longitude":-72.32}');
+do $$ begin assert public.read_saved_places()->>'home_address'='Nouvelle maison'; end $$;
+select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-222222222222"}',true);
+do $$ begin
+ assert public.read_saved_places() is null;
+ assert (select count(*)=0 from public.user_saved_places);
 end $$;
-
+set local role anon;
+do $$ begin
+ begin perform public.read_saved_places(); raise exception 'Anonymous access accepted';
+ exception when insufficient_privilege then null; end;
+end $$;
 rollback;
-select 'PASS: private home and work addresses with owner-only RLS' as result;
+select 'PASS: encrypted saved places preserve owner access and reject cross-account access' result;

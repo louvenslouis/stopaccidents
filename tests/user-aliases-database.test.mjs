@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('PostgreSQL: aliases are generated once, unique, private and exposed safely on testimony', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   const existingId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
   const guestId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
   const reportId = '11111111-1111-4111-8111-111111111111';
   try {
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin;
       create role authenticated nologin;
       create schema auth;
@@ -34,7 +35,7 @@ test('PostgreSQL: aliases are generated once, unique, private and exposed safely
       await db.exec(await readFile(new URL(name, migrations), 'utf8'));
     }
     const aliasFor = async (id) => (await db.query(
-      'select alias from public.user_aliases where user_id=$1', [id],
+      'select alias from private.user_aliases where user_id=$1', [id],
     )).rows[0]?.alias;
     const originalAlias = await aliasFor(existingId);
     assert.match(originalAlias, /^[a-z][a-z0-9]{3,39}$/);
@@ -69,7 +70,7 @@ test('PostgreSQL: aliases are generated once, unique, private and exposed safely
     await db.exec(`insert into auth.users(id) select gen_random_uuid() from generate_series(1,2000);`);
     const stats = (await db.query(`select count(*)::int as total, count(distinct alias)::int as distinct_aliases,
       bool_and(alias ~ '^[a-z][a-z0-9]{3,39}$') as valid,
-      count(*) filter(where alias ~ '[0-9]$')::int as numbered from public.user_aliases`)).rows[0];
+      count(*) filter(where alias ~ '[0-9]$')::int as numbered from private.user_aliases`)).rows[0];
     assert.equal(stats.total, stats.distinct_aliases);
     assert.ok(stats.valid);
     assert.ok(stats.numbered > 0);
@@ -82,7 +83,7 @@ test('PostgreSQL: aliases are generated once, unique, private and exposed safely
       `insert into public.user_aliases(user_id,alias) values ('${guestId}','AliasInjected')`,
       `select private.assign_user_alias('${guestId}')`,
     ]) {
-      await assert.rejects(db.query(sql), (error) => error.code === '42501');
+      await assert.rejects(db.query(sql), (error) => ['42501', '55000'].includes(error.code));
     }
     assert.match((await db.query('select public.suggest_user_alias() as alias')).rows[0].alias, /^[a-z][a-z0-9]{3,39}$/);
     assert.equal((await db.query('select onboarding_step from public.user_aliases')).rows[0].onboarding_step, 'complete');

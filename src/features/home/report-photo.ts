@@ -1,6 +1,7 @@
 import { readAccident } from '@/features/accident-report/read';
 import { readSuspiciousVehicleReport, type SafetyReportSummary } from '@/features/safety-report/read';
 import { readReportEvent } from '@/features/report-events/api';
+import { readReportPhotos } from '@/features/report-events/photos';
 
 type Photo = { url: string | null; captured_at: string; storage_path: string };
 
@@ -14,8 +15,9 @@ export function rankReportPhotos(photos: readonly Photo[]): string[] {
 
 export async function readReportCardPhotos(report: SafetyReportSummary, signal: AbortSignal): Promise<string[]> {
   const read = report.report_kind === 'accident' ? readAccident
-    : report.report_kind === 'suspicious_vehicle' ? readSuspiciousVehicleReport : null;
-  if (!read || signal.aborted) return [];
+    : report.report_kind === 'suspicious_vehicle' ? readSuspiciousVehicleReport
+    : async (id: string, request: AbortSignal) => ({ photos: await readReportPhotos(report.report_kind, id, request) });
+  if (signal.aborted) return [];
   const detail = await read(report.id, signal);
   if (signal.aborted || !detail) return [];
   const own = rankReportPhotos(detail.photos ?? []);

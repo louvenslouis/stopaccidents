@@ -14,10 +14,12 @@ import {
 export function ReportCamera({
   onCapture,
   onClose,
+  onBusyChange,
   subject = 'l’accident',
 }: {
   onCapture: (photo: CapturedPhoto) => void;
   onClose: () => void;
+  onBusyChange?: (busy: boolean) => void;
   subject?: string;
 }) {
   const camera = useRef<CameraView>(null);
@@ -30,6 +32,7 @@ export function ReportCamera({
     if (taking.current || !ready) return;
     taking.current = true;
     setBusy(true);
+    onBusyChange?.(true);
     setError(null);
     try {
       const photo = await camera.current?.takePictureAsync({
@@ -57,6 +60,7 @@ export function ReportCamera({
     } finally {
       taking.current = false;
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
   return (

@@ -172,3 +172,19 @@ test('ordinary refreshes preserve a swipe while changed report order cancels an 
   f.flush();
   assert.deepEqual(f.selected, []);
 });
+
+test('accessible navigation uses the same animation and rejects double navigation and boundaries', () => {
+  const f = fixture();
+  f.result.selectAdjacent(-1);
+  assert.equal(f.animation, undefined);
+  f.result.selectAdjacent(1);
+  assert.equal(f.animation.target, 1);
+  f.result.selectAdjacent(1);
+  assert.equal(f.scheduled.length, 0);
+  f.finish(); f.flush();
+  assert.deepEqual(f.selected, ['middle']);
+  f.render(1);
+  f.result.selectAdjacent(-1);
+  f.finish(); f.flush();
+  assert.deepEqual(f.selected, ['middle', 'new']);
+});

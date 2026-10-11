@@ -1,5 +1,5 @@
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { vehiclePhotos } from '@/features/suspicious-vehicle-report/model';
-import { ReportPhotos } from '@/components/report-photos';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -12,7 +12,6 @@ import { useReportDraft } from '@/features/report-events/use-report-draft';
 import { useEventChoice } from '@/features/report-events/use-event-choice';
 import { ReportDraftLoading } from '@/components/report-draft-loading';
 import { ReportReward } from '@/components/report-reward';
-import { ReportCamera } from '@/components/report-camera';
 import { randomUUID } from 'expo-crypto';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import ArrowRight from 'lucide-react-native/icons/arrow-right';
@@ -40,12 +39,13 @@ import {
 } from '@/features/suspicious-vehicle-report/model';
 import { acquirePreciseLocation } from '@/features/accident-report/precise-location';
 import { reverseGeocodeZone } from '@/features/accident-report/reverse-geocode';
-import { MAX_PHOTOS, isPreciseLocation } from '@/features/accident-report/model';
+import { isPreciseLocation } from '@/features/accident-report/model';
 import { saveSuspiciousVehicleReportStep } from '@/features/suspicious-vehicle-report/submit';
 import { useAppLocation } from '@/features/location/app-location';
 import { reusableAppLocation } from '@/features/location/app-location-model';
 
-const stepLabels = ['Voiture', 'Précisions'];
+const stepLabels = ['Voiture', 'Précisions', 'Photos'];
+const PHOTO_STEP = stepLabels.length;
 const makeDraft = (): SuspiciousVehicleReportDraft => ({
   id: randomUUID(),
   location: '',
@@ -135,7 +135,6 @@ export function SuspiciousVehicleReportSheet({
   const [locationProgress, setLocationProgress] = useState('');
   const [locationError, setLocationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [selectingPhotos, setSelectingPhotos] = useState(false);
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
@@ -186,7 +185,6 @@ export function SuspiciousVehicleReportSheet({
   }
 
   function close() {
-    if (cameraOpen) { setCameraOpen(false); return; }
     if (!pause()) return;
     if (receipt) {
       done();
@@ -279,7 +277,7 @@ export function SuspiciousVehicleReportSheet({
 
   async function next(skip = false) {
     if (submitting.current || selectingPhotos) return;
-    const validation = skip ? null : validateSuspiciousVehicleStep(draft, step);
+    const validation = skip ? null : validateSuspiciousVehicleStep(draft, Math.min(step, 2));
     if (validation) {
       setError(validation);
       return;
@@ -300,9 +298,9 @@ export function SuspiciousVehicleReportSheet({
         await saveSuspiciousVehicleReportStep(draft, 0, setProgress);
         savedLocation.current = suspiciousVehicleLocationDescription(draft);
       }
-      const id = skip ? draft.id : await saveSuspiciousVehicleReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : await saveSuspiciousVehicleReportStep(draft, Math.min(step, 2), setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 2) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
       setError(
@@ -320,7 +318,6 @@ export function SuspiciousVehicleReportSheet({
     if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
-    setCameraOpen(false);
     setDraft(makeDraft());
     setStep(0);
     setSavedSteps(0);
@@ -337,7 +334,7 @@ export function SuspiciousVehicleReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
@@ -358,8 +355,6 @@ export function SuspiciousVehicleReportSheet({
                 done();
               }}
             />
-          ) : cameraOpen && visible ? (
-            <ReportCamera subject="la voiture" onClose={() => setCameraOpen(false)} onCapture={(photo) => { setDraft(current => ({ ...current, photo: null, photos: [...vehiclePhotos(current), photo].slice(0, MAX_PHOTOS) })); setCameraOpen(false); }} />
           ) : receipt ? (
             <ReportReward reportId={receipt} reportKind="suspicious_vehicle" onDone={done} visible={visible} />
           ) : (
@@ -604,9 +599,7 @@ export function SuspiciousVehicleReportSheet({
                         style={[styles.input, styles.personNotes]}
                       />
                     </OptionalReportDetails>
-                    <ReportPhotos photos={vehiclePhotos(draft)} context={draft} disabled={sending}
-                      onChange={(photos) => setDraft(current => ({ ...current, photo: null, photos }))}
-                      onCamera={() => setCameraOpen(true)} onBusyChange={setSelectingPhotos} />
+
                     <View style={styles.privacy}>
                       <AppIcon icon={ShieldCheck} size={18} color={themeColor("#6C7789", 'muted')} />
                       <Text style={[styles.small, styles.flex]}>
@@ -615,6 +608,10 @@ export function SuspiciousVehicleReportSheet({
                       </Text>
                     </View>
                   </>
+                )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={vehiclePhotos(draft)} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photo: null, photos }))} onBusyChange={setSelectingPhotos} />
                 )}
               </ScrollView>
               {step > 0 && (
@@ -658,11 +655,11 @@ export function SuspiciousVehicleReportSheet({
                         label={
                           sending
                             ? 'Enregistrement…'
-                            : step === 2
+                            : step === PHOTO_STEP
                               ? 'Terminer le signalement'
                               : 'Suivant'
                         }
-                        icon={step === 2 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
                         disabled={sending || locating || selectingPhotos}
                         busy={sending}

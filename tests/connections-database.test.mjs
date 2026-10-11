@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('connections require recipient consent and keep invitations private', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   try {
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin;
       create role authenticated nologin;
       create schema auth;
@@ -36,7 +37,7 @@ test('connections require recipient consent and keep invitations private', async
     await db.query('insert into auth.users(id,is_anonymous) values ($1,false),($2,false),($3,false),($4,true)', [alice,bob,eve,guest]);
     await db.query('update auth.users set email = $1 where id = $2', ['alice@example.com', alice]);
     await db.query('update auth.users set email = $1 where id = $2', ['bob@example.com', bob]);
-    const aliases = (await db.query('select user_id,alias from public.user_aliases')).rows;
+    const aliases = (await db.query('select user_id,alias from private.user_aliases')).rows;
     const alias = id => aliases.find(row => row.user_id === id).alias;
     async function login(id, role = 'authenticated') {
       await db.exec('reset role; set role ' + role);

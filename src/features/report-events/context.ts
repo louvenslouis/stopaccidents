@@ -1,6 +1,7 @@
-import type { Coordinates } from '@/features/accident-report/model';
+import type { CapturedPhoto, Coordinates } from '@/features/accident-report/model';
 
 export type ReportContext = {
+  photos?: CapturedPhoto[];
   visitedStep?: number;
   sourceReportId?: string;
   locationSource?: 'device' | 'manual';

@@ -74,11 +74,7 @@ export async function saveSafetyRecord(
         throw new Error("Choisissez une photo JPEG de moins de 6 Mo.");
       }
       uploaded = `${userId}/${randomUUID()}.jpg`;
-      const { error: uploadError } = await supabase.storage
-        .from("identity-cards")
-        .upload(uploaded, bytes, { contentType: "image/jpeg", upsert: false });
-      if (uploadError)
-        throw new Error("Impossible d’envoyer la photo. Réessayez.");
+      await safetyRpc("save_identity_photo", { p_path: uploaded, p_base64: photoBase64 });
       path = uploaded;
     }
     await requireAccount(userId);
@@ -92,16 +88,13 @@ export async function saveSafetyRecord(
     });
     if (uploaded && record.photo_path) await cleanPhoto(record.photo_path);
   } catch (cause) {
-    // RLS refuses removal if a lost response hid a successful save.
+    // The cleanup RPC refuses removal if a lost response hid a successful save.
     if (uploaded) await cleanPhoto(uploaded);
     throw cause;
   }
 }
 async function cleanPhoto(path: string) {
-  await supabase.storage
-    .from("identity-cards")
-    .remove([path])
-    .catch(() => undefined);
+  await safetyRpc("delete_identity_photo", { p_path: path }).catch(() => undefined);
 }
 export async function deleteSafetyRecord(userId: string, record: SafetyRecord) {
   await requireAccount(userId);
@@ -109,9 +102,6 @@ export async function deleteSafetyRecord(userId: string, record: SafetyRecord) {
   if (record.photo_path) await cleanPhoto(record.photo_path);
 }
 export async function readIdentityPhoto(path: string) {
-  const { data, error } = await supabase.storage
-    .from("identity-cards")
-    .createSignedUrl(path, 60);
-  if (error || !data) throw new Error("Impossible d’ouvrir la photo.");
-  return data.signedUrl;
+  const base64 = await safetyRpc<string>("read_identity_photo", { p_path: path });
+  return `data:image/jpeg;base64,${base64.replace(/\s/g, '')}`;
 }

@@ -1,3 +1,5 @@
+import { saveReportPhotos, validateReportPhotos } from '@/features/report-events/photos';
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -36,10 +38,12 @@ import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
-const stepLabels = ['Emplacement', 'Véhicule', 'Circulation'];
+const stepLabels = ['Emplacement', 'Véhicule', 'Circulation', 'Photos'];
+const PHOTO_STEP = stepLabels.length;
 
 const makeDraft = (): BreakdownReportDraft => ({
   id: randomUUID(),
+  photos: [],
   location: '',
   locationHint: '',
   coordinates: null,
@@ -186,6 +190,7 @@ export function BreakdownReportSheet({
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const submitting = useRef(false);
   const scroll = useRef<ScrollView>(null);
 
@@ -211,7 +216,7 @@ export function BreakdownReportSheet({
     key: K,
     value: BreakdownReportDraft[K],
   ) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
@@ -224,7 +229,7 @@ export function BreakdownReportSheet({
   }
 
   function pause() {
-    if (submitting.current) return false;
+    if (submitting.current || selectingPhotos) return false;
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -323,8 +328,8 @@ export function BreakdownReportSheet({
   }
 
   async function next(skip = false) {
-    if (submitting.current) return;
-    const validation = skip ? null : validateBreakdownStep(draft, step);
+    if (submitting.current || selectingPhotos) return;
+    const validation = skip ? null : (step === PHOTO_STEP ? validateReportPhotos(draft) : validateBreakdownStep(draft, step));
     if (validation) {
       setError(validation);
       return;
@@ -345,9 +350,11 @@ export function BreakdownReportSheet({
         await saveBreakdownReportStep(draft, 0, setProgress);
         savedLocation.current = breakdownLocationDescription(draft);
       }
-      const id = skip ? draft.id : await saveBreakdownReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : step === PHOTO_STEP
+        ? await saveReportPhotos('breakdown', draft, setProgress)
+        : await saveBreakdownReportStep(draft, step, setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 3) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
       setError(
@@ -362,7 +369,7 @@ export function BreakdownReportSheet({
   }
 
   function done() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
     setDraft(makeDraft());
@@ -382,7 +389,7 @@ export function BreakdownReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {!ready ? (
             <ReportDraftLoading
@@ -429,7 +436,7 @@ export function BreakdownReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -449,9 +456,9 @@ export function BreakdownReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -514,7 +521,7 @@ export function BreakdownReportSheet({
                             ? `Modifier le repère : ${draft.locationHint}`
                             : 'Ajouter un repère sur place'
                         }
-                        disabled={sending}
+                        disabled={sending || selectingPhotos}
                         onPress={() => setEditingLocationHint(true)}
                       >
                         <Text numberOfLines={1} style={styles.locationHintPrompt}>
@@ -538,7 +545,7 @@ export function BreakdownReportSheet({
                           label={option.label}
                           description={option.description}
                           selected={draft.breakdownPosition === option.value}
-                          disabled={sending}
+                          disabled={sending || selectingPhotos}
                           onPress={() =>
                             update('breakdownPosition', option.value)
                           }
@@ -562,7 +569,7 @@ export function BreakdownReportSheet({
                             accessibilityRole="radio"
                             accessibilityLabel={option.label}
                             accessibilityState={{ checked: selected, disabled: sending }}
-                            disabled={sending}
+                            disabled={sending || selectingPhotos}
                             onPress={() => update('vehicleType', option.value)}
                             style={({ pressed }) => [
                               styles.vehicleOption,
@@ -602,7 +609,7 @@ export function BreakdownReportSheet({
                           label={option.label}
                           description={option.description}
                           selected={draft.trafficImpact === option.value}
-                          disabled={sending}
+                          disabled={sending || selectingPhotos}
                           onPress={() => update('trafficImpact', option.value)}
                         />
                       ))}
@@ -624,6 +631,10 @@ export function BreakdownReportSheet({
                     <Text style={styles.optional}>Facultatif</Text>
                   </>
                 )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={draft.photos ?? []} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photos }))} onBusyChange={setSelectingPhotos} />
+                )}
               </ScrollView>
               {step > 0 && (
                 <View style={styles.footer}>
@@ -637,7 +648,7 @@ export function BreakdownReportSheet({
                       {progress}
                     </Text>
                   )}
-                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
                     style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={styles.small}>Passer</Text>
                   </Pressable>
@@ -655,20 +666,20 @@ export function BreakdownReportSheet({
                           changeStep(step - 1);
                         }
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
                         label={
                           sending
                             ? 'Enregistrement…'
-                            : step === 3
+                            : step === PHOTO_STEP
                               ? 'Envoyer le signalement'
                               : 'Suivant'
                         }
-                        icon={step === 3 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
-                        disabled={sending || locating}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

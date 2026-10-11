@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('live sharing restricts readers, expires, and rejects stale writers', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   try {
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin;
       create role authenticated nologin;
       create schema auth;

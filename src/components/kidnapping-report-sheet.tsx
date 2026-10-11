@@ -1,3 +1,5 @@
+import { saveReportPhotos, validateReportPhotos } from '@/features/report-events/photos';
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -40,9 +42,11 @@ import { saveKidnappingReportStep } from '@/features/kidnapping-report/submit';
 import { useAppLocation } from '@/features/location/app-location';
 import { reusableAppLocation } from '@/features/location/app-location-model';
 
-const stepLabels = ['Véhicules', 'Personne'];
+const stepLabels = ['Véhicules', 'Personne', 'Photos'];
+const PHOTO_STEP = stepLabels.length;
 const makeDraft = (): KidnappingReportDraft => ({
   id: randomUUID(),
+  photos: [],
   location: '',
   locationHint: '',
   coordinates: null,
@@ -127,6 +131,7 @@ export function KidnappingReportSheet({
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const submitting = useRef(false);
   const scroll = useRef<ScrollView>(null);
 
@@ -152,7 +157,7 @@ export function KidnappingReportSheet({
     key: K,
     value: KidnappingReportDraft[K],
   ) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
@@ -165,7 +170,7 @@ export function KidnappingReportSheet({
   }
 
   function pause() {
-    if (submitting.current) return false;
+    if (submitting.current || selectingPhotos) return false;
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -264,8 +269,8 @@ export function KidnappingReportSheet({
   }
 
   async function next(skip = false) {
-    if (submitting.current) return;
-    const validation = skip ? null : validateKidnappingStep(draft, step);
+    if (submitting.current || selectingPhotos) return;
+    const validation = skip ? null : (step === PHOTO_STEP ? validateReportPhotos(draft) : validateKidnappingStep(draft, step));
     if (validation) {
       setError(validation);
       return;
@@ -286,9 +291,11 @@ export function KidnappingReportSheet({
         await saveKidnappingReportStep(draft, 0, setProgress);
         savedLocation.current = kidnappingLocationDescription(draft);
       }
-      const id = skip ? draft.id : await saveKidnappingReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : step === PHOTO_STEP
+        ? await saveReportPhotos('kidnapping', draft, setProgress)
+        : await saveKidnappingReportStep(draft, step, setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 2) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
       setError(
@@ -303,7 +310,7 @@ export function KidnappingReportSheet({
   }
 
   function done() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
     setDraft(makeDraft());
@@ -322,7 +329,7 @@ export function KidnappingReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
@@ -358,7 +365,7 @@ export function KidnappingReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -378,9 +385,9 @@ export function KidnappingReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -575,6 +582,10 @@ export function KidnappingReportSheet({
                     </View>
                   </>
                 )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={draft.photos ?? []} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photos }))} onBusyChange={setSelectingPhotos} />
+                )}
               </ScrollView>
               {step > 0 && (
                 <View style={styles.footer}>
@@ -591,7 +602,7 @@ export function KidnappingReportSheet({
                       {progress}
                     </Text>
                   )}
-                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
                     style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={styles.small}>Passer</Text>
                   </Pressable>
@@ -610,20 +621,20 @@ export function KidnappingReportSheet({
                           changeStep(step - 1);
                         }
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
                         label={
                           sending
                             ? 'Enregistrement…'
-                            : step === 2
+                            : step === PHOTO_STEP
                               ? 'Envoyer les indices'
                               : 'Suivant'
                         }
-                        icon={step === 2 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
-                        disabled={sending || locating}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

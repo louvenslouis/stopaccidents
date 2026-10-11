@@ -1,4 +1,5 @@
-import { PublicationModeration } from '@/components/publication-moderation';
+import { ReportPhotoGallery } from '@/components/report-photo-gallery';
+import { useReportDetailStyles } from './report-detail-appearance';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
@@ -31,7 +32,7 @@ const statusLabels = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const styles = useStyles();
+  const styles = useReportDetailStyles(useStyles());
 
   return (
     <View style={styles.section}>
@@ -44,7 +45,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function Field({ label, value }: { label: string; value: string }) {
-  const styles = useStyles();
+  const styles = useReportDetailStyles(useStyles());
 
   return (
     <View style={styles.field}>
@@ -57,13 +58,13 @@ function Field({ label, value }: { label: string; value: string }) {
 export function FireDetailSheet({
   id,
   onClose,
-  hideContributions = false,
+  footer, embedded = false, hideContributions = false,
 }: {
   id: string;
   onClose: () => void;
-  hideContributions?: boolean;
+  footer?: ReactNode; embedded?: boolean; hideContributions?: boolean;
 }) {
-  const styles = useStyles();
+  const styles = useReportDetailStyles(useStyles());
   const themeColor = useThemeColor();
 
   const { height, width } = useWindowDimensions();
@@ -92,53 +93,8 @@ export function FireDetailSheet({
     }
   }
 
-  return (
-    <Modal
-      visible
-      transparent
-      animationType="slide"
-      statusBarTranslucent
-      onRequestClose={onClose}
-    >
-      <View style={[styles.overlay, width >= 700 && styles.wideOverlay]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer la fiche de l’incendie"
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            width >= 700 && styles.wideSheet,
-            {
-              maxHeight: height - insets.top - 20,
-              paddingBottom: Math.max(insets.bottom, 16),
-            },
-          ]}
-        >
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <View style={styles.heading}>
-              <Text style={styles.eyebrow}>INCENDIE</Text>
-              <Text accessibilityRole="header" style={styles.title}>
-                Incendie
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Fermer les détails"
-              onPress={onClose}
-              style={styles.close}
-            >
-              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
-            </Pressable>
-          </View>
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-          >
+  const detailContent = <>
+
             {!report ? (
               <View style={styles.state}>
                 {loading && <ActivityIndicator color={themeColor("#B76518", 'warning')} />}
@@ -159,10 +115,10 @@ export function FireDetailSheet({
               </View>
             ) : (
               <>
-                <PublicationModeration kind="fire" reportId={id} onDone={onClose} />
+                {!embedded && <>
                 {!hideContributions && (
                   <EventContributions kind="fire" reportId={id} />
-                )}
+                )} </>}
                 <View style={styles.summary}>
                   <View style={styles.artBox}>
                     <ReportIllustration kind="fire" size={68} />
@@ -249,6 +205,11 @@ export function FireDetailSheet({
                     Référence : {report.id}
                   </Text>
                 </Section>
+                <ReportPhotoGallery kind="fire" id={id} updatedAt={report.updated_at} />
+                {embedded && <> {!hideContributions && (
+                  <EventContributions kind="fire" reportId={id} />
+                )}
+                 </>}
                 {error && (
                   <Text accessibilityRole="alert" style={styles.error}>
                     {error}
@@ -269,7 +230,58 @@ export function FireDetailSheet({
                 </Pressable>
               </>
             )}
-          </ScrollView>
+
+  </>;
+  if (embedded) return <View style={styles.content}>{detailContent}</View>;
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={[styles.overlay, width >= 700 && styles.wideOverlay]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer la fiche de l’incendie"
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          accessibilityViewIsModal
+          style={[
+            styles.sheet,
+            width >= 700 && styles.wideSheet,
+            {
+              maxHeight: height - insets.top - 20,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}
+        >
+          <View style={styles.handle} />
+          <View style={styles.header}>
+            <View style={styles.heading}>
+              <Text style={styles.eyebrow}>INCENDIE</Text>
+              <Text accessibilityRole="header" style={styles.title}>
+                Incendie
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fermer les détails"
+              onPress={onClose}
+              style={styles.close}
+            >
+              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
+            </Pressable>
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+          >{detailContent}</ScrollView>
+          {footer}
         </View>
       </View>
     </Modal>

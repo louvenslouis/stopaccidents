@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
-import { PGlite } from "@electric-sql/pglite";
-export async function safetyDatabase() {
-  const db = await PGlite.create();
+import { createCryptoDatabase } from "./crypto-db.mjs";
+export async function safetyDatabase({ beforeEncryption, beforeAliasEncryption } = {}) {
+  const db = await createCryptoDatabase();
   try {
     await db.exec(`
       create role service_role nologin bypassrls;
@@ -30,6 +30,8 @@ export async function safetyDatabase() {
       .filter((name) => name.endsWith(".sql"))
       .sort()) {
       const sql = await readFile(new URL(name, migrations), "utf8");
+      if (name.endsWith('_encrypt_user_aliases.sql')) await beforeAliasEncryption?.(db);
+      if (name.endsWith('_encrypt_sensitive_user_data.sql')) await beforeEncryption?.(db);
       try {
         await db.exec(sql);
       } catch (e) {

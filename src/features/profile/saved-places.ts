@@ -67,10 +67,7 @@ function readPlace(address: unknown, latitude: unknown, longitude: unknown): Sav
 }
 
 export async function readSavedPlaces(): Promise<SavedPlaces> {
-  const { data, error } = await supabase
-    .from('user_saved_places')
-    .select('home_address,home_latitude,home_longitude,work_address,work_latitude,work_longitude')
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('read_saved_places');
 
   if (error) throw new Error('Impossible de charger vos lieux enregistrés.');
   if (!data) return EMPTY_PLACES;
@@ -85,19 +82,20 @@ export async function saveSavedPlaces(userId: string, places: SavedPlaces) {
   const validation = validateSavedPlaces(normalized);
   if (validation) throw new Error(validation);
 
-  const { error } = await supabase.from('user_saved_places').upsert(
-    {
-      user_id: userId,
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || sessionData.session?.user.id !== userId || sessionData.session.user.is_anonymous)
+    throw new Error('Votre session a changé. Rouvrez votre profil.');
+
+  const { error } = await supabase.rpc('save_saved_places', {
+    p_places: {
       home_address: normalized.home?.address || '',
       home_latitude: normalized.home?.latitude ?? null,
       home_longitude: normalized.home?.longitude ?? null,
       work_address: normalized.work?.address || '',
       work_latitude: normalized.work?.latitude ?? null,
       work_longitude: normalized.work?.longitude ?? null,
-      updated_at: new Date().toISOString(),
     },
-    { onConflict: 'user_id' },
-  );
+  });
   if (error) throw new Error('Impossible d’enregistrer vos lieux. Réessayez dans un instant.');
   return normalized;
 }

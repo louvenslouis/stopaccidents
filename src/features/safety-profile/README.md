@@ -4,7 +4,9 @@ Registered accounts can save up to ten vehicles (type, plate and color) and one
 identity card (number and optional JPEG, at most 6 MiB). The profile is separate
 from public aliases, Auth metadata and report feeds. Private-schema tables have
 RLS and no client table privileges; owner-only RPCs check the stored account.
-Identity photos use a private immutable bucket and 60-second owner-issued URLs.
+Identity photos use encrypted private database storage and owner-only RPCs. Profile
+fields and report identifiers are encrypted; alert matching uses keyed HMAC indexes.
+See `docs/sensitive-data.md` for keys, migration and rotation.
 The app does not persist profile identifiers or photographs in offline drafts.
 
 The owner explicitly enables **Alerter mes proches**. Only connections accepted

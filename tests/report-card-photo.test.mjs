@@ -10,6 +10,7 @@ function fixture(details = {}, contributions = []) {
     '@/features/accident-report/read': { readAccident: read },
     '@/features/safety-report/read': { readSuspiciousVehicleReport: read },
     '@/features/report-events/api': { readReportEvent: async () => ({ event_id: 'event', contributions }) },
+    '@/features/report-events/photos': { readReportPhotos: async (_kind, id) => (await read(id)).photos },
   };
   const exports = {};
   new Function('require', 'exports', ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(name => deps[name], exports);
@@ -32,13 +33,22 @@ test('photo fallback uses only the most recent matching testimony in the same ev
   assert.deepEqual(await f.readReportCardPhotos(report, new AbortController().signal), ['testimony.jpg']);
   assert.deepEqual(f.calls, ['current', 'new']);
 });
-test('unsupported types, missing reports and canceled reads never borrow another image', async () => {
+test('all report types can display images while canceled reads never borrow another image', async () => {
   const f = fixture();
-  assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: 'fire' }, new AbortController().signal), []);
+  assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: 'fire', testimony_count: 1 }, new AbortController().signal), []);
   const controller = new AbortController(); controller.abort();
   assert.deepEqual(await f.readReportCardPhotos(report, controller.signal), []);
-  assert.deepEqual(f.calls, []);
+  assert.deepEqual(f.calls, ['current']);
   assert.deepEqual(await f.readReportCardPhotos({ ...report, testimony_count: 1 }, new AbortController().signal), []);
+});
+
+test('new photo collections supply cards and matching testimonies for all seven kinds', async () => {
+  for (const kind of ['fire', 'gathering', 'breakdown', 'gunfire', 'kidnapping', 'armed_presence', 'barricade']) {
+    const f = fixture({ witness: { photos: [photo(`${kind}.jpg`, 3)] } }, [
+      { id: 'witness', report_kind: kind, created_at: '2026-10-03' },
+    ]);
+    assert.deepEqual(await f.readReportCardPhotos({ ...report, report_kind: kind }, new AbortController().signal), [`${kind}.jpg`]);
+  }
 });
 
 const heroSource = await readFile('src/components/report-ticket-design.tsx', 'utf8');

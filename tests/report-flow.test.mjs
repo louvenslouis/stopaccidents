@@ -338,10 +338,14 @@ test('skipping details preserves the draft, permits returning, and saves a later
   assert.equal(details.props.disabled, false, 'a visited skipped stage stays accessible');
   details.props.onPress();
   f.render();
-  const finish = f.button('Enregistrer les compléments');
+  const finish = f.button('Suivant');
   assert.ok(finish);
   await finish.props.onPress();
   f.render();
   assert.deepEqual(f.calls.save.map(call => call.step), [0, 3]);
   assert.equal(f.calls.save[1].draft.accidentType, 'two_cars', 'unsent answer remains in the draft');
+  assert.ok(f.button('Étape 4 : Photos'));
+  await f.button('Enregistrer les compléments').props.onPress();
+  f.render();
+  assert.deepEqual(f.calls.save.map(call => call.step), [0, 3, 3]);
 });

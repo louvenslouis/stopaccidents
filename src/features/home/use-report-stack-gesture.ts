@@ -87,5 +87,14 @@ export function useReportStackGesture(keys: string[], index: number, onSelect: (
       }));
     });
 
-  return { gesture, position, width, canInteract };
+  const selectAdjacent = useCallback((direction: -1 | 1) => {
+    const next = keys[index + direction];
+    if (!next || !canInteract()) return;
+    busy.set(true);
+    position.set(withSpring(index + direction, spring, finished => {
+      if (finished) scheduleOnRN(commit, next);
+    }));
+  }, [keys, index, canInteract, busy, position, commit]);
+
+  return { gesture, position, width, canInteract, selectAdjacent };
 }

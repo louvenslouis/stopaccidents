@@ -70,15 +70,17 @@ test('saving preserves the chosen geometry and uses explicit ownership for creat
   const value = { ...schedule, name: ` ${schedule.name} `, weekdays: [5, 1, 3] };
   const saved = await api.saveRoute('owner', shape, value);
   assert.equal(saved.departureTime, '07:00');
-  const insert = api.calls[0].operations.find(([name]) => name === 'insert')[1];
-  assert.equal(insert.user_id, 'owner');
+  assert.equal(api.calls[0].name, 'save_saved_route');
+  assert.equal(api.calls[0].args.p_id, null);
+  const insert = api.calls[0].args.p_route;
+  assert.equal('user_id' in insert, false);
   assert.equal(insert.name, schedule.name);
   assert.deepEqual(insert.coordinates, shape.coordinates);
   assert.deepEqual(insert.weekdays, [1, 3, 5]);
   assert.deepEqual(value.weekdays, [5, 1, 3]);
   await api.saveRoute('owner', shape, schedule, 'route');
-  assert.deepEqual(api.calls[1].operations.filter(([name]) => name === 'eq'), [['eq', 'id', 'route'], ['eq', 'user_id', 'owner']]);
-  assert.equal('user_id' in api.calls[1].operations.find(([name]) => name === 'update')[1], false);
+  assert.equal(api.calls[1].args.p_id, 'route');
+  assert.equal('user_id' in api.calls[1].args.p_route, false);
 });
 
 test('anonymous, signed-out and switched accounts cannot read or mutate routes', async () => {
@@ -100,7 +102,7 @@ test('route reads bind the requested account, pass cancellation and discard resp
   const api = client({ data: [row], error: null });
   const controller = new AbortController();
   assert.equal((await api.readSavedRoutes('owner', controller.signal))[0].id, 'route');
-  assert.ok(api.calls[0].operations.some(([name, key, value]) => name === 'eq' && key === 'user_id' && value === 'owner'));
+  assert.equal(api.calls[0].name, 'read_saved_routes');
   assert.ok(api.calls[0].operations.some(([name, signal]) => name === 'abortSignal' && signal === controller.signal));
   await api.readRouteAlerts('owner', controller.signal);
   assert.equal(api.calls[1].name, 'read_route_alerts');

@@ -2,15 +2,16 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('only registered contributors earn points, including all seven completion RPCs and legacy guest rewards', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   try {
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin; create role authenticated nologin;
       create schema auth; create schema storage;
-      create table auth.users(id uuid primary key, is_anonymous boolean not null default false);
+      create table auth.users(id uuid primary key, is_anonymous boolean not null default false, email text, raw_user_meta_data jsonb not null default '{}'::jsonb);
       create function auth.uid() returns uuid language sql stable as $$
         select (nullif(current_setting('request.jwt.claims', true), '')::jsonb->>'sub')::uuid
       $$;
@@ -26,13 +27,14 @@ test('only registered contributors earn points, including all seven completion R
     const migrations = new URL('../supabase/migrations/', import.meta.url);
     const files = (await readdir(migrations)).filter(name => name.endsWith('.sql')).sort();
     const migration = files.find(name => name.endsWith('_registered_contributor_rewards.sql'));
-    for (const name of files.filter(name => name !== migration)) {
+    const guest = randomUUID(), member = randomUUID(), legacy = randomUUID();
+    for (const name of files) {
+      if (name === migration) {
+        await db.query('insert into auth.users(id,is_anonymous) values ($1,true),($2,false)', [guest, member]);
+        await db.query("insert into public.report_rewards(report_kind,report_id,user_id) values ('barricade',$1,$2)", [legacy, guest]);
+      }
       await db.exec(await readFile(new URL(name, migrations), 'utf8'));
     }
-    const guest = randomUUID(), member = randomUUID(), legacy = randomUUID();
-    await db.query('insert into auth.users(id,is_anonymous) values ($1,true),($2,false)', [guest, member]);
-    await db.query("insert into public.report_rewards(report_kind,report_id,user_id) values ('barricade',$1,$2)", [legacy, guest]);
-    await db.exec(await readFile(new URL(migration, migrations), 'utf8'));
     assert.equal((await db.query('select eligible from public.report_rewards where report_id=$1', [legacy])).rows[0].eligible, false);
 
     const steps = {

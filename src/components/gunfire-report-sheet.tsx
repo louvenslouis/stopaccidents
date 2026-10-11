@@ -1,3 +1,5 @@
+import { saveReportPhotos, validateReportPhotos } from '@/features/report-events/photos';
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -41,9 +43,11 @@ import { saveGunfireReportStep } from "@/features/gunfire-report/submit";
 import { useAppLocation } from "@/features/location/app-location";
 import { reusableAppLocation } from "@/features/location/app-location-model";
 
-const stepLabels = ["Tirs entendus", "Précisions"];
+const stepLabels = ["Tirs entendus", "Précisions", 'Photos'];
+const PHOTO_STEP = stepLabels.length;
 const makeDraft = (): GunfireReportDraft => ({
   id: randomUUID(),
+  photos: [],
   location: "",
   locationHint: "",
   coordinates: null,
@@ -177,6 +181,7 @@ export function GunfireReportSheet({
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const submitting = useRef(false);
   const scroll = useRef<ScrollView>(null);
 
@@ -202,7 +207,7 @@ export function GunfireReportSheet({
     key: K,
     value: GunfireReportDraft[K],
   ) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
@@ -215,7 +220,7 @@ export function GunfireReportSheet({
   }
 
   function pause() {
-    if (submitting.current) return false;
+    if (submitting.current || selectingPhotos) return false;
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -314,8 +319,8 @@ export function GunfireReportSheet({
   }
 
   async function next(skip = false) {
-    if (submitting.current) return;
-    const validation = skip ? null : validateGunfireStep(draft, step);
+    if (submitting.current || selectingPhotos) return;
+    const validation = skip ? null : (step === PHOTO_STEP ? validateReportPhotos(draft) : validateGunfireStep(draft, step));
     if (validation) {
       setError(validation);
       return;
@@ -336,9 +341,11 @@ export function GunfireReportSheet({
         await saveGunfireReportStep(draft, 0, setProgress);
         savedLocation.current = gunfireLocationDescription(draft);
       }
-      const id = skip ? draft.id : await saveGunfireReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : step === PHOTO_STEP
+        ? await saveReportPhotos('gunfire', draft, setProgress)
+        : await saveGunfireReportStep(draft, step, setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 2) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
       setError(
@@ -353,7 +360,7 @@ export function GunfireReportSheet({
   }
 
   function done() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
     setDraft(makeDraft());
@@ -372,7 +379,7 @@ export function GunfireReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
@@ -413,7 +420,7 @@ export function GunfireReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -433,9 +440,9 @@ export function GunfireReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -540,21 +547,21 @@ export function GunfireReportSheet({
                       title="Les tirs semblent…"
                       options={PROXIMITY_OPTIONS}
                       value={draft.proximity}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                       onChange={(value) => update("proximity", value)}
                     />
                     <Choices
                       title="Quantité approximative de tirs"
                       options={SHOT_COUNT_OPTIONS}
                       value={draft.shotCount}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                       onChange={(value) => { update("shotCount", value); update("cadence", ""); }}
                     />
                     {draft.shotCount !== "one" && <Choices
                       title="Rythme des tirs"
                       options={CADENCE_OPTIONS}
                       value={draft.cadence}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                       onChange={(value) => update("cadence", value)}
                     />}
                     <View style={styles.warning}>
@@ -630,6 +637,10 @@ export function GunfireReportSheet({
                     </View>
                   </>
                 )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={draft.photos ?? []} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photos }))} onBusyChange={setSelectingPhotos} />
+                )}
               </ScrollView>
               {step > 0 && (
                 <View style={styles.footer}>
@@ -646,7 +657,7 @@ export function GunfireReportSheet({
                       {progress}
                     </Text>
                   )}
-                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
                     style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={styles.small}>Passer</Text>
                   </Pressable>
@@ -665,20 +676,20 @@ export function GunfireReportSheet({
                           changeStep(step - 1);
                         }
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
                         label={
                           sending
                             ? "Enregistrement…"
-                            : step === 2
+                            : step === PHOTO_STEP
                               ? "Terminer le signalement"
                               : "Suivant"
                         }
-                        icon={step === 2 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
-                        disabled={sending || locating}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

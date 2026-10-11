@@ -52,11 +52,11 @@ export function ReportPhotos({ photos, context, disabled, onChange, onCamera, on
       </View>)}
     </View>
     {photos.length < MAX_PHOTOS && <View style={styles.actions}>
-      <Pressable accessibilityRole="button" disabled={locked} onPress={onCamera}
+      {!canImportReportPhotos(context) && <Pressable accessibilityRole="button" disabled={locked} onPress={onCamera}
         style={[styles.action, { backgroundColor: color('#EDF4F1', 'elevated'), opacity: locked ? 0.5 : 1 }]}>
         <AppIcon icon={Camera} color={color('#23766A', 'success')} size={22} />
         <Text style={{ color: color('#243147', 'text') }}>Prendre une photo</Text>
-      </Pressable>
+      </Pressable>}
       {canImportReportPhotos(context) && <Pressable accessibilityRole="button" disabled={locked} onPress={selectImages}
         style={[styles.action, { backgroundColor: color('#EDF4F1', 'elevated'), opacity: locked ? 0.5 : 1 }]}>
         {busy ? <ActivityIndicator /> : <AppIcon icon={Images} color={color('#23766A', 'success')} size={22} />}

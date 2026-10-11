@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import { validateSchedule, type RouteAlert, type RouteSchedule, type SavedRoute } from './model';
 import type { RouteShape } from './routing';
 
-const columns = 'id,name,waypoints,coordinates,distance_meters,duration_seconds,departure_time,weekdays,timezone,duration_minutes,lead_minutes,alerts_enabled';
 function readRoute(row: Record<string, unknown>): SavedRoute {
   if (typeof row.id !== 'string' || typeof row.name !== 'string' ||
     !Array.isArray(row.waypoints) || !Array.isArray(row.coordinates) ||
@@ -26,7 +25,7 @@ async function requireAccount(userId: string) {
 }
 export async function readSavedRoutes(userId: string, signal?: AbortSignal): Promise<SavedRoute[]> {
   await requireAccount(userId);
-  const query = supabase.from('user_routes').select(columns).eq('user_id', userId).order('created_at', { ascending: false });
+  const query = supabase.rpc('read_saved_routes');
   const { data, error } = await (signal ? query.abortSignal(signal) : query);
   if (error || !Array.isArray(data)) throw new Error('Impossible de charger vos trajets. Réessayez.');
   await requireAccount(userId);
@@ -43,10 +42,7 @@ export async function saveRoute(userId: string, shape: RouteShape, schedule: Rou
     timezone: schedule.timezone, duration_minutes: schedule.durationMinutes,
     lead_minutes: schedule.leadMinutes, alerts_enabled: schedule.alertsEnabled,
   };
-  const query = id
-    ? supabase.from('user_routes').update(values).eq('id', id).eq('user_id', userId)
-    : supabase.from('user_routes').insert({ ...values, user_id: userId });
-  const { data, error } = await query.select(columns).single();
+  const { data, error } = await supabase.rpc('save_saved_route', { p_id: id ?? null, p_route: values });
   if (error || !data) throw new Error('Impossible d’enregistrer le trajet. Réessayez.');
   await requireAccount(userId);
   return readRoute(data);

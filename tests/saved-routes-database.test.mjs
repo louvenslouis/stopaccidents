@@ -15,13 +15,26 @@ function access(db) {
       await db.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ sub: id, role, session_id: session })]);
     },
     rpc: async (name, args = []) => (await db.query(`select public.${name}(${args.map((_, i) => '$' + (i + 1)).join(',')}) value`, args)).rows[0].value,
-    route: async (owner, id = randomUUID()) => {
-      await db.query(`insert into public.user_routes(id,user_id,name,waypoints,coordinates,distance_meters,duration_seconds,departure_time,weekdays,timezone)
-        values($1,$2,'Maison → Travail',$3,$4,2200,900,(now() at time zone 'America/Port-au-Prince')::time,array[1,2,3,4,5,6,7],'America/Port-au-Prince')`,
-      [id, owner, JSON.stringify(waypoints), JSON.stringify(coordinates)]);
-      return id;
+    route: async (owner) => {
+      const current = (await db.query('select auth.uid() id')).rows[0].id;
+      if (current && current !== owner) {
+        await db.query("insert into public.user_routes(user_id) values($1)", [owner]);
+      }
+      if (!current) await db.query("select set_config('request.jwt.claims',$1,false)", [JSON.stringify({ sub: owner })]);
+      const departure = (await db.query("select (now() at time zone 'America/Port-au-Prince')::time::text value")).rows[0].value;
+      const data = { name: 'Maison → Travail', waypoints, coordinates, distance_meters: 2200, duration_seconds: 900,
+        departure_time: departure, weekdays: [1,2,3,4,5,6,7], timezone: 'America/Port-au-Prince', duration_minutes: 60, lead_minutes: 30, alerts_enabled: true };
+      return (await db.query('select public.save_saved_route(null,$1) value', [JSON.stringify(data)])).rows[0].value.id;
     },
   };
+}
+
+async function readRoute(db, id) {
+  return (await db.query('select public.read_saved_routes() value')).rows[0].value.find(row => row.id === id);
+}
+async function patchRoute(db, id, changes) {
+  const current = await readRoute(db, id);
+  return db.query('select public.save_saved_route($1,$2)', [id, JSON.stringify({ ...current, ...changes })]);
 }
 
 test('saved routes preserve exact geometry and protect CRUD, schedule and worker APIs', async () => {
@@ -32,24 +45,24 @@ test('saved routes preserve exact geometry and protect CRUD, schedule and worker
     await db.query('insert into auth.users(id,is_anonymous) values($1,false),($2,false),($3,true)', [owner, other, guest]);
     await login(owner);
     const id = await route(owner);
-    const saved = (await db.query('select * from public.user_routes where id=$1', [id])).rows[0];
+    const saved = await readRoute(db, id);
     assert.deepEqual(saved.coordinates, coordinates);
     assert.deepEqual(saved.waypoints, waypoints);
     await assert.rejects(route(other), e => e.code === '42501');
     await assert.rejects(db.query('update public.user_routes set user_id=$1 where id=$2', [other, id]), e => e.code === '42501');
     for (const invalid of [[], [[-72.3, 18.5]], [[-72.3, 18.5], [null, 18.6]], [[-72.3, 18.5], [200, 18.6]], [[-72.3, 18.5], {}]]) {
-      await assert.rejects(db.query('update public.user_routes set coordinates=$1 where id=$2', [JSON.stringify(invalid), id]), /route_invalid_geometry/);
+      await assert.rejects(patchRoute(db,id,{coordinates:invalid}), /route_invalid_geometry/);
     }
     for (const invalid of [[], [0], [8], [1, 1], [1, null]]) {
-      await assert.rejects(db.query('update public.user_routes set weekdays=$1 where id=$2', [invalid, id]), /route_invalid_schedule/);
+      await assert.rejects(patchRoute(db,id,{weekdays:invalid}), /route_invalid_schedule/);
     }
-    await assert.rejects(db.query("update public.user_routes set timezone='Mars/Olympus' where id=$1", [id]), /route_invalid_schedule/);
-    await assert.rejects(db.query('update public.user_routes set duration_minutes=241 where id=$1', [id]), e => e.code === '23514');
-    await assert.rejects(db.query('update public.user_routes set lead_minutes=120 where id=$1', [id]), e => e.code === '23514');
+    await assert.rejects(patchRoute(db,id,{timezone:'Mars/Olympus'}), /route_invalid_schedule/);
+    await assert.rejects(patchRoute(db,id,{duration_minutes:241}), /route_invalid_schedule/);
+    await assert.rejects(patchRoute(db,id,{lead_minutes:120}), /route_invalid_schedule/);
     await login(other);
     assert.equal((await db.query('select * from public.user_routes')).rows.length, 0);
     assert.equal((await db.query('delete from public.user_routes where id=$1 returning id', [id])).rows.length, 0);
-    assert.equal((await db.query("update public.user_routes set name='Hack' where id=$1 returning id", [id])).rows.length, 0);
+    await assert.rejects(patchRoute(db,id,{name:'Hack'}), /route_unavailable/);
     for (const name of ['claim_route_push_jobs', 'read_route_alerts']) {
       if (name === 'read_route_alerts') assert.deepEqual(await rpc(name), []);
       else await assert.rejects(rpc(name), e => e.code === '42501');
@@ -81,15 +94,15 @@ test('route matching uses the segment corridor and local weekday across midnight
     assert.equal(await matches(18.555, -72.30), true);
     assert.equal(await matches(18.555, -72.305), false); // endpoint shortcuts must not match
     assert.equal(await matches(18.55, -72.31, [[-72.31,18.55],[-72.31,18.55]]), true);
-    await db.query("update public.user_routes set departure_time='23:50',weekdays=array[1],duration_minutes=60,lead_minutes=30 where id=$1", [id]);
+    await patchRoute(db,id,{departure_time:'23:50',weekdays:[1],duration_minutes:60,lead_minutes:30});
     const departures = async (instant) => (await db.query('select d.departure_at::text value from public.user_routes r cross join lateral private.route_departures(r,$2::timestamptz) d where r.id=$1', [id, instant])).rows;
     assert.equal((await departures('2026-10-06T04:10:00Z')).length, 1); // Tuesday 00:10 belongs to Monday departure
     assert.equal((await departures('2026-10-06T04:50:00Z')).length, 0);
     assert.equal((await departures('2026-10-05T04:10:00Z')).length, 0); // Monday 00:10 is Sunday's trip
-    await db.query("update public.user_routes set departure_time='00:10',weekdays=array[2] where id=$1", [id]);
+    await patchRoute(db,id,{departure_time:'00:10',weekdays:[2]});
     assert.equal((await departures('2026-10-06T03:50:00Z')).length, 1); // Monday lead window for Tuesday
     assert.equal((await departures('2026-10-06T03:39:00Z')).length, 0);
-    await db.query("update public.user_routes set departure_time='08:00',weekdays=array[1,2,3,4,5,6,7],timezone='America/New_York' where id=$1", [id]);
+    await patchRoute(db,id,{departure_time:'08:00',weekdays:[1,2,3,4,5,6,7],timezone:'America/New_York'});
     assert.equal((await departures('2026-01-05T13:00:00Z')).length, 1);
     assert.equal((await departures('2026-07-06T12:00:00Z')).length, 1);
     assert.equal((await departures('2026-07-06T13:00:00Z')).length, 0);
@@ -105,8 +118,8 @@ test('scheduled incident alerts work without GPS and deduplicate, revoke and ret
     await db.query('insert into auth.sessions(id,user_id) values($1,$2)', [session,owner]);
     await login(owner, 'authenticated', session);
     const id = await route(owner);
-    const departure = (await db.query('select departure_time from public.user_routes where id=$1', [id])).rows[0].departure_time;
-    await db.query("update public.user_routes set departure_time=((now() at time zone timezone)+interval '12 hours')::time where id=$1",[id]);
+    const departure = (await readRoute(db,id)).departure_time;
+    await patchRoute(db,id,{departure_time:(await db.query("select (($1::time)+interval '12 hours')::time::text value",[departure])).rows[0].value});
     await rpc('register_route_push_device', [device,'ExpoPushToken[abcdefghijklmnop]']);
     // Safety and route preferences are independent, even for the same installation/token.
     await rpc('register_safety_push_device', [device,'ExpoPushToken[abcdefghijklmnop]']);
@@ -117,7 +130,7 @@ test('scheduled incident alerts work without GPS and deduplicate, revoke and ret
     await rpc('save_accident_report_step', [far,1,'Rue parallèle',18.552,-72.305,10]);
     await login(owner);
     assert.deepEqual(await rpc('read_route_alerts'),[]); // no alert outside the configured time
-    await db.query('update public.user_routes set departure_time=$1 where id=$2',[departure,id]);
+    await patchRoute(db,id,{departure_time:departure});
     const inbox = await rpc('read_route_alerts');
     assert.equal(inbox.length, 1);
     assert.equal(inbox[0].report_id, report);
@@ -195,7 +208,7 @@ test('scheduled incident alerts work without GPS and deduplicate, revoke and ret
     assert.equal((await db.query('select count(*)::integer n from private.route_push_devices')).rows[0].n,0);
     await login(owner);
     const beforeNextDeparture = (await rpc('read_route_alerts')).length;
-    await db.query("update public.user_routes set departure_time=(departure_time+interval '1 minute')::time where id=$1",[id]);
+    await patchRoute(db,id,{departure_time:(await db.query("select ($1::time+interval '1 minute')::time::text value",[(await readRoute(db,id)).departure_time])).rows[0].value});
     assert.equal((await rpc('read_route_alerts')).length,beforeNextDeparture*2); // same unresolved event, distinct departure
     assert.equal((await rpc('read_route_alerts')).length,beforeNextDeparture*2); // repeated reads do not repeat it
   } finally { await db.close(); }

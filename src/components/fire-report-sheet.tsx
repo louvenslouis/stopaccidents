@@ -1,3 +1,5 @@
+import { saveReportPhotos, validateReportPhotos } from '@/features/report-events/photos';
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -37,11 +39,13 @@ import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
-const stepLabels = ['Bien touché', 'État du feu', 'Personnes'];
+const stepLabels = ['Bien touché', 'État du feu', 'Personnes', 'Photos'];
+const PHOTO_STEP = stepLabels.length;
 
 
 const makeDraft = (): FireReportDraft => ({
   id: randomUUID(),
+  photos: [],
   location: '',
   locationHint: '',
   coordinates: null,
@@ -187,6 +191,7 @@ export function FireReportSheet({
   const locationController = useRef<AbortController | null>(null);
   const locationRequest = useRef(0);
   const savedLocation = useRef<string | null>(null);
+  const [selectingPhotos, setSelectingPhotos] = useState(false);
   const submitting = useRef(false);
   const scroll = useRef<ScrollView>(null);
 
@@ -212,7 +217,7 @@ export function FireReportSheet({
     key: K,
     value: FireReportDraft[K],
   ) {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     setDraft((current) => ({ ...current, [key]: value }));
     setError(null);
   }
@@ -225,7 +230,7 @@ export function FireReportSheet({
   }
 
   function pause() {
-    if (submitting.current) return false;
+    if (submitting.current || selectingPhotos) return false;
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -324,8 +329,8 @@ export function FireReportSheet({
   }
 
   async function next(skip = false) {
-    if (submitting.current) return;
-    const validation = skip ? null : validateFireStep(draft, step);
+    if (submitting.current || selectingPhotos) return;
+    const validation = skip ? null : (step === PHOTO_STEP ? validateReportPhotos(draft) : validateFireStep(draft, step));
     if (validation) {
       setError(validation);
       return;
@@ -346,9 +351,11 @@ export function FireReportSheet({
         await saveFireReportStep(draft, 0, setProgress);
         savedLocation.current = fireLocationDescription(draft);
       }
-      const id = skip ? draft.id : await saveFireReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : step === PHOTO_STEP
+        ? await saveReportPhotos('fire', draft, setProgress)
+        : await saveFireReportStep(draft, step, setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 3) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (cause) {
       setError(
@@ -363,7 +370,7 @@ export function FireReportSheet({
   }
 
   function done() {
-    if (submitting.current) return;
+    if (submitting.current || selectingPhotos) return;
     locationRequest.current++;
     locationController.current?.abort();
     setDraft(makeDraft());
@@ -383,7 +390,7 @@ export function FireReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {!ready ? (
             <ReportDraftLoading
@@ -430,7 +437,7 @@ export function FireReportSheet({
                   </Text>
                 </View>
                 <Pressable
-                  disabled={sending}
+                  disabled={sending || selectingPhotos}
                   accessibilityRole="button"
                   accessibilityLabel="Fermer le formulaire"
                   onPress={close}
@@ -450,9 +457,9 @@ export function FireReportSheet({
                         accessibilityLabel={`Étape ${index} : ${label}`}
                         accessibilityState={{
                           selected: step === index,
-                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending,
+                          disabled: index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos,
                         }}
-                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending}
+                        disabled={index > Math.max(savedSteps, step, draft.visitedStep ?? 0) || sending || selectingPhotos}
                         onPress={() => changeStep(index)}
                         style={styles.stepItem}
                       >
@@ -515,7 +522,7 @@ export function FireReportSheet({
                             ? `Modifier le repère : ${draft.locationHint}`
                             : 'Ajouter un repère sur place'
                         }
-                        disabled={sending}
+                        disabled={sending || selectingPhotos}
                         onPress={() => setEditingLocationHint(true)}
                       >
                         <Text numberOfLines={1} style={styles.locationHintPrompt}>
@@ -538,7 +545,7 @@ export function FireReportSheet({
                           key={option.value}
                           label={option.label}
                           selected={draft.fireTarget === option.value}
-                          disabled={sending}
+                          disabled={sending || selectingPhotos}
                           onPress={() =>
                             update('fireTarget', option.value)
                           }
@@ -562,7 +569,7 @@ export function FireReportSheet({
                             accessibilityRole="radio"
                             accessibilityLabel={option.label}
                             accessibilityState={{ checked: selected, disabled: sending }}
-                            disabled={sending}
+                            disabled={sending || selectingPhotos}
                             onPress={() => update('fireState', option.value)}
                             style={({ pressed }) => [
                               styles.vehicleOption,
@@ -601,7 +608,7 @@ export function FireReportSheet({
                           key={option.value}
                           label={option.label}
                           selected={draft.peopleDanger === option.value}
-                          disabled={sending}
+                          disabled={sending || selectingPhotos}
                           onPress={() => update('peopleDanger', option.value)}
                         />
                       ))}
@@ -623,6 +630,10 @@ export function FireReportSheet({
 
                   </>
                 )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={draft.photos ?? []} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photos }))} onBusyChange={setSelectingPhotos} />
+                )}
               </ScrollView>
               {step > 0 && (
                 <View style={styles.footer}>
@@ -636,7 +647,7 @@ export function FireReportSheet({
                       {progress}
                     </Text>
                   )}
-                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending} onPress={() => next(true)}
+                  <Pressable accessibilityRole="button" accessibilityLabel="Passer" disabled={sending || selectingPhotos} onPress={() => next(true)}
                     style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={styles.small}>Passer</Text>
                   </Pressable>
@@ -654,20 +665,20 @@ export function FireReportSheet({
                           changeStep(step - 1);
                         }
                       }}
-                      disabled={sending}
+                      disabled={sending || selectingPhotos}
                     />
                     <View style={styles.flex}>
                       <Action
                         label={
                           sending
                             ? 'Enregistrement…'
-                            : step === 3
+                            : step === PHOTO_STEP
                               ? 'Envoyer le signalement'
                               : 'Suivant'
                         }
-                        icon={step === 3 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
-                        disabled={sending || locating}
+                        disabled={sending || locating || selectingPhotos}
                         busy={sending}
                       />
                     </View>

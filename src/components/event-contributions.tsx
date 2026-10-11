@@ -1,3 +1,5 @@
+import { MergeReportPicker } from './merge-report-picker';
+import { useReportDetailStyles } from './report-detail-appearance';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useAppTheme, createThemedStyles } from '@/features/appearance/theme-provider';
@@ -13,12 +15,18 @@ import { SafetyReportDetailSheet } from "./safety-report-detail-sheet";
 export function EventContributions({
   kind,
   reportId,
+  moderation,
+  onDone,
+  onBusyChange,
 }: {
   kind: ReportKind;
   reportId: string;
+  moderation?: "merge" | "undo";
+  onDone?: () => void;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const { scheme } = useAppTheme();
-  const styles = useStyles();
+  const styles = useReportDetailStyles(useStyles());
 
   const loader = useCallback(
     (signal: AbortSignal) => readReportEvent(kind, reportId, signal),
@@ -38,8 +46,9 @@ export function EventContributions({
     return () => data.subscription.unsubscribe();
   }, [refresh]);
   async function moderate(mergeId?: string) {
-    if (!event || busy) return;
+    if (!event || busy || (!mergeId && (!target || target === event.event_id || reason.trim().length < 3))) return;
     setBusy(true);
+    onBusyChange?.(true);
     setActionError(null);
     try {
       const result = mergeId
@@ -56,12 +65,14 @@ export function EventContributions({
       setTarget("");
       setReason("");
       refresh();
+      onDone?.();
     } catch (e) {
       setActionError(
         e instanceof Error ? e.message : "Modification impossible.",
       );
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
   if (!event)
@@ -78,6 +89,58 @@ export function EventContributions({
         ) : null}
       </View>
     );
+  if (moderation) return event.is_moderator ? (
+
+        <View style={styles.row}>
+          {moderation === "merge" && <>
+          <MergeReportPicker kind={kind} sourceId={event.event_id} value={target} onChange={setTarget} disabled={busy} />
+          <TextInput keyboardAppearance={scheme}
+            accessibilityLabel="Motif de la fusion"
+            placeholder="Motif de la fusion"
+            value={reason}
+            onChangeText={setReason}
+            maxLength={500}
+            multiline
+            style={styles.input}
+            editable={!busy}
+          />
+          <Pressable
+            accessibilityRole="button"
+            disabled={
+              busy ||
+              reason.trim().length < 3 ||
+              !/^[0-9a-f-]{36}$/i.test(target.trim())
+            }
+            style={styles.button}
+            onPress={() => void moderate()}
+          >
+            <Text style={styles.link}>Fusionner les événements</Text>
+          </Pressable>
+          </>}
+          {moderation === "undo" && event.merges.length === 0 && <Text style={styles.body}>Aucune fusion à annuler.</Text>}
+          {moderation === "undo" && event.merges.map((merge) => (
+            <View key={merge.id} style={styles.row}>
+              <Text style={styles.body}>
+                {merge.reason} · {formatAccidentDate(merge.created_at)}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy}
+                style={styles.button}
+                onPress={() => void moderate(merge.id)}
+              >
+                <Text style={styles.link}>Annuler cette fusion</Text>
+              </Pressable>
+            </View>
+          ))}
+          {busy && <ActivityIndicator />}
+          {actionError && (
+            <Text accessibilityRole="alert" style={styles.body}>
+              {actionError}
+            </Text>
+          )}
+        </View>
+  ) : <Text style={styles.body}>Accès réservé à la modération.</Text>;
   return (
     <View style={styles.card}>
       <Text style={styles.title}>
@@ -127,70 +190,6 @@ export function EventContributions({
             )}
           </View>
         ))}
-      {event.is_moderator && (
-        <View style={styles.row}>
-          <Text style={styles.title}>Modération · fusion réversible</Text>
-          <Text selectable style={styles.body}>
-            Événement : {event.event_id}
-          </Text>
-          <Text style={styles.body}>
-            Regroupez uniquement les fiches décrivant le même événement. Les
-            témoignages et leurs photos sont conservés.
-          </Text>
-          <TextInput keyboardAppearance={scheme}
-            accessibilityLabel="Identifiant de l’événement de destination"
-            placeholder="Identifiant de l’événement de destination"
-            value={target}
-            onChangeText={setTarget}
-            autoCapitalize="none"
-            style={styles.input}
-            editable={!busy}
-          />
-          <TextInput keyboardAppearance={scheme}
-            accessibilityLabel="Motif de la fusion"
-            placeholder="Motif de la fusion"
-            value={reason}
-            onChangeText={setReason}
-            maxLength={500}
-            multiline
-            style={styles.input}
-            editable={!busy}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={
-              busy ||
-              reason.trim().length < 3 ||
-              !/^[0-9a-f-]{36}$/i.test(target.trim())
-            }
-            style={styles.button}
-            onPress={() => void moderate()}
-          >
-            <Text style={styles.link}>Fusionner les événements</Text>
-          </Pressable>
-          {event.merges.map((merge) => (
-            <View key={merge.id} style={styles.row}>
-              <Text style={styles.body}>
-                {merge.reason} · {formatAccidentDate(merge.created_at)}
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                disabled={busy}
-                style={styles.button}
-                onPress={() => void moderate(merge.id)}
-              >
-                <Text style={styles.link}>Annuler cette fusion</Text>
-              </Pressable>
-            </View>
-          ))}
-          {busy && <ActivityIndicator />}
-          {actionError && (
-            <Text accessibilityRole="alert" style={styles.body}>
-              {actionError}
-            </Text>
-          )}
-        </View>
-      )}
       {selection && (
         <SafetyReportDetailSheet
           selection={selection}

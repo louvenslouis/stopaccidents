@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { test } from 'node:test';
 import { randomUUID } from 'node:crypto';
-import { PGlite } from '@electric-sql/pglite';
+import { createCryptoDatabase } from './helpers/crypto-db.mjs';
 
 test('leaderboard: periods, commune, merges, ordering, top 100, personal rank and privacy', async () => {
-  const db = await PGlite.create();
+  const db = await createCryptoDatabase();
   try {
     await db.exec(`
+      create role service_role nologin bypassrls;
       create role anon nologin;
       create role authenticated nologin;
       create schema auth;
@@ -108,9 +109,9 @@ test('leaderboard: periods, commune, merges, ordering, top 100, personal rank an
     assert.deepEqual(tieAliases,[...tieAliases].sort());
     assert.equal((await read('all',null,100)).entries.length,0);
     assert.equal((await read('all',null,999)).entries.length,0);
-    const lastUser=(await db.query(`select a.user_id, a.alias from public.user_aliases a
+    const lastUser=(await db.query(`select a.user_id, a.alias from private.user_aliases a
       where a.user_id not in ($1,$2,$3) order by a.alias collate "C" desc limit 1`,[owner,other,empty])).rows[0];
-    await db.query("update public.user_aliases set alias='zzzlastcontributor' where user_id=$1",[lastUser.user_id]);
+    await db.query("update private.user_alias_data set alias_lookup=private.alias_lookup('zzzlastcontributor'), encrypted_alias=private.encrypt_user_data(to_jsonb('zzzlastcontributor'::text),'alias:'||user_id) where user_id=$1",[lastUser.user_id]);
     lastUser.alias='zzzlastcontributor';
     await db.exec(`set role authenticated; select set_config('request.jwt.claims','{"sub":"${lastUser.user_id}"}',false)`);
     for (const period of ['all','week','month']) {

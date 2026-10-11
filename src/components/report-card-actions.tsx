@@ -1,7 +1,16 @@
+import { useRole } from '@/features/moderation/use-role';
+import { PublicationModeration } from './publication-moderation';
+import { EventContributions } from './event-contributions';
+import { ReportDetailAppearanceContext } from './report-detail-appearance';
+import Ban from 'lucide-react-native/icons/ban';
+import Merge from 'lucide-react-native/icons/merge';
+import Undo2 from 'lucide-react-native/icons/undo-2';
 import { AnimatedPressable } from './ui/animated-pressable';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { ActivityIndicator, Dimensions, Modal, StyleSheet, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, useWindowDimensions } from 'react-native';
+import RefreshCw from 'lucide-react-native/icons/refresh-cw';
+import Check from 'lucide-react-native/icons/check';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
 import { ReportCommentsSheet } from './report-comments-sheet';
 import MessageSquarePlus from 'lucide-react-native/icons/message-square-plus';
@@ -25,12 +34,15 @@ import { ReportShareSheet } from './report-share-sheet';
 
 export const ReportCardActivityContext = createContext<(active: boolean) => void>(() => {});
 
-export function ReportCardActions({ report, onUpdated, canInteract, children }: {
+export function ReportCardActions({ report, onUpdated, canInteract, overlay = false, children }: {
+  overlay?: boolean;
   report: SafetyReportSummary;
   onUpdated?: () => void;
   canInteract?: () => boolean;
   children?: (parts: { header: ReactNode; footer: ReactNode }) => ReactNode;
 }) {
+  const { canModerate } = useRole();
+  const [moderation, setModeration] = useState<"suspend" | "merge" | "undo" | null>(null);
   const setCardActive = useContext(ReportCardActivityContext);
   const styles = useStyles();
   const color = useThemeColor();
@@ -54,7 +66,7 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
       const below = y + anchorHeight + 8;
       setMenu({
         left: Math.max(insets.left + 12, Math.min(x + anchorWidth - 205, width - insets.right - 217)),
-        top: Math.max(insets.top + 8, below + 106 > height - insets.bottom ? y - 114 : below),
+        top: Math.max(insets.top + 8, below + (canModerate ? 196 : 58) > height - insets.bottom ? y - (canModerate ? 204 : 66) : below),
       });
     });
   }
@@ -65,7 +77,7 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
   const sending = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [share, setShare] = useState<ReportShare | null>(null);
-  const active = commentsOpen || updating || flagging || !!share || !!menu || confirmation.pending;
+  const active = !!moderation || commentsOpen || updating || flagging || !!share || !!menu || confirmation.pending;
   useEffect(() => {
     if (!active) return;
     setCardActive(true);
@@ -89,38 +101,39 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
       if (canInteract && !canInteract()) return;
       setMenu(null); setError(null);
       try { setShare(createReportShare(report, location)); } catch { setError('Impossible de préparer le partage. Réessayez.'); }
-    }} style={styles.headerIcon}>
-      <Share2 size={19} color="#182C2A" />
+    }} style={[styles.headerIcon, overlay && styles.glassIcon]}>
+      <Share2 size={19} color={overlay ? '#FFFFFF' : '#182C2A'} />
     </AnimatedPressable>
     <View ref={menuAnchor} collapsable={false}>
-      <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded: !!menu }} onPress={openMenu} style={styles.headerIcon}>
-        <Ellipsis size={23} color="#182C2A" />
+      <AnimatedPressable haptic="selection" pressedScale={0.9} accessibilityRole="button" accessibilityLabel="Options du signalement" accessibilityState={{ expanded: !!menu }} onPress={openMenu} style={[styles.headerIcon, overlay && styles.glassIcon]}>
+        <Ellipsis size={23} color={overlay ? '#FFFFFF' : '#182C2A'} />
       </AnimatedPressable>
     </View>
   </View>;
   const footer = <>
-    <View style={styles.actions}>
+    <View style={[styles.actions, overlay && styles.overlayActions]}>
       <AnimatedPressable haptic="selection" pressedScale={0.97} accessibilityRole="button" accessibilityLabel="Mettre à jour l’info" accessibilityState={{ disabled: !canUpdate }} disabled={!canUpdate}
-        onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setUpdating(true); }} style={[styles.update, !canUpdate && styles.dimmed]}>
-        <MessageSquarePlus size={18} color="#FFFFFF" />
-        <Text style={styles.updateText}>Mettre à jour</Text>
+        onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setUpdating(true); }} style={[styles.update, overlay && [styles.glassAction, width < 400 && styles.glassNarrow], !canUpdate && styles.dimmed]}>
+        {overlay ? <RefreshCw size={16} color="#FFFFFF" /> : <MessageSquarePlus size={18} color="#FFFFFF" />}
+        <Text numberOfLines={1} style={[styles.updateText, overlay && styles.glassText]}>{overlay ? "Mise à jour" : "Mettre à jour"}</Text>
       </AnimatedPressable>
       <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button"
         accessibilityLabel={confirmed ? 'Retirer ma confirmation' : 'Confirmer cette information'}
         accessibilityHint={confirmationDisabled && !confirmation.pending ? 'Vous avez déjà témoigné sur cet événement ou il est clos' : undefined}
         accessibilityState={{ selected: confirmed, busy: confirmation.pending, disabled: confirmationDisabled }} disabled={confirmationDisabled}
-        onPress={() => { if (!canInteract || canInteract()) void confirmation.toggle(); }} style={[styles.confirm, confirmed && styles.confirmed, confirmationDisabled && !confirmation.pending && styles.dimmed]}>
-        {confirmation.pending ? <ActivityIndicator size="small" color={color('#296957', 'success')} /> : <ThumbsUp size={18} color={color('#296957', 'success')} fill={confirmed ? color('#296957', 'success') : 'none'} />}
-        <Text style={styles.confirmText}>{confirmed ? 'Confirmé' : 'Confirmer'}</Text>
-        <View style={[styles.count, confirmed && styles.countSelected]}>
-          <Text translate={false} style={styles.countText}>{confirmation.value ? (confirmation.value.count > 999 ? '999+' : confirmation.value.count) : '–'}</Text>
-        </View>
+        onPress={() => { if (!canInteract || canInteract()) void confirmation.toggle(); }} style={[styles.confirm, confirmed && styles.confirmed, overlay && [styles.glassAction, width < 400 && styles.glassNarrow], overlay && confirmed && styles.glassSelected, confirmationDisabled && !confirmation.pending && styles.dimmed]}>
+        {confirmation.pending ? <ActivityIndicator size="small" color={overlay ? '#FFFFFF' : color('#296957', 'success')} /> : overlay ? <Check size={16} color="#FFFFFF" /> : <ThumbsUp size={18} color={overlay ? '#FFFFFF' : color('#296957', 'success')} fill={confirmed ? (overlay ? '#FFFFFF' : color('#296957', 'success')) : 'none'} />}
+        <Text numberOfLines={1} style={[styles.confirmText, overlay && styles.glassText]}>{confirmed ? 'Confirmé' : 'Confirmer'}</Text>
+        {!overlay && <View style={[styles.count, confirmed && styles.countSelected, overlay && styles.glassCount]}>
+          <Text translate={false} style={[styles.countText, overlay && styles.glassText]}>{confirmation.value ? (confirmation.value.count > 999 ? '999+' : confirmation.value.count) : '–'}</Text>
+        </View>}
       </AnimatedPressable>
-      <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button" accessibilityLabel="Ouvrir les commentaires" onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setCommentsOpen(true); }} style={styles.comments}>
-        <MessageCircle size={21} color={color('#296957', 'success')} />
+      <AnimatedPressable haptic="selection" pressedScale={0.94} accessibilityRole="button" accessibilityLabel="Ouvrir les commentaires" onPress={() => { if (canInteract && !canInteract()) return; setMenu(null); setCommentsOpen(true); }} style={[styles.comments, overlay && styles.glassIcon]}>
+        <MessageCircle size={21} color={overlay ? '#FFFFFF' : color('#296957', 'success')} />
+
       </AnimatedPressable>
     </View>
-    {(confirmation.error || (error && !flagging)) && <Text accessibilityRole="alert" style={styles.error}>{confirmation.error || error}</Text>}
+    {(confirmation.error || (error && !flagging)) && <Text accessibilityRole="alert" style={[styles.error, overlay && styles.glassError]}>{confirmation.error || error}</Text>}
   </>;
   return <>
     {children ? children({ header, footer }) : <><View style={styles.inlineHeader}>{header}</View>{footer}</>}
@@ -129,8 +142,21 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
     </TestimonyContext>}
     {commentsOpen && <ReportCommentsSheet report={report} onClose={() => setCommentsOpen(false)} />}
     {share && <ReportShareSheet report={share} onClose={() => setShare(null)} />}
-    <Modal visible={flagging || !!menu} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { if (!busy) { setFlagging(false); setMenu(null); } }}>
-      {flagging ? <View style={styles.overlay}>
+    <Modal visible={flagging || !!menu || (!!moderation && canModerate)} transparent animationType="fade" statusBarTranslucent onRequestClose={() => { if (!busy) { setFlagging(false); setMenu(null); setModeration(null); } }}>
+      {moderation && canModerate ? <View style={styles.overlay}>
+        <Pressable accessibilityLabel="Fermer" accessibilityRole="button" disabled={busy} onPress={() => setModeration(null)} style={StyleSheet.absoluteFill} />
+        <View style={[styles.dialog, { maxHeight: "90%" }]} accessibilityViewIsModal>
+          <View style={styles.dialogHeader}>
+            <Text accessibilityRole="header" style={styles.title}>{moderation === "suspend" ? "Suspension" : moderation === "merge" ? "Fusion" : "Annuler une fusion"}</Text>
+            <Pressable accessibilityLabel="Fermer" accessibilityRole="button" disabled={busy} onPress={() => setModeration(null)} style={styles.icon}><X size={20} color={color("#405066", "secondary")} /></Pressable>
+          </View>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            <ReportDetailAppearanceContext value>
+              {moderation === "suspend" ? <PublicationModeration kind={report.report_kind} reportId={report.id} onBusyChange={setBusy} onDone={() => { setModeration(null); onUpdated?.(); }} /> : <EventContributions kind={report.report_kind} reportId={report.id} moderation={moderation} onBusyChange={setBusy} onDone={() => { setModeration(null); onUpdated?.(); }} />}
+            </ReportDetailAppearanceContext>
+          </ScrollView>
+        </View>
+      </View> : flagging ? <View style={styles.overlay}>
         <Pressable accessibilityLabel="Fermer" accessibilityRole="button" disabled={busy} onPress={() => setFlagging(false)} style={StyleSheet.absoluteFill} />
         <View style={styles.dialog} accessibilityViewIsModal>
           <View style={styles.dialogHeader}>
@@ -151,15 +177,31 @@ export function ReportCardActions({ report, onUpdated, canInteract, children }: 
           <Pressable accessibilityRole="button" onPress={() => { setMenu(null); setFlagging(true); setSent(false); setError(null); setReason(''); }} style={styles.menuItem}>
             <Flag size={18} color={color('#C43F32', 'accent')} /><Text style={styles.menuText}>Signaler</Text>
           </Pressable>
-          <View accessibilityState={{ disabled: true }} style={[styles.menuItem, styles.dimmed]}>
-            <Ellipsis size={18} color={color('#737C89', 'muted')} /><Text style={styles.soon}>Autres · bientôt</Text>
-          </View>
+          {canModerate && <>
+            <Pressable accessibilityRole="button" onPress={() => { setMenu(null); setModeration('suspend'); }} style={styles.menuItem}>
+              <Ban size={18} color={color('#243147', 'text')} /><Text style={styles.moderationText}>Suspension</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { setMenu(null); setModeration('merge'); }} style={styles.menuItem}>
+              <Merge size={18} color={color('#243147', 'text')} /><Text style={styles.moderationText}>Fusion</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => { setMenu(null); setModeration('undo'); }} style={styles.menuItem}>
+              <Undo2 size={18} color={color('#243147', 'text')} /><Text style={styles.moderationText}>Annuler une fusion</Text>
+            </Pressable>
+          </>}
         </Animated.View>}
       </View>}
     </Modal>
   </>;
 }
 const useStyles = createThemedStyles(color => StyleSheet.create({
+  overlayActions: { marginTop: 0, gap: 5 },
+  glassAction: { flex: 1, width: undefined, minHeight: 42, paddingHorizontal: 6, paddingVertical: 8, borderRadius: 24, flexDirection: 'row', gap: 4, borderWidth: 1, borderColor: '#FFFFFF80', backgroundColor: '#14202B88', alignItems: 'center', justifyContent: 'center' },
+  glassIcon: { width: 44, height: 44, minHeight: 44, borderRadius: 22, borderColor: '#FFFFFF80', backgroundColor: '#14202B88' },
+  glassNarrow: { flexDirection: 'column', paddingHorizontal: 3, paddingVertical: 4, gap: 3 },
+  glassText: { color: '#FFFFFF', fontSize: 10, fontWeight: '600', flexShrink: 1 },
+  glassCount: { minWidth: 15, height: 18, paddingHorizontal: 2, backgroundColor: '#FFFFFF22', borderRadius: 9 },
+  glassSelected: { backgroundColor: '#226B5799', borderColor: '#D6FFE6' },
+  glassError: { color: '#FFFFFF', backgroundColor: '#691E28CC', padding: 8, borderRadius: 10 },
   inlineHeader: { alignItems: 'flex-end', marginTop: 12 },
   headerActions: { flexDirection: 'row', gap: 6 },
   headerIcon: { width: 42, height: 42, borderRadius: 15, backgroundColor: '#FFFFFF80', borderWidth: 1, borderColor: '#FFFFFF65', alignItems: 'center', justifyContent: 'center' },
@@ -178,7 +220,7 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   menu: { position: 'absolute', width: 205, shadowColor: '#10231C', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 12, padding: 6, borderWidth: 1, borderColor: color('#E1E7EE', 'border'), borderRadius: 18, backgroundColor: color('#FFFFFF', 'surface') },
   menuItem: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 46, paddingHorizontal: 12 },
   menuText: { color: color('#C43F32', 'accent'), fontWeight: '600', fontSize: 14 },
-  soon: { color: color('#737C89', 'muted'), fontSize: 13 },
+  moderationText: { color: color('#243147', 'text'), fontSize: 14, fontWeight: '600' },
   error: { color: color('#C43F32', 'accent'), fontSize: 13, marginTop: 8 },
   overlay: { flex: 1, backgroundColor: '#101C2E88', justifyContent: 'center', alignItems: 'center', padding: 24 },
   dialog: { width: '100%', maxWidth: 420, padding: 22, borderRadius: 26, gap: 18, backgroundColor: color('#FFFFFF', 'surface') },

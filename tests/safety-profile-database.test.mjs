@@ -83,7 +83,7 @@ test("confidential profile, exact event matching, consent, corrections and priva
     );
     const photo = `${owner}/${randomUUID()}.jpg`;
     await db.query(
-      "insert into storage.objects(bucket_id,name) values('identity-cards',$1)",
+      "select public.save_identity_photo($1,'/9j/AA==')",
       [photo],
     );
     await save(identity, "identity", "00987654", null, null, photo);
@@ -372,15 +372,8 @@ test("confidential profile, exact event matching, consent, corrections and priva
     assert.equal((await inbox()).length, 0);
     await login(owner);
     await rpc("delete_safety_record", [identity]);
-    assert.equal(
-      (
-        await db.query(
-          "delete from storage.objects where name=$1 returning name",
-          [photo],
-        )
-      ).rows.length,
-      1,
-    );
+    await rpc("delete_identity_photo", [photo]);
+    await assert.rejects(rpc("read_identity_photo", [photo]), /safety_photo_unavailable/);
     assert.deepEqual((await profile()).records, []);
   } finally {
     await db.close();

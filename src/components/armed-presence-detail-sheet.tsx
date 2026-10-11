@@ -1,4 +1,5 @@
-import { PublicationModeration } from '@/components/publication-moderation';
+import { ReportPhotoGallery } from '@/components/report-photo-gallery';
+import { useReportDetailStyles } from './report-detail-appearance';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
@@ -24,7 +25,7 @@ const statusLabels = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const styles = useStyles();
+  const styles = useReportDetailStyles(useStyles());
 
   return (
     <View style={styles.section}>
@@ -36,8 +37,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = false }: { id: string; onClose: () => void; hideContributions?: boolean }) {
-  const styles = useStyles();
+export function ArmedPresenceDetailSheet({ id, onClose, footer, embedded = false, hideContributions = false }: { id: string; onClose: () => void; footer?: ReactNode; embedded?: boolean; hideContributions?: boolean }) {
+  const styles = useReportDetailStyles(useStyles());
   const themeColor = useThemeColor();
 
   const { height, width } = useWindowDimensions();
@@ -63,42 +64,8 @@ export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = fals
     }
   }
 
-  return (
-    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
-      <View style={[styles.overlay, width >= 700 && styles.wideOverlay]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fermer la fiche de la présence d’hommes armés"
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
-        <View
-          accessibilityViewIsModal
-          style={[
-            styles.sheet,
-            width >= 700 && styles.wideSheet,
-            {
-              maxHeight: height - insets.top - 20,
-              paddingBottom: Math.max(insets.bottom, 16),
-            },
-          ]}>
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <View style={styles.heading}>
-              <Text style={styles.eyebrow}>SIGNALEMENT</Text>
-              <Text accessibilityRole="header" style={styles.title}>
-                Présence d’hommes armés
-              </Text>
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Fermer les détails"
-              onPress={onClose}
-              style={styles.close}>
-              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+  const detailContent = <>
+
             {!report ? (
               <View style={styles.state}>
                 {loading && <ActivityIndicator color={themeColor("#AF3848", 'accent')} />}
@@ -115,8 +82,8 @@ export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = fals
               </View>
             ) : (
               <>
-                <PublicationModeration kind="armed_presence" reportId={id} onDone={onClose} />
-                {!hideContributions && <EventContributions kind='armed_presence' reportId={id} />}
+                {!embedded && <>
+                {!hideContributions && <EventContributions kind='armed_presence' reportId={id} />} </>}
                 <View style={styles.summary}>
                   <View style={styles.iconBox}>
                     <AppIcon icon={ShieldAlert} size={27} color={themeColor("#AF3848", 'accent')} />
@@ -193,6 +160,9 @@ export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = fals
                       {report.details ? <Text translate={false}>{report.details}</Text> : 'Non renseigné'}
                     </Text>
                   </Section>
+                <ReportPhotoGallery kind="armed_presence" id={id} updatedAt={report.updated_at} />
+                {embedded && <> {!hideContributions && <EventContributions kind='armed_presence' reportId={id} />}
+                 </>}
                 {error && (
                   <Text accessibilityRole="alert" style={styles.error}>
                     {error}
@@ -212,7 +182,47 @@ export function ArmedPresenceDetailSheet({ id, onClose, hideContributions = fals
                 </Pressable>
               </>
             )}
-          </ScrollView>
+
+  </>;
+  if (embedded) return <View style={styles.content}>{detailContent}</View>;
+
+  return (
+    <Modal visible transparent animationType="slide" statusBarTranslucent onRequestClose={onClose}>
+      <View style={[styles.overlay, width >= 700 && styles.wideOverlay]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Fermer la fiche de la présence d’hommes armés"
+          onPress={onClose}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          accessibilityViewIsModal
+          style={[
+            styles.sheet,
+            width >= 700 && styles.wideSheet,
+            {
+              maxHeight: height - insets.top - 20,
+              paddingBottom: Math.max(insets.bottom, 16),
+            },
+          ]}>
+          <View style={styles.handle} />
+          <View style={styles.header}>
+            <View style={styles.heading}>
+              <Text style={styles.eyebrow}>SIGNALEMENT</Text>
+              <Text accessibilityRole="header" style={styles.title}>
+                Présence d’hommes armés
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fermer les détails"
+              onPress={onClose}
+              style={styles.close}>
+              <AppIcon icon={X} size={22} color={themeColor("#667185", 'muted')} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>{detailContent}</ScrollView>
+          {footer}
         </View>
       </View>
     </Modal>

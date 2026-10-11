@@ -1,4 +1,4 @@
-import { ReportPhotos } from '@/components/report-photos';
+import { ReportPhotoStep } from '@/components/report-photo-step';
 import { OptionalReportDetails } from '@/components/optional-report-details';
 import { ReportScene } from '@/components/report-scene';
 import { ReportModalSheet } from '@/components/ui/report-modal-sheet';
@@ -29,7 +29,6 @@ import X from 'lucide-react-native/icons/x';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { AppIcon, type AppIconComponent } from '@/components/ui/app-icon';
-import { ReportCamera } from '@/components/report-camera';
 import { SuspiciousVehicleReportSheet } from '@/components/suspicious-vehicle-report-sheet';
 import { GunfireReportSheet } from '@/components/gunfire-report-sheet';
 import { ArmedPresenceReportSheet } from '@/components/armed-presence-report-sheet';
@@ -41,7 +40,6 @@ import {
   type ReportType,
 } from '@/components/report-type-picker';
 import {
-  MAX_PHOTOS,
   isPreciseLocation,
   locationDescription,
   splitIdentifiers,
@@ -104,7 +102,8 @@ const severities: {
     tint: '#F0F2F6',
   },
 ];
-const steps = ['Accident', 'Gravité', 'Détails'];
+const steps = ['Accident', 'Gravité', 'Détails', 'Photos'];
+const PHOTO_STEP = steps.length;
 const makeDraft = (): ReportDraft => ({
   id: randomUUID(),
   location: '',
@@ -271,7 +270,6 @@ export function ReportSheet({
   const { location: appLocation } = useAppLocation();
   const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
   const eventChoice = useEventChoice('accident');
-  const [cameraOpen, setCameraOpen] = useState(false);
   const [selectingPhotos, setSelectingPhotos] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -301,10 +299,6 @@ export function ReportSheet({
   }, []);
   function close() {
     if (submitting.current || selectingPhotos) return;
-    if (cameraOpen) {
-      setCameraOpen(false);
-      return;
-    }
     locationRequest.current++;
     locationController.current?.abort();
     setLocating(false);
@@ -408,7 +402,7 @@ export function ReportSheet({
   }
   async function next(skip = false) {
     if (!draft || submitting.current || selectingPhotos) return;
-    const validation = skip ? null : validateStep(draft, step);
+    const validation = skip ? null : validateStep(draft, Math.min(step, 3));
     if (validation) {
       setError(validation);
       return;
@@ -428,9 +422,9 @@ export function ReportSheet({
         await saveAccidentReportStep(draft, 0, setProgress);
         savedLocation.current = locationDescription(draft);
       }
-      const id = skip ? draft.id : await saveAccidentReportStep(draft, step, setProgress);
+      const id = skip ? draft.id : await saveAccidentReportStep(draft, Math.min(step, 3), setProgress);
       if (!skip) setSavedSteps((current) => Math.max(current, step + 1));
-      if (step === 3) setReceipt(id);
+      if (step === PHOTO_STEP) setReceipt(id);
       else changeStep(step + 1);
     } catch (e) {
       setError(
@@ -459,7 +453,7 @@ export function ReportSheet({
     <ReportModalSheet
       visible={visible && (reportType === null || reportType === 'accident')}
       onRequestClose={close}
-      dismissDisabled={sending}
+      dismissDisabled={sending || selectingPhotos}
     >
           {reportType === null ? (
             <ReportTypePicker
@@ -486,14 +480,6 @@ export function ReportSheet({
                 locationController.current?.abort();
                 setLocating(false);
                 done();
-              }}
-            />
-          ) : cameraOpen ? (
-            <ReportCamera
-              onClose={() => setCameraOpen(false)}
-              onCapture={(photo) => {
-                update('photos', [...draft.photos, photo].slice(0, MAX_PHOTOS));
-                setCameraOpen(false);
               }}
             />
           ) : receipt ? (
@@ -680,9 +666,7 @@ export function ReportSheet({
                       disabled={sending || selectingPhotos}
                       onChange={(value) => update('identities', value)}
                     />
-                    <ReportPhotos photos={draft.photos} context={draft} disabled={sending}
-                      onChange={(photos) => setDraft(current => ({ ...current, photos }))} onCamera={() => setCameraOpen(true)}
-                      onBusyChange={setSelectingPhotos} />
+
                     <Text style={styles.label}>Autres informations</Text>
                     <OptionalReportDetails key="notes" hasValue={Boolean(draft.notes)}>
                       <TextInput keyboardAppearance={scheme}
@@ -698,6 +682,10 @@ export function ReportSheet({
                       />
                     </OptionalReportDetails>
                   </>
+                )}
+                {step === PHOTO_STEP && (
+                  <ReportPhotoStep photos={draft.photos ?? []} context={draft} active={visible} disabled={sending}
+                    onChange={(photos) => setDraft(current => ({ ...current, photos }))} onBusyChange={setSelectingPhotos} />
                 )}
               </ScrollView>
               {step > 0 && (
@@ -740,11 +728,11 @@ export function ReportSheet({
                         label={
                           sending
                             ? 'Enregistrement…'
-                            : step === 3
+                            : step === PHOTO_STEP
                               ? 'Enregistrer les compléments'
                               : 'Suivant'
                         }
-                        icon={step === 3 ? CheckCheck : ArrowRight}
+                        icon={step === PHOTO_STEP ? CheckCheck : ArrowRight}
                         onPress={() => next()}
                         disabled={sending || locating || selectingPhotos}
                         busy={sending}
