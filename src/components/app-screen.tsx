@@ -16,6 +16,7 @@ type AppScreenProps = {
   hideIntro?: boolean;
   headerLeft?: ReactNode;
   headerRight?: ReactNode;
+  headerStyle?: StyleProp<ViewStyle>;
   children?: ReactNode;
   contentContainerStyle?: StyleProp<ViewStyle>;
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -28,6 +29,7 @@ export function AppScreen({
   hideIntro = false,
   headerLeft,
   headerRight,
+  headerStyle,
   children,
   contentContainerStyle,
   onScroll,
@@ -54,7 +56,7 @@ export function AppScreen({
         showsVerticalScrollIndicator={false}>
         <Animated.View
           entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
-          style={[styles.header, hideIntro && styles.compactHeader, !!headerLeft && styles.headerWithLeft]}>
+          style={[styles.header, hideIntro && styles.compactHeader, !!headerLeft && styles.headerWithLeft, headerStyle]}>
           {headerLeft}
           {!hideIntro && <View style={styles.heading}>
             <Text style={styles.eyebrow}>{eyebrow}</Text>

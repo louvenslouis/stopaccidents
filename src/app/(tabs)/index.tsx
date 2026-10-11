@@ -143,6 +143,7 @@ export default function HomeScreen() {
       <AppScreen
         title="Accueil"
         hideIntro
+        headerStyle={styles.homeHeader}
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerLeft={
@@ -285,6 +286,11 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     backgroundColor: themeColor('#FFFFFF', 'surface'),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  homeHeader: {
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: themeColor('#FFFFFF', 'border'),
   },
   homeContent: {
     paddingTop: 16,

@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { scheduleOnRN } from 'react-native-worklets';
-import { Image } from 'expo-image';
 import { Modal, StyleSheet, useWindowDimensions, type View as NativeView } from 'react-native';
 import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming, withDelay, withRepeat, withSequence, cancelAnimation, useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ArrowUpRight from 'lucide-react-native/icons/arrow-up-right';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Clock3 from 'lucide-react-native/icons/clock-3';
@@ -19,6 +19,7 @@ import { ReportCardActions, ReportCardActivityContext } from './report-card-acti
 import { ReportLocationPreview } from './report-location-preview';
 import { SafetyReportDetailSheet } from './safety-report-detail-sheet';
 import { ReportIllustration } from './report-illustration';
+import { ReportCardPhoto } from './report-card-photo';
 
 const labels: Record<SafetyReportSummary['report_kind'], string> = {
   accident: 'Accident', barricade: 'Route barricadée', breakdown: 'Véhicule en panne', kidnapping: 'Enlèvement', gunfire: 'Tirs entendus', armed_presence: 'Présence d’hommes armés', suspicious_vehicle: 'Véhicule suspect', gathering: 'Rassemblement', fire: 'Incendie',
@@ -75,17 +76,20 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
   function content(header: ReactNode, footer: ReactNode, expanded: boolean) {
     return <>
       <View style={[styles.photo, expanded && { flexGrow: 0, flexShrink: 0, height: Math.max(270, Math.min(420, targetHeight * 0.51)) }]}>
-        {photo ? <Image recyclingKey={`${report.report_kind}:${report.event_id || report.id}`} source={{ uri: photo, cacheKey: photo.split('?')[0] }} cachePolicy="memory-disk" transition={180} contentFit="cover" onError={() => setFailedPhotos(old => [...old, photo])} style={StyleSheet.absoluteFill} /> : <View pointerEvents="none" style={styles.noPhoto}><View style={styles.orbit} /><ReportIllustration kind={report.report_kind} size={80} /><Text style={styles.fallbackTitle}>{labels[report.report_kind]}</Text></View>}
-        <View pointerEvents="none" style={styles.shade} />
-        {!expanded && <AnimatedPressable accessibilityRole="button" accessibilityLabel={`Ouvrir : ${labels[report.report_kind]}`} onPress={open} style={StyleSheet.absoluteFill}><View /></AnimatedPressable>}
-        <View style={styles.top}>
+        <ReportCardPhoto photo={photo} identity={`${report.report_kind}:${report.event_id || report.id}`} enabled={active && (expanded || !origin)}
+          canInteract={expanded ? () => true : canInteract} onError={() => { if (photo) setFailedPhotos(old => [...old, photo]); }}
+          fallback={<View pointerEvents="none" style={styles.noPhoto}><View style={styles.orbit} /><ReportIllustration kind={report.report_kind} size={80} /><Text style={styles.fallbackTitle}>{labels[report.report_kind]}</Text></View>}>
+        {controls => <>
+        {controls(<View pointerEvents="box-none" style={styles.top}>
           {expanded ? <View style={styles.closePlaceholder} /> : <AnimatedPressable accessibilityRole="button" accessibilityLabel="Ouvrir" onPress={open} style={styles.expandButton}><ArrowUpRight size={16} color="#FFFFFF" /><Text numberOfLines={1} style={styles.expandLabel}>Ouvrir</Text></AnimatedPressable>}
           {header}
+        </View>)}
+        <View pointerEvents="box-none" style={styles.photoBottom}>
+          {expanded && <View pointerEvents="none" style={styles.photoTitle}><Text style={styles.openTitle}>{labels[report.report_kind]}</Text><Text translate={false} style={styles.openLocation}>{location.label}</Text></View>}
+          {controls(footer)}
         </View>
-        <View style={styles.photoBottom}>
-          {expanded && <View style={styles.photoTitle}><Text style={styles.openTitle}>{labels[report.report_kind]}</Text><Text translate={false} style={styles.openLocation}>{location.label}</Text></View>}
-          {footer}
-        </View>
+        </>}
+        </ReportCardPhoto>
       </View>
       <View style={styles.panel}>
         {!expanded ? <View style={styles.summary}>
@@ -107,12 +111,12 @@ export function RecentReportCard({ report, active, loading, canInteract, onRefre
     {({ header, footer }) => <>
       <View ref={ref} collapsable={false} style={styles.card}>{content(header, footer, false)}</View>
       <Modal visible={!!origin} transparent animationType="none" statusBarTranslucent onRequestClose={close}>
-        <View style={styles.backdrop}>
+        <GestureHandlerRootView style={styles.backdrop}>
           <Animated.View style={[styles.openCard, morph]} accessibilityViewIsModal>
             <View style={styles.openToolbar}><AnimatedPressable accessibilityRole="button" accessibilityLabel="Fermer le signalement" onPress={close} style={styles.circle}><ArrowLeft size={21} color="#FFFFFF" /></AnimatedPressable></View>
             <ScrollView style={styles.openScroll} bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.openContent}>{origin && content(header, footer, true)}</ScrollView>
           </Animated.View>
-        </View>
+        </GestureHandlerRootView>
       </Modal>
     </>}
   </ReportCardActions>;
@@ -148,7 +152,6 @@ const useStyles = createThemedStyles(color => StyleSheet.create({
   noPhoto: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 16, overflow: 'hidden' },
   orbit: { position: 'absolute', width: 320, height: 320, borderRadius: 160, borderWidth: 48, borderColor: '#FFFFFF0B', top: -90, right: -100 },
   fallbackTitle: { color: '#D2E5F5', fontSize: 22, fontWeight: '600', textAlign: 'center', paddingHorizontal: 20 },
-  shade: { ...StyleSheet.absoluteFill, backgroundColor: '#08162218' },
   top: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12 },
   openToolbar: { height: 62, paddingHorizontal: 12, justifyContent: 'center' },
   openScroll: { flex: 1 },

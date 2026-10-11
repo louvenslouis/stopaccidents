@@ -31,7 +31,7 @@ function fixture(initialIndex = 0) {
     'react-native-gesture-handler': {
       Gesture: { Pan: () => {
         const gesture = { handlers: {}, config: {} };
-        for (const name of ['enabled', 'activeOffsetX', 'failOffsetY']) {
+        for (const name of ['enabled', 'maxPointers', 'activeOffsetX', 'failOffsetY']) {
           gesture[name] = value => { gesture.config[name] = value; return gesture; };
         }
         for (const name of ['onStart', 'onUpdate', 'onEnd', 'onFinalize']) {
@@ -151,6 +151,7 @@ test('both ends resist overscroll, long drags stay within one mounted page, and 
 });
 
 test('vertical gestures and taps remain available, and a single card disables the pan', () => {
+  assert.equal(fixture().result.gesture.config.maxPointers, 1);
   const f = fixture();
   assert.deepEqual(f.result.gesture.config.failOffsetY, [-10, 10]);
   f.result.gesture.handlers.onFinalize();

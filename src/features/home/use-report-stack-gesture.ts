@@ -39,6 +39,7 @@ export function useReportStackGesture(keys: string[], index: number, onSelect: (
 
   const gesture = Gesture.Pan()
     .enabled(keys.length > 1)
+    .maxPointers(1)
     .activeOffsetX([-10, 10])
     .failOffsetY([-10, 10])
     .onStart(() => {
