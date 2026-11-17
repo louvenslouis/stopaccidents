@@ -21,7 +21,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 Chaque push sur `master` lance le workflow
 `.github/workflows/deploy-pages.yml` : installation avec `npm ci`, export web Expo,
 puis publication de `dist` sur
-[le site](https://louvenslouis.github.io/stopaccidents/).
+[le site](https://app.stopaccidentshaiti.org/).
 Le workflow peut aussi être lancé manuellement depuis l’onglet **Actions**.
 
 Dans **Settings → Pages**, la source de publication doit être **GitHub Actions**.
@@ -56,9 +56,9 @@ See the [Supabase password authentication guide](https://supabase.com/docs/guide
 
 Google login uses Supabase OAuth. To activate it for this project:
 
-1. In [Google Auth Platform](https://console.cloud.google.com/auth/overview), create a Web OAuth client. Add `https://louvenslouis.github.io` as an authorized JavaScript origin and `https://vqzmzblwmbhmfoikpbhy.supabase.co/auth/v1/callback` as an authorized redirect URI.
+1. In [Google Auth Platform](https://console.cloud.google.com/auth/overview), create a Web OAuth client. Add `https://app.stopaccidentshaiti.org` as an authorized JavaScript origin and `https://vqzmzblwmbhmfoikpbhy.supabase.co/auth/v1/callback` as an authorized redirect URI.
 2. Add that client ID and secret to [Supabase Authentication > Google](https://supabase.com/dashboard/project/vqzmzblwmbhmfoikpbhy/auth/providers?provider=Google), then enable the provider. Store the secret there, never in Expo.
-3. Add `https://louvenslouis.github.io/stopaccidents/profil/` and `stopaccidents://profil` to [Supabase's allowed redirect URLs](https://supabase.com/dashboard/project/vqzmzblwmbhmfoikpbhy/auth/url-configuration). Add the current local Web URL when testing locally. Native OAuth callbacks need a development or production build with the `stopaccidents` scheme; Expo Go's redirect URL is not stable.
+3. Add `https://app.stopaccidentshaiti.org/profil/` and `stopaccidents://profil` to [Supabase's allowed redirect URLs](https://supabase.com/dashboard/project/vqzmzblwmbhmfoikpbhy/auth/url-configuration). Add the current local Web URL when testing locally. Native OAuth callbacks need a development or production build with the `stopaccidents` scheme; Expo Go's redirect URL is not stable.
 4. Once Google OAuth works, set `EXPO_PUBLIC_GOOGLE_AUTH_ENABLED=true` in the build environment to enable the button.
 
 In the output, you'll find options to open the app in a
@@ -239,7 +239,7 @@ Le petit bouton de partage de la carte compacte prépare une image PNG et un tex
 court avec le type, le lieu, la date, la gravité et un lien vers la fiche concernée.
 L’image contient un QR code vers cette fiche ; le lien reste dans le texte partagé.
 L’aperçu fige le signalement choisi même si l’accueil s’actualise. Le lien utilise
-`EXPO_PUBLIC_SITE_URL` (par défaut `https://louvenslouis.github.io/stopaccidents/`)
+`EXPO_PUBLIC_SITE_URL` (par défaut `https://app.stopaccidentshaiti.org/`)
 et le paramètre `signalement=catégorie:UUID`, compatible avec l’hébergement statique.
 Sur le web, le partage de fichiers est proposé lorsque le navigateur le permet ;
 le téléchargement de l’image et la copie du texte restent disponibles.

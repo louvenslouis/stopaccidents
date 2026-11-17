@@ -1,7 +1,7 @@
 import { accidentSeverity, accidentTypeLabel, formatAccidentDate } from '../accident-report/presentation';
 import { parseReportSelection, reportSelection, type SafetyReportSummary } from './read';
 
-const PUBLIC_SITE_URL = 'https://louvenslouis.github.io/stopaccidents/';
+const PUBLIC_SITE_URL = 'https://app.stopaccidentshaiti.org/';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function sharedReportSelection(value: string | string[] | undefined) {

@@ -12,8 +12,8 @@ function googleAuth({ platform = 'ios', oauthError = null, browserResult, exchan
   const calls = [];
   const session = { user: { id: 'account-id', email: 'personne@example.com' } };
   const location = {
-    origin: 'https://louvenslouis.github.io',
-    pathname: '/stopaccidents/profil',
+    origin: 'https://app.stopaccidentshaiti.org',
+    pathname: '/profil',
     assigned: null,
     assign(url) { this.assigned = url; },
   };
@@ -58,7 +58,7 @@ test('native Google login opens the auth browser and exchanges the PKCE code', a
 test('web Google login redirects back to the current profile URL', async () => {
   const auth = googleAuth({ platform: 'web' });
   assert.deepEqual(await auth.signInWithGoogle(), { status: 'redirecting' });
-  assert.equal(auth.calls[0].credentials.options.redirectTo, 'https://louvenslouis.github.io/stopaccidents/profil/');
+  assert.equal(auth.calls[0].credentials.options.redirectTo, 'https://app.stopaccidentshaiti.org/profil/');
   assert.equal(auth.location.assigned, 'https://example.supabase.co/auth/v1/authorize');
   assert.equal(auth.calls.length, 1);
 });

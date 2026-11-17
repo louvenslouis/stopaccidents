@@ -21,7 +21,7 @@ import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 
-const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://louvenslouis.github.io/stopaccidents/';
+const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://app.stopaccidentshaiti.org/';
 
 export function HomeMenu() {
   const styles = useStyles();
