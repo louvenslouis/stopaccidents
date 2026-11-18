@@ -15,6 +15,8 @@ declare global {
 }
 
 const installPromptChange = 'stopaccidents:install-prompt-change';
+const installReminderKey = 'stopaccidents.pwa-install-reminder';
+let reminderSeen = false;
 
 // Capture the event before Expo loads so the home menu can use it after navigation or hydration.
 export const captureInstallPrompt = `
@@ -57,11 +59,11 @@ function getInstallMethod() {
   if (typeof window === 'undefined') return null;
 
   const browser = window.navigator;
-  const isIPhone = browser?.platform === 'iPhone' || /\biPhone\b/.test(browser?.userAgent ?? '');
-  if (!isIPhone) return getInstallPrompt() ? 'prompt' : null;
+  if (browser?.standalone || window.matchMedia?.('(display-mode: standalone)').matches) return null;
 
-  const isStandalone = browser.standalone || window.matchMedia?.('(display-mode: standalone)').matches;
-  return isStandalone ? null : 'safari';
+  const isIPhone = browser?.platform === 'iPhone' || /\biPhone\b/.test(browser?.userAgent ?? '');
+  if (isIPhone) return 'safari';
+  return getInstallPrompt() ? 'prompt' : null;
 }
 
 export function usePwaInstall() {
@@ -70,4 +72,36 @@ export function usePwaInstall() {
     installPwa: method === 'prompt' ? requestInstall : null,
     canShowSafariGuide: method === 'safari',
   };
+}
+
+export function shouldShowInstallReminder() {
+  if (reminderSeen || typeof window === 'undefined') return false;
+
+  try {
+    return window.localStorage.getItem(installReminderKey) !== '1'
+      && window.sessionStorage.getItem(installReminderKey) !== '1';
+  } catch {
+    return true;
+  }
+}
+
+export function markInstallReminderSeen() {
+  reminderSeen = true;
+  try {
+    window.sessionStorage.setItem(installReminderKey, '1');
+  } catch {
+    // Keep the reminder dismissed for this page when storage is unavailable.
+  }
+}
+
+export function setInstallReminderDisabled(disabled: boolean) {
+  try {
+    if (disabled) {
+      window.localStorage.setItem(installReminderKey, '1');
+    } else {
+      window.localStorage.removeItem(installReminderKey);
+    }
+  } catch {
+    // The reminder is already dismissed for this page.
+  }
 }

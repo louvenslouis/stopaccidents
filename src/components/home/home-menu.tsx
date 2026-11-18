@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
-import { Alert, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { Alert, Linking, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
+import { useIsFocused, useRouter } from 'expo-router';
 import Check from 'lucide-react-native/icons/check';
 import Download from 'lucide-react-native/icons/download';
 import EllipsisVertical from 'lucide-react-native/icons/ellipsis-vertical';
@@ -19,7 +19,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
-import { usePwaInstall } from '@/features/home/pwa-install';
+import {
+  markInstallReminderSeen,
+  setInstallReminderDisabled,
+  shouldShowInstallReminder,
+  usePwaInstall,
+} from '@/features/home/pwa-install';
 import { useLanguage } from '@/features/language/language-provider';
 import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
@@ -28,6 +33,23 @@ import { surfaceDepth } from '@/components/ui/surface-depth';
 
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://app.stopaccidentshaiti.org/';
 const INSTALL_LABEL = 'Installer l’application';
+const INSTALL_REMINDER_DELAY_MS = 3000;
+const reminderPreferenceStyle: CSSProperties = {
+  minHeight: 44,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 10,
+  fontFamily: 'system-ui, sans-serif',
+  fontSize: 15,
+  cursor: 'pointer',
+};
+const reminderCheckboxStyle: CSSProperties = {
+  width: 20,
+  height: 20,
+  flexShrink: 0,
+  margin: 0,
+  accentColor: '#296957',
+};
 const SAFARI_INSTALL_STEPS = [
   {
     icon: SquareArrowUp,
@@ -43,18 +65,29 @@ const SAFARI_INSTALL_STEPS = [
   },
 ];
 
-export function HomeMenu() {
+type HomePanel =
+  | { kind: 'menu'; right: number; top: number }
+  | { kind: 'reminder' }
+  | { kind: 'safari' };
+
+export function HomeMenu({ allowInstallReminder }: { allowInstallReminder: boolean }) {
   const styles = useStyles();
   const color = useThemeColor();
   const { t } = useLanguage();
   const { installPwa, canShowSafariGuide } = usePwaInstall();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const trigger = useRef<View>(null);
-  const [anchor, setAnchor] = useState<{ right: number; top: number } | null>(null);
+  const [openPanel, setPanel] = useState<HomePanel | null>(null);
   const [menuHeight, setMenuHeight] = useState(188);
-  const [showSafariGuide, setShowSafariGuide] = useState(false);
+  const [reminderDisabled, setReminderDisabled] = useState(false);
+  const canInstall = Platform.OS === 'web' && (!!installPwa || canShowSafariGuide);
+  const canRemind = isFocused && allowInstallReminder && canInstall;
+  const panel = openPanel?.kind === 'reminder' && !canRemind ? null : openPanel;
+  const menu = panel?.kind === 'menu' ? panel : null;
+  const showSafariGuide = panel?.kind === 'safari';
   const progress = useSharedValue(0);
   const opacity = useSharedValue(0);
   const panelStyle = useAnimatedStyle(() => ({
@@ -66,17 +99,56 @@ export function HomeMenu() {
   }));
   const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
+  useEffect(() => {
+    if (!canRemind || panel || !shouldShowInstallReminder()) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+    function scheduleReminder() {
+      clearTimeout(timer);
+      if (document.hidden) return;
+
+      timer = setTimeout(() => {
+        if (document.hidden || !shouldShowInstallReminder()) return;
+        markInstallReminderSeen();
+        progress.set(0);
+        opacity.set(0);
+        setPanel({ kind: 'reminder' });
+      }, INSTALL_REMINDER_DELAY_MS);
+    }
+
+    scheduleReminder();
+    document.addEventListener('visibilitychange', scheduleReminder);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', scheduleReminder);
+    };
+  }, [canRemind, opacity, panel, progress]);
+
   function open() {
     trigger.current?.measureInWindow((x, y, buttonWidth, buttonHeight) => {
       progress.set(0);
       opacity.set(0);
-      setAnchor({ right: width - x - buttonWidth, top: y + buttonHeight + 8 });
+      setPanel({ kind: 'menu', right: width - x - buttonWidth, top: y + buttonHeight + 8 });
     });
   }
 
   function close() {
-    setAnchor(null);
-    setShowSafariGuide(false);
+    setPanel(null);
+  }
+
+  function startInstallation() {
+    markInstallReminderSeen();
+    if (installPwa) {
+      installPwa();
+      close();
+    } else if (canShowSafariGuide) {
+      setPanel({ kind: 'safari' });
+    }
+  }
+
+  function changeReminderDisabled(disabled: boolean) {
+    setReminderDisabled(disabled);
+    setInstallReminderDisabled(disabled);
   }
 
   function openSite() {
@@ -92,11 +164,11 @@ export function HomeMenu() {
     { label: 'Paramètres', icon: Settings, action: () => { close(); router.push('/parametres'); } },
     { label: 'Le Site', icon: Globe, action: openSite },
   ];
-  if (installPwa || canShowSafariGuide) {
+  if (canInstall) {
     items.push({
       label: INSTALL_LABEL,
       icon: Download,
-      action: installPwa ? () => { installPwa(); close(); } : () => setShowSafariGuide(true),
+      action: startInstallation,
     });
   }
 
@@ -106,7 +178,7 @@ export function HomeMenu() {
         ref={trigger}
         accessibilityLabel="Ouvrir le menu"
         accessibilityRole="button"
-        accessibilityState={{ expanded: anchor !== null && !showSafariGuide }}
+        accessibilityState={{ expanded: menu !== null }}
         onPress={open}
         haptic="light"
         hitSlop={4}
@@ -115,7 +187,7 @@ export function HomeMenu() {
         <AppIcon icon={EllipsisVertical} size={22} color={color('#49614D', 'secondary')} />
       </AnimatedPressable>
       <Modal
-        visible={anchor !== null}
+        visible={panel !== null}
         transparent
         animationType="none"
         statusBarTranslucent
@@ -133,10 +205,10 @@ export function HomeMenu() {
         <View style={styles.overlay}>
           <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
             <Pressable
-              accessibilityLabel={showSafariGuide ? 'Fermer' : 'Fermer le menu'}
+              accessibilityLabel={menu ? 'Fermer le menu' : 'Fermer'}
               accessibilityRole="button"
-              importantForAccessibility={showSafariGuide ? 'no' : 'auto'}
-              tabIndex={showSafariGuide ? -1 : 0}
+              aria-hidden={!menu}
+              tabIndex={menu ? 0 : -1}
               onPress={close}
               style={StyleSheet.absoluteFill}
             />
@@ -144,21 +216,49 @@ export function HomeMenu() {
           <Animated.View
             accessibilityViewIsModal
             onAccessibilityEscape={close}
-            onLayout={(event) => setMenuHeight(event.nativeEvent.layout.height)}
+            onLayout={menu ? (event) => setMenuHeight(event.nativeEvent.layout.height) : undefined}
             style={[
               styles.menu,
               {
                 maxWidth: width - 32,
                 maxHeight: height - insets.top - insets.bottom - 24,
               },
-              showSafariGuide ? styles.installGuide : {
-                right: Math.max(16, Math.min(anchor?.right ?? 16, width - 256)),
-                top: Math.max(insets.top + 8, Math.min(anchor?.top ?? 0, height - insets.bottom - menuHeight - 16)),
-              },
+              menu ? {
+                right: Math.max(16, Math.min(menu.right, width - 256)),
+                top: Math.max(insets.top + 8, Math.min(menu.top, height - insets.bottom - menuHeight - 16)),
+              } : styles.installGuide,
               panelStyle,
             ]}>
             <ScrollView bounces={false}>
-              {showSafariGuide ? (
+              {panel?.kind === 'reminder' ? (
+                <View style={styles.installContent}>
+                  <View style={styles.reminderHeader}>
+                    <View aria-hidden style={styles.installStepIcon}>
+                      <AppIcon icon={Download} size={20} color={color('#49614D', 'secondary')} />
+                    </View>
+                    <Text accessibilityRole="header" style={[styles.installTitle, styles.reminderTitle]}>
+                      Installer Stop Accidents
+                    </Text>
+                  </View>
+                  <label style={{ ...reminderPreferenceStyle, color: color('#29392F', 'text') }}>
+                    <input
+                      type="checkbox"
+                      checked={reminderDisabled}
+                      onChange={(event) => changeReminderDisabled(event.currentTarget.checked)}
+                      style={reminderCheckboxStyle}
+                    />
+                    <span>{t('Ne plus me le rappeler')}</span>
+                  </label>
+                  <View style={styles.reminderActions}>
+                    <Pressable accessibilityRole="button" onPress={close} style={[styles.installClose, styles.reminderAction]}>
+                      <Text style={styles.label}>Plus tard</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" onPress={startInstallation} style={[styles.installClose, styles.reminderAction, styles.reminderPrimary]}>
+                      <Text style={[styles.label, styles.reminderPrimaryLabel]}>Installer</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : showSafariGuide ? (
                 <View style={styles.installContent}>
                   <Text accessibilityRole="header" style={styles.installTitle}>{INSTALL_LABEL}</Text>
                   {SAFARI_INSTALL_STEPS.map(({ icon, text }) => (
@@ -231,4 +331,10 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: color('#EDF3E9', 'elevated'),
   },
+  reminderHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reminderTitle: { flex: 1 },
+  reminderActions: { flexDirection: 'row', gap: 8 },
+  reminderAction: { flex: 1, paddingHorizontal: 8 },
+  reminderPrimary: { backgroundColor: '#296957' },
+  reminderPrimaryLabel: { color: '#FFFFFF' },
 }));

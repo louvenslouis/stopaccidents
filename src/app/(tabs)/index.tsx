@@ -174,7 +174,7 @@ export default function HomeScreen() {
               style={styles.headerButton}>
               <AppIcon icon={Bell} size={21} color={themeColor('#49614D', 'secondary')} />
             </AnimatedPressable>
-            <HomeMenu />
+            <HomeMenu allowInstallReminder={!reportOpen && !zonesOpen && !selectedReport && !cardActive} />
           </View>
         }
       >
