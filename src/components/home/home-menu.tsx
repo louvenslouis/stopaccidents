@@ -1,10 +1,13 @@
 import { useRef, useState } from 'react';
 import { Alert, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import Check from 'lucide-react-native/icons/check';
 import Download from 'lucide-react-native/icons/download';
 import EllipsisVertical from 'lucide-react-native/icons/ellipsis-vertical';
 import Globe from 'lucide-react-native/icons/globe';
 import Settings from 'lucide-react-native/icons/settings';
+import SquareArrowUp from 'lucide-react-native/icons/square-arrow-up';
+import SquarePlus from 'lucide-react-native/icons/square-plus';
 import UserRound from 'lucide-react-native/icons/user-round';
 import Route from 'lucide-react-native/icons/route';
 import Animated, {
@@ -26,9 +29,18 @@ import { surfaceDepth } from '@/components/ui/surface-depth';
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://app.stopaccidentshaiti.org/';
 const INSTALL_LABEL = 'Installer l’application';
 const SAFARI_INSTALL_STEPS = [
-  'Ouvrez Stop Accidents dans Safari, puis touchez « Partager » dans la barre d’outils ou dans le menu de la page.',
-  'Faites défiler les options et touchez « Sur l’écran d’accueil ».',
-  'Activez « Ouvrir comme app web » si l’option apparaît, puis touchez « Ajouter ».',
+  {
+    icon: SquareArrowUp,
+    text: 'Ouvrez Stop Accidents dans Safari, puis touchez « Partager » dans la barre d’outils ou dans le menu de la page.',
+  },
+  {
+    icon: SquarePlus,
+    text: 'Faites défiler les options et touchez « Sur l’écran d’accueil ».',
+  },
+  {
+    icon: Check,
+    text: 'Activez « Ouvrir comme app web » si l’option apparaît, puis touchez « Ajouter ».',
+  },
 ];
 
 export function HomeMenu() {
@@ -149,8 +161,13 @@ export function HomeMenu() {
               {showSafariGuide ? (
                 <View style={styles.installContent}>
                   <Text accessibilityRole="header" style={styles.installTitle}>{INSTALL_LABEL}</Text>
-                  {SAFARI_INSTALL_STEPS.map((step) => (
-                    <Text key={step} style={styles.installStep}>{step}</Text>
+                  {SAFARI_INSTALL_STEPS.map(({ icon, text }) => (
+                    <View key={text} style={styles.installStep}>
+                      <View aria-hidden style={styles.installStepIcon}>
+                        <AppIcon icon={icon} size={20} color={color('#49614D', 'secondary')} />
+                      </View>
+                      <Text style={styles.installStepText}>{text}</Text>
+                    </View>
                   ))}
                   <Pressable accessibilityRole="button" onPress={close} style={styles.installClose}>
                     <Text style={styles.label}>Fermer</Text>
@@ -197,7 +214,16 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
   installGuide: { position: 'relative', alignSelf: 'center', width: 360, padding: 0 },
   installContent: { padding: 20, gap: 12 },
   installTitle: { color: color('#29392F', 'text'), fontSize: 20, fontWeight: '700' },
-  installStep: { color: color('#29392F', 'text'), fontSize: 16, lineHeight: 23 },
+  installStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  installStepIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color('#EDF3E9', 'elevated'),
+  },
+  installStepText: { flex: 1, color: color('#29392F', 'text'), fontSize: 16, lineHeight: 23 },
   installClose: {
     minHeight: 44,
     borderRadius: 12,
