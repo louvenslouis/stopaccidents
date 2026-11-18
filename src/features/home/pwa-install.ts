@@ -8,6 +8,10 @@ declare global {
   interface Window {
     stopAccidentsInstallPrompt?: InstallPromptEvent;
   }
+
+  interface Navigator {
+    standalone?: boolean;
+  }
 }
 
 const installPromptChange = 'stopaccidents:install-prompt-change';
@@ -49,7 +53,21 @@ function requestInstall() {
   });
 }
 
+function getInstallMethod() {
+  if (typeof window === 'undefined') return null;
+
+  const browser = window.navigator;
+  const isIPhone = browser?.platform === 'iPhone' || /\biPhone\b/.test(browser?.userAgent ?? '');
+  if (!isIPhone) return getInstallPrompt() ? 'prompt' : null;
+
+  const isStandalone = browser.standalone || window.matchMedia?.('(display-mode: standalone)').matches;
+  return isStandalone ? null : 'safari';
+}
+
 export function usePwaInstall() {
-  const event = useSyncExternalStore(subscribe, getInstallPrompt, () => null);
-  return event ? requestInstall : null;
+  const method = useSyncExternalStore(subscribe, getInstallMethod, () => null);
+  return {
+    installPwa: method === 'prompt' ? requestInstall : null,
+    canShowSafariGuide: method === 'safari',
+  };
 }

@@ -24,18 +24,25 @@ import { AppIcon } from '@/components/ui/app-icon';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 
 const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://app.stopaccidentshaiti.org/';
+const INSTALL_LABEL = 'Installer l’application';
+const SAFARI_INSTALL_STEPS = [
+  'Ouvrez Stop Accidents dans Safari, puis touchez « Partager » dans la barre d’outils ou dans le menu de la page.',
+  'Faites défiler les options et touchez « Sur l’écran d’accueil ».',
+  'Activez « Ouvrir comme app web » si l’option apparaît, puis touchez « Ajouter ».',
+];
 
 export function HomeMenu() {
   const styles = useStyles();
   const color = useThemeColor();
   const { t } = useLanguage();
-  const installPwa = usePwaInstall();
+  const { installPwa, canShowSafariGuide } = usePwaInstall();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const trigger = useRef<View>(null);
   const [anchor, setAnchor] = useState<{ right: number; top: number } | null>(null);
   const [menuHeight, setMenuHeight] = useState(188);
+  const [showSafariGuide, setShowSafariGuide] = useState(false);
   const progress = useSharedValue(0);
   const opacity = useSharedValue(0);
   const panelStyle = useAnimatedStyle(() => ({
@@ -57,6 +64,7 @@ export function HomeMenu() {
 
   function close() {
     setAnchor(null);
+    setShowSafariGuide(false);
   }
 
   function openSite() {
@@ -72,11 +80,11 @@ export function HomeMenu() {
     { label: 'Paramètres', icon: Settings, action: () => { close(); router.push('/parametres'); } },
     { label: 'Le Site', icon: Globe, action: openSite },
   ];
-  if (installPwa) {
+  if (installPwa || canShowSafariGuide) {
     items.push({
-      label: 'Installer l’application',
+      label: INSTALL_LABEL,
       icon: Download,
-      action: () => { installPwa(); close(); },
+      action: installPwa ? () => { installPwa(); close(); } : () => setShowSafariGuide(true),
     });
   }
 
@@ -86,7 +94,7 @@ export function HomeMenu() {
         ref={trigger}
         accessibilityLabel="Ouvrir le menu"
         accessibilityRole="button"
-        accessibilityState={{ expanded: anchor !== null }}
+        accessibilityState={{ expanded: anchor !== null && !showSafariGuide }}
         onPress={open}
         haptic="light"
         hitSlop={4}
@@ -113,8 +121,10 @@ export function HomeMenu() {
         <View style={styles.overlay}>
           <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]}>
             <Pressable
-              accessibilityLabel="Fermer le menu"
+              accessibilityLabel={showSafariGuide ? 'Fermer' : 'Fermer le menu'}
               accessibilityRole="button"
+              importantForAccessibility={showSafariGuide ? 'no' : 'auto'}
+              tabIndex={showSafariGuide ? -1 : 0}
               onPress={close}
               style={StyleSheet.absoluteFill}
             />
@@ -128,13 +138,25 @@ export function HomeMenu() {
               {
                 maxWidth: width - 32,
                 maxHeight: height - insets.top - insets.bottom - 24,
+              },
+              showSafariGuide ? styles.installGuide : {
                 right: Math.max(16, Math.min(anchor?.right ?? 16, width - 256)),
                 top: Math.max(insets.top + 8, Math.min(anchor?.top ?? 0, height - insets.bottom - menuHeight - 16)),
               },
               panelStyle,
             ]}>
             <ScrollView bounces={false}>
-              {items.map(({ label, icon, action }, index) => (
+              {showSafariGuide ? (
+                <View style={styles.installContent}>
+                  <Text accessibilityRole="header" style={styles.installTitle}>{INSTALL_LABEL}</Text>
+                  {SAFARI_INSTALL_STEPS.map((step) => (
+                    <Text key={step} style={styles.installStep}>{step}</Text>
+                  ))}
+                  <Pressable accessibilityRole="button" onPress={close} style={styles.installClose}>
+                    <Text style={styles.label}>Fermer</Text>
+                  </Pressable>
+                </View>
+              ) : items.map(({ label, icon, action }, index) => (
                 <AnimatedPressable
                   key={label}
                   accessibilityRole="button"
@@ -156,7 +178,7 @@ export function HomeMenu() {
 
 const useStyles = createThemedStyles((color) => StyleSheet.create({
   trigger: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
-  overlay: { flex: 1 },
+  overlay: { flex: 1, justifyContent: 'center' },
   backdrop: { backgroundColor: 'rgba(14, 23, 18, 0.22)' },
   menu: {
     ...surfaceDepth(color, 'raised'),
@@ -172,4 +194,15 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
   item: { minHeight: 56, paddingHorizontal: 14, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 13 },
   separator: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: color('#E0E5D7', 'border') },
   label: { flexShrink: 1, color: color('#29392F', 'text'), fontSize: 16, fontWeight: '600' },
+  installGuide: { position: 'relative', alignSelf: 'center', width: 360, padding: 0 },
+  installContent: { padding: 20, gap: 12 },
+  installTitle: { color: color('#29392F', 'text'), fontSize: 20, fontWeight: '700' },
+  installStep: { color: color('#29392F', 'text'), fontSize: 16, lineHeight: 23 },
+  installClose: {
+    minHeight: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color('#EDF3E9', 'elevated'),
+  },
 }));
