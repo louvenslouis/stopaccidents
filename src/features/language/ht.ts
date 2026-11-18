@@ -129,6 +129,7 @@ export const haitianCreole: Record<string, string> = {
   "Mon profil": "Pwofil mwen",
   "Paramètres": "Paramèt",
   "Le Site": "Sit la",
+  "Installer l’application": "Enstale aplikasyon an",
   "Ouvrir le menu": "Ouvri meni an",
   "Fermer le menu": "Fèmen meni an",
   "Impossible d’ouvrir le site. Réessayez.": "Pa kapab ouvri sit la. Eseye ankò.",

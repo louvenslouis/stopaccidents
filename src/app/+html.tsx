@@ -1,5 +1,6 @@
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
+import { captureInstallPrompt } from '@/features/home/pwa-install';
 
 const registerServiceWorker = `
   if ('serviceWorker' in navigator) {
@@ -23,6 +24,7 @@ export default function RootHtml({ children }: PropsWithChildren) {
         <meta name="theme-color" content="#F7F7F7" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/pwa/icon-180.png" />
+        <script dangerouslySetInnerHTML={{ __html: captureInstallPrompt }} />
         <ScrollViewStyleReset />
         {headNodes}
       </head>

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Alert, Linking, Modal, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
+import Download from 'lucide-react-native/icons/download';
 import EllipsisVertical from 'lucide-react-native/icons/ellipsis-vertical';
 import Globe from 'lucide-react-native/icons/globe';
 import Settings from 'lucide-react-native/icons/settings';
@@ -15,8 +16,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
+import { usePwaInstall } from '@/features/home/pwa-install';
 import { useLanguage } from '@/features/language/language-provider';
-import { Pressable, Text, View } from '@/features/language/native';
+import { Pressable, ScrollView, Text, View } from '@/features/language/native';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { AppIcon } from '@/components/ui/app-icon';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -27,6 +29,7 @@ export function HomeMenu() {
   const styles = useStyles();
   const color = useThemeColor();
   const { t } = useLanguage();
+  const installPwa = usePwaInstall();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
@@ -69,6 +72,13 @@ export function HomeMenu() {
     { label: 'Paramètres', icon: Settings, action: () => { close(); router.push('/parametres'); } },
     { label: 'Le Site', icon: Globe, action: openSite },
   ];
+  if (installPwa) {
+    items.push({
+      label: 'Installer l’application',
+      icon: Download,
+      action: () => { installPwa(); close(); },
+    });
+  }
 
   return (
     <>
@@ -117,23 +127,26 @@ export function HomeMenu() {
               styles.menu,
               {
                 maxWidth: width - 32,
+                maxHeight: height - insets.top - insets.bottom - 24,
                 right: Math.max(16, Math.min(anchor?.right ?? 16, width - 256)),
                 top: Math.max(insets.top + 8, Math.min(anchor?.top ?? 0, height - insets.bottom - menuHeight - 16)),
               },
               panelStyle,
             ]}>
-            {items.map(({ label, icon, action }, index) => (
-              <AnimatedPressable
-                key={label}
-                accessibilityRole="button"
-                onPress={action}
-                haptic="selection"
-                pressedScale={0.97}
-                style={[styles.item, index > 0 && styles.separator]}>
-                <AppIcon icon={icon} size={20} color={color('#49614D', 'secondary')} />
-                <Text style={styles.label}>{label}</Text>
-              </AnimatedPressable>
-            ))}
+            <ScrollView bounces={false}>
+              {items.map(({ label, icon, action }, index) => (
+                <AnimatedPressable
+                  key={label}
+                  accessibilityRole="button"
+                  onPress={action}
+                  haptic="selection"
+                  pressedScale={0.97}
+                  style={[styles.item, index > 0 && styles.separator]}>
+                  <AppIcon icon={icon} size={20} color={color('#49614D', 'secondary')} />
+                  <Text style={styles.label}>{label}</Text>
+                </AnimatedPressable>
+              ))}
+            </ScrollView>
           </Animated.View>
         </View>
       </Modal>
