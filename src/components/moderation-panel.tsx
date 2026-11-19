@@ -3,7 +3,7 @@ import { Pressable, Text, TextInput, View } from '@/features/language/native';
 import { useThemeColor } from '@/features/appearance/theme-provider';
 import { roleLabels, useRole, type AppRole } from '@/features/moderation/use-role';
 import { supabase } from '@/lib/supabase';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import { AppIcon } from './ui/app-icon';
 
@@ -29,13 +29,6 @@ export function ModerationPanel() {
   return <View style={{ padding: 20, gap: 12, borderRadius: 20, backgroundColor: color('#FFFFFF', 'surface') }}>
     <Text style={{ ...text, fontWeight: '700' }}>{roleLabels[role]}</Text>
     {isAdmin && <>
-      <Link
-        href="https://docs.google.com/forms/d/1mMiPSRxWu88Q3mp95KZB52CcLE4qXkMgYRgzbzHMfWk/edit#responses"
-        target="_blank"
-        rel="noopener noreferrer"
-        style={button}>
-        <Text style={{ ...text, fontWeight: '700' }}>Inscriptions à la bêta Android</Text>
-      </Link>
       <TextInput accessibilityLabel="Identifiant du compte" placeholder="Identifiant du compte" autoCapitalize="none" value={userId} onChangeText={setUserId} editable={!busy}
         style={{ ...text, borderWidth: 1, borderColor: color('#DFE3EA', 'border'), borderRadius: 12, padding: 12 }} />
       {(['user', 'moderator', 'admin'] as const).map(value => <Pressable key={value} accessibilityRole="button" style={button} disabled={busy || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId.trim())} onPress={() => void changeRole(value)}><Text style={text}>{roleLabels[value]}</Text></Pressable>)}
