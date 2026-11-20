@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { Linking, Platform } from 'react-native';
 import { isPreciseLocation, type Coordinates } from './model';
 
 export class PreciseLocationError extends Error {
@@ -10,14 +11,22 @@ export class PreciseLocationError extends Error {
   }
 }
 
+export class LocationPermissionError extends PreciseLocationError {
+  constructor(message = 'L’accès à la position exacte n’est pas autorisé.') {
+    super(message, true);
+  }
+}
+
 /** Wait for a fresh, accurate fix; always stop tracking on completion or dismissal. */
 export function acquirePreciseLocation(
   signal: AbortSignal,
   onProgress: (message: string) => void,
+  access: 'request' | 'automatic' | 'retry' = 'request',
 ): Promise<Coordinates> {
   return new Promise((resolve, reject) => {
     let settled = false;
     let subscription: Location.LocationSubscription | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     const finish = (coordinates?: Coordinates, error?: Error) => {
       if (settled) return;
       settled = true;
@@ -28,7 +37,7 @@ export function acquirePreciseLocation(
       else reject(error);
     };
     const cancel = () => finish(undefined, new Error('Recherche annulée.'));
-    const timeout = setTimeout(
+    const startFixTimeout = () => setTimeout(
       () =>
         finish(
           undefined,
@@ -43,29 +52,51 @@ export function acquirePreciseLocation(
       cancel();
       return;
     }
+    // A native permission or GPS dialog can stay open until the user responds.
+    const waitForDialog = access === 'retry' && Platform.OS !== 'web';
+    if (!waitForDialog) timeout = startFixTimeout();
     void (async () => {
       onProgress('Autorisation de la position exacte…');
       let permission = await Location.getForegroundPermissionsAsync();
       if (settled) return;
-      if (!permission.granted && permission.canAskAgain)
+      const shouldRequest = !permission.granted && permission.canAskAgain &&
+        (access !== 'automatic' || permission.status !== 'denied');
+      if (shouldRequest) {
         permission = await Location.requestForegroundPermissionsAsync();
-      if (settled) return;
+        if (settled) return;
+      }
       if (
         !permission.granted ||
         permission.ios?.accuracy === 'reduced' ||
         permission.android?.accuracy === 'coarse'
-      )
-        throw new PreciseLocationError(
-          'L’accès à la position exacte n’est pas autorisé.',
-          true,
+      ) {
+        if (access === 'retry' && !shouldRequest && Platform.OS !== 'web') {
+          await Linking.openSettings();
+        }
+        throw new LocationPermissionError(
+          access === 'retry' && Platform.OS === 'web'
+            ? 'Autorisez la localisation dans les paramètres de ce site, puis réessayez.'
+            : undefined,
         );
-      const enabled = await Location.hasServicesEnabledAsync();
+      }
+      let enabled = await Location.hasServicesEnabledAsync();
       if (settled) return;
+      if (!enabled && access === 'retry') {
+        if (Platform.OS === 'android') {
+          await Location.enableNetworkProviderAsync().catch(() => undefined);
+          if (settled) return;
+          enabled = await Location.hasServicesEnabledAsync();
+        } else if (Platform.OS === 'ios') {
+          await Linking.openSettings();
+        }
+        if (settled) return;
+      }
       if (!enabled)
         throw new PreciseLocationError(
           'La localisation de l’appareil est désactivée.',
           true,
         );
+      if (waitForDialog) timeout = startFixTimeout();
       onProgress('Recherche d’une position précise…');
       // Expo web forwards these browser options unchanged, including high accuracy.
       const options = {

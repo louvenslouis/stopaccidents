@@ -268,7 +268,7 @@ export function ReportSheet({
   const themeColor = useThemeColor();
 
   const { location: appLocation } = useAppLocation();
-  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
+  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage, resumeDraft, discardDraft, discarding } = useReportDraft('accident', makeDraft, visible && reportType === 'accident');
   const eventChoice = useEventChoice('accident');
   const [selectingPhotos, setSelectingPhotos] = useState(false);
   const [locating, setLocating] = useState(false);
@@ -453,14 +453,11 @@ export function ReportSheet({
     <ReportModalSheet
       visible={visible && (reportType === null || reportType === 'accident')}
       onRequestClose={close}
-      dismissDisabled={sending || selectingPhotos}
+      dismissDisabled={sending || selectingPhotos || discarding}
     >
           {reportType === null ? (
             <ReportTypePicker
-              onSelect={(type) => {
-                onSelectType(type);
-                if (type === 'accident' && savedSteps === 0) changeStep(0);
-              }}
+              onSelect={onSelectType}
               onClose={close}
             />
           ) : !ready ? (
@@ -469,17 +466,19 @@ export function ReportSheet({
             <ReportContextStep
               key={draft.id}
               initialContext={draft}
+              onResumeDraft={resumeDraft}
               active={visible && reportType === 'accident'}
-              busy={locating || sending || selectingPhotos}
-              cancelDisabled={sending}
+              busy={discarding || locating || sending || selectingPhotos}
+              cancelDisabled={sending || discarding}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
               onPublish={(context) => void locate(context)}
               onCancel={() => {
+                if (submitting.current || selectingPhotos) return;
                 locationRequest.current++;
                 locationController.current?.abort();
                 setLocating(false);
-                done();
+                return discardDraft(done);
               }}
             />
           ) : receipt ? (

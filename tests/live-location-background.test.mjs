@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import ts from 'typescript';
 const source=await readFile('src/features/live-location/background.ts','utf8');
-function fixture({expired=false,owner='alice',publish=true,available=true,replacement=false}={}) {
+function fixture({expired=false,owner='alice',publish=true,available=true,replacement=false,relatives=true}={}) {
   let task, stored={token:'session',owner:'alice',expires_at:new Date(Date.now()+(expired?-1000:60000)).toISOString()};
   const calls={stopped:0,sent:[],started:0}, exports={};
   const modules={
+    '@/constants/feature-availability':{featureAvailability:{relatives}},
     'expo-location':{Accuracy:{High:4},hasStartedLocationUpdatesAsync:async()=>true,stopLocationUpdatesAsync:async()=>{calls.stopped++},requestBackgroundPermissionsAsync:async()=>({granted:true}),startLocationUpdatesAsync:async()=>{calls.started++}},
     'expo-task-manager':{defineTask:(_name,handler)=>{task=handler},isAvailableAsync:async()=>available},
     'expo-secure-store':{getItemAsync:async()=>stored?JSON.stringify(stored):null,setItemAsync:async(_key,value)=>{stored=JSON.parse(value)},deleteItemAsync:async()=>{stored=null}},
@@ -16,6 +17,13 @@ function fixture({expired=false,owner='alice',publish=true,available=true,replac
   new Function('exports','require',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(exports,name=>modules[name]);
   return {...exports,calls,run:task,stored:()=>stored};
 }
+test('pausing relatives stops previously registered background shares without sending a location',async()=>{
+  const f=fixture({relatives:false});
+  await f.run({data:{locations:[{timestamp:Date.now()}]}});
+  assert.equal(f.calls.sent.length,0);
+  assert.equal(f.calls.stopped,1);
+  assert.equal(f.stored(),null);
+});
 test('background delivery stops for an expired session or a changed account',async()=>{
   for(const options of [{expired:true},{owner:'bob'},{owner:null}]){
     const f=fixture(options);

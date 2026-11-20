@@ -13,6 +13,7 @@ type AppScreenProps = {
   eyebrow?: string;
   title: string;
   description?: string;
+  animateEntrance?: boolean;
   hideIntro?: boolean;
   headerLeft?: ReactNode;
   headerRight?: ReactNode;
@@ -27,6 +28,7 @@ export function AppScreen({
   eyebrow,
   title,
   description,
+  animateEntrance = true,
   hideIntro = false,
   headerLeft,
   headerRight,
@@ -57,7 +59,7 @@ export function AppScreen({
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}>
         <Animated.View
-          entering={FadeInDown.duration(320).reduceMotion(ReduceMotion.System)}
+          entering={animateEntrance ? FadeInDown.duration(320).reduceMotion(ReduceMotion.System) : undefined}
           style={[styles.header, hideIntro && styles.compactHeader, !!headerLeft && styles.headerWithLeft, headerStyle]}>
           {headerLeft}
           {!hideIntro && <View style={styles.heading}>
@@ -68,12 +70,12 @@ export function AppScreen({
           {headerSeparatorStyle && <View pointerEvents="none" style={headerSeparatorStyle} />}
         </Animated.View>
         {!hideIntro && description && <Animated.Text
-          entering={FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System)}
+          entering={animateEntrance ? FadeInDown.delay(70).duration(320).reduceMotion(ReduceMotion.System) : undefined}
           style={styles.description}>
           {t(description)}
         </Animated.Text>}
         <Animated.View
-          entering={FadeInDown.delay(120).duration(340).reduceMotion(ReduceMotion.System)}>
+          entering={animateEntrance ? FadeInDown.delay(120).duration(340).reduceMotion(ReduceMotion.System) : undefined}>
           {children}
         </Animated.View>
       </Animated.ScrollView>

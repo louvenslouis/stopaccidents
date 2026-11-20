@@ -1,7 +1,7 @@
 # Rôles et modération
 
 - `user` : rôle par défaut des nouveaux comptes et des sessions anonymes ; tous les parcours de signalement restent accessibles.
-- `moderator` : suspension, remise en ligne et fusion réversible des publications.
+- `moderator` : suspension, remise en ligne, fusion réversible et suppression définitive d’une publication depuis le dashboard.
 - `admin` : droits de modération et attribution/retrait des rôles, y compris administrateur.
 
 Les autorisations sont relues dans la base à chaque opération ; les métadonnées modifiables par le client ne font pas autorité. Le dernier administrateur ne peut pas être rétrogradé par l’application. Les comptes anonymes ne peuvent pas recevoir de rôle privilégié.

@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import * as SecureStore from 'expo-secure-store';
 import { supabase } from '@/lib/supabase';
+import { featureAvailability } from '@/constants/feature-availability';
 import { publishLocation, type ShareSession } from './api';
 
 const TASK = 'stopaccidents-live-location';
@@ -42,7 +43,7 @@ async function clearFinishedShare(session: ShareSession | null) {
 
 TaskManager.defineTask<{ locations: Location.LocationObject[] }>(TASK, async ({ data, error }) => {
   const session = await savedShare();
-  if (!session || Date.parse(session.expires_at) <= Date.now()) {
+  if (!featureAvailability.relatives || !session || Date.parse(session.expires_at) <= Date.now()) {
     await clearFinishedShare(session);
     return;
   }

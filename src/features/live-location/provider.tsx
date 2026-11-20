@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type PropsWithChildren } from 'react';
-import { AppState } from 'react-native';
+import { Alert, AppState, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/features/language/language-provider';
+import { featureAvailability } from '@/constants/feature-availability';
 import { EMPTY_SHARES, publishLocation, readLocationShares, startLocationShare, stopLocationShare, type ShareSession, type ShareSnapshot } from './api';
 import { savedShare, saveShare, startBackground, stopBackground } from './background';
 
@@ -14,6 +15,13 @@ const Context = createContext<Sharing>({ snapshot: EMPTY_SHARES, busy: false, er
 export const useLiveLocation = () => useContext(Context);
 
 export function LiveLocationProvider({ children }: PropsWithChildren) {
+  useEffect(() => {
+    if (!featureAvailability.relatives) void stopBackground().catch(() => {});
+  }, []);
+  return featureAvailability.relatives ? <ActiveLiveLocationProvider>{children}</ActiveLiveLocationProvider> : children;
+}
+
+function ActiveLiveLocationProvider({ children }: PropsWithChildren) {
   const [owner, setOwner] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     let active = true, changed = false;
@@ -130,6 +138,20 @@ function AccountSharing({ owner, children }: PropsWithChildren<{ owner: string |
     setBusy(true); setError(null);
     let created: ShareSession | null = null;
     try {
+      if (Platform.OS === 'android') {
+        const consent = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            t('Localisation en arrière-plan'),
+            t('Stop Accidents collecte et partage votre position avec les proches sélectionnés, même lorsque l’application est en arrière-plan ou que vous ne l’utilisez pas. Le partage prend fin à la durée choisie ou lorsque vous l’arrêtez.'),
+            [
+              { text: t('Annuler'), style: 'cancel', onPress: () => resolve(false) },
+              { text: t('Continuer'), onPress: () => resolve(true) },
+            ],
+            { cancelable: true, onDismiss: () => resolve(false) },
+          );
+        });
+        if (!consent || !mounted.current) return;
+      }
       if (!(await Location.requestForegroundPermissionsAsync()).granted) throw new Error('Autorisez la localisation pour partager votre position.');
       let timeout: ReturnType<typeof setTimeout> | undefined;
       const fix = await Promise.race([

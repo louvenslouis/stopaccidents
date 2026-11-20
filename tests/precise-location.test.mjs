@@ -34,19 +34,29 @@ const fix = (accuracy = 8, timestamp = Date.now()) => ({
 });
 function fixture({
   permission = { granted: true },
+  requestedPermission = { granted: true },
+  platform = 'android',
+  access,
+  servicesEnabled = true,
+  acceptActivation = true,
   pendingSubscription = false,
 } = {}) {
   let callback, timeout, resolveSubscription;
-  const calls = { removed: 0, requested: 0, watched: 0, options: null };
+  const calls = { removed: 0, requested: 0, activated: 0, settings: 0, watched: 0, options: null };
   const subscription = { remove: () => calls.removed++ };
   const location = {
     Accuracy: { Highest: 6 },
     getForegroundPermissionsAsync: async () => permission,
     requestForegroundPermissionsAsync: async () => {
       calls.requested++;
-      return { granted: true };
+      return requestedPermission;
     },
-    hasServicesEnabledAsync: async () => true,
+    hasServicesEnabledAsync: async () => servicesEnabled,
+    enableNetworkProviderAsync: async () => {
+      calls.activated++;
+      if (!acceptActivation) throw new Error('Cancelled');
+      servicesEnabled = true;
+    },
     watchPositionAsync: async (options, onPosition) => {
       calls.watched++;
       calls.options = options;
@@ -59,7 +69,14 @@ function fixture({
     },
   };
   const { acquirePreciseLocation } = compile(source, {
-    require: (name) => (name === 'expo-location' ? location : model),
+    require: (name) => ({
+      'expo-location': location,
+      'react-native': {
+        Platform: { OS: platform },
+        Linking: { openSettings: async () => { calls.settings++; } },
+      },
+      './model': model,
+    })[name],
     setTimeout: (fn) => {
       timeout = fn;
       return 1;
@@ -67,7 +84,7 @@ function fixture({
     clearTimeout: () => {},
   });
   const controller = new AbortController();
-  const request = acquirePreciseLocation(controller.signal, () => {});
+  const request = acquirePreciseLocation(controller.signal, () => {}, access);
   return {
     calls,
     request,
@@ -137,4 +154,69 @@ test('already granted permission is reused without asking again', async () => {
   f.emit(fix());
   await f.request;
   assert.equal(f.calls.requested, 0);
+});
+
+test('a tap can request permission again and enable Android location before starting GPS', async () => {
+  const permission = { granted: false, canAskAgain: true, status: 'denied' };
+  const automatic = fixture({ access: 'automatic', permission });
+  await assert.rejects(automatic.request, /pas autorisé/);
+  assert.equal(automatic.calls.requested, 0);
+
+  const retry = fixture({ access: 'retry', permission, servicesEnabled: false });
+  await flush();
+  assert.equal(retry.calls.requested, 1);
+  assert.equal(retry.calls.activated, 1);
+  assert.equal(retry.calls.settings, 0);
+  retry.emit(fix());
+  await retry.request;
+});
+
+test('declining either retry dialog stops acquisition without sending the user to settings', async () => {
+  const denied = { granted: false, canAskAgain: false };
+  const permission = fixture({
+    access: 'retry', permission: { ...denied, canAskAgain: true }, requestedPermission: denied,
+  });
+  await assert.rejects(permission.request, /pas autorisé/);
+  assert.equal(permission.calls.settings, 0);
+  assert.equal(permission.calls.watched, 0);
+
+  const gps = fixture({ access: 'retry', servicesEnabled: false, acceptActivation: false });
+  await assert.rejects(gps.request, /désactivée/);
+  assert.equal(gps.calls.activated, 1);
+  assert.equal(gps.calls.settings, 0);
+  assert.equal(gps.calls.watched, 0);
+});
+
+test('only a native user retry opens settings for a blocked permission', async () => {
+  const permission = { granted: false, canAskAgain: false };
+  for (const [access, platform, settings] of [
+    ['retry', 'android', 1], ['retry', 'ios', 1], ['retry', 'web', 0], ['automatic', 'ios', 0],
+  ]) {
+    const f = fixture({ access, platform, permission });
+    await assert.rejects(f.request);
+    assert.equal(f.calls.requested, 0);
+    assert.equal(f.calls.settings, settings);
+    assert.equal(f.calls.watched, 0);
+  }
+});
+
+test('a browser that keeps denying location points to the site settings', async () => {
+  const denied = { granted: false, canAskAgain: true, status: 'denied' };
+  const f = fixture({ access: 'retry', platform: 'web', permission: denied, requestedPermission: denied });
+  await assert.rejects(f.request, /paramètres de ce site/);
+  assert.equal(f.calls.requested, 1);
+  assert.equal(f.calls.settings, 0);
+  assert.equal(f.calls.watched, 0);
+});
+
+test('disabled services open iOS settings on tap and stay passive during automatic refresh', async () => {
+  for (const [access, platform, settings] of [
+    ['retry', 'ios', 1], ['automatic', 'ios', 0], ['automatic', 'android', 0],
+  ]) {
+    const f = fixture({ access, platform, servicesEnabled: false });
+    await assert.rejects(f.request, /désactivée/);
+    assert.equal(f.calls.settings, settings);
+    assert.equal(f.calls.activated, 0);
+    assert.equal(f.calls.watched, 0);
+  }
 });

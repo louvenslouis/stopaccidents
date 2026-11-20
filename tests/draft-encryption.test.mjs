@@ -33,6 +33,7 @@ async function nativeStorage() {
       WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'unlocked',
       getItemAsync: async key => pointers.get(key) ?? null,
       setItemAsync: async (key, value) => { if (fail) throw Error('disk full'); pointers.set(key, value); },
+      deleteItemAsync: async key => { pointers.delete(key); },
     },
     'expo-crypto': {
       randomUUID, AESKeySize: { AES256: 256 },
@@ -106,6 +107,7 @@ function indexedDatabase(records) {
             return result;
           },
           put(value, key) { records.set(key, structuredClone(value)); },
+          delete(key) { records.delete(key); },
         }) };
         setTimeout(() => tx.oncomplete?.(), 0);
         return tx;
@@ -115,6 +117,32 @@ function indexedDatabase(records) {
     return request;
   } };
 }
+
+test('cancel removes the native encrypted file and pointer, with recoverable interrupted cleanup', async () => {
+  const { storage, pointers, files } = await nativeStorage();
+  await storage.setItem('alice', value);
+  await storage.removeItem('alice');
+  await storage.removeItem('alice');
+  assert.equal(await storage.getItem('alice'), null);
+  assert.equal(files.size, 0);
+  assert.equal(pointers.size, 0);
+  const name = `report-draft-${randomUUID()}.json`;
+  files.set(name, value);
+  pointers.set('alice', 'discarded:' + name);
+  assert.equal(await storage.getItem('alice'), null);
+  assert.equal(files.size, 0);
+  assert.equal(pointers.size, 0);
+});
+
+test('cancel removes the IndexedDB record and key for both encrypted and legacy drafts', async () => {
+  const records = new Map([['legacy', value]]);
+  const storage = await load('src/features/report-events/draft-storage.web.ts', {}, { indexedDB: indexedDatabase(records), crypto: webcrypto });
+  await storage.setItem('encrypted', value);
+  await storage.removeItem('legacy');
+  await storage.removeItem('encrypted');
+  assert.equal(records.size, 0);
+  assert.equal(await storage.getItem('encrypted'), null);
+});
 
 test('web migrates drafts with nonextractable keys and rejects tampering or another owner', async () => {
   const records = new Map([['alice', value]]);

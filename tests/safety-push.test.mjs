@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { dispatchSafetyPush, dispatchRoutePush } from "../supabase/functions/safety-push/dispatch.mjs";
 
+import { deleteReportPhotos } from "../supabase/functions/safety-push/delete-photos.mjs";
+
 const job = {
   id: "job",
   lease: "lease",
@@ -144,4 +146,17 @@ test("revoked route jobs and temporary provider failures never report delivery",
   });
   assert.equal(acknowledgement.p_status, "retry");
   assert.equal(acknowledgement.p_error, "http_429");
+});
+
+test("deleted photo cleanup uses only requested Storage paths and propagates failures for retry", async () => {
+  const files = [{bucket_id:"report-photos",name:"one"},{bucket_id:"accident-photos",name:"two"}];
+  const removed = [];
+  const client = {
+    rpc: async name => { assert.equal(name,"pending_report_photo_deletions"); return {data:files}; },
+    storage: {from: bucket => ({ remove: async paths => {removed.push([bucket,paths]); return {}; } })},
+  };
+  assert.deepEqual(await deleteReportPhotos(client), {processed:2});
+  assert.deepEqual(removed,[["report-photos",["one"]],["accident-photos",["two"]]]);
+  client.storage.from = () => ({remove: async () => ({error:new Error("Storage unavailable")})});
+  await assert.rejects(deleteReportPhotos(client),/Storage unavailable/);
 });

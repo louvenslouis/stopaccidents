@@ -43,7 +43,19 @@ export function subcategories(category: Category) {
 }
 export type DateRange = { start: string | null; end: string };
 export type Analytics = {
+  stop_accidents_bulletins: {
+    period_start: string;
+    period_end: string;
+    serious_accidents: number;
+    accidents_at_least: boolean;
+    deaths: number;
+    injured: number;
+    provisional: boolean;
+    note: string | null;
+    sources: { publisher: string; published_on: string; url: string }[];
+  }[];
   total: number;
+  individual_total: number;
   previous_total: number | null;
   testimonies: number;
   detailed: number;
@@ -141,31 +153,41 @@ export function chartBuckets(
   daily: Analytics["daily"],
   range: DateRange,
   firstDate: string | null,
+  bulletins: Analytics["stop_accidents_bulletins"] = [],
 ): ChartBucket[] {
-  const start = range.start ?? firstDate ?? range.end;
+  const start = range.start ?? (firstDate && firstDate < range.end ? firstDate : range.end);
   const days = Math.max(
     1,
     Math.round((Date.parse(range.end) - Date.parse(start)) / 86400000) + 1,
   );
   const size = Math.max(1, Math.ceil(days / 31));
-  const counts = new Map<number, number>();
-  for (const item of daily) {
-    if (item.date < start || item.date > range.end) continue;
-    const index = Math.floor(
-      (Date.parse(item.date) - Date.parse(start)) / 86400000 / size,
-    );
-    counts.set(index, (counts.get(index) ?? 0) + item.count);
-  }
-  return Array.from({ length: Math.ceil(days / size) }, (_, index) => {
-    const from = shiftDate(start, index * size);
-    const to = shiftDate(start, Math.min(days - 1, (index + 1) * size - 1));
-    return {
+  const periods = bulletins
+    .filter((b) => b.period_start >= start && b.period_end <= range.end)
+    .sort((a, b) => a.period_start.localeCompare(b.period_start));
+  const buckets: ChartBucket[] = [];
+  let nextPeriod = 0;
+  for (let from = start; from <= range.end;) {
+    const regularEnd = shiftDate(from, size - 1);
+    let to = regularEnd < range.end ? regularEnd : range.end;
+    let count = 0;
+    // Keep a published period whole even when it crosses a chart boundary.
+    while (nextPeriod < periods.length && periods[nextPeriod].period_start <= to) {
+      const bulletin = periods[nextPeriod++];
+      if (bulletin.period_end > to) to = bulletin.period_end;
+      count += bulletin.serious_accidents;
+    }
+    for (const item of daily) {
+      if (item.date >= from && item.date <= to) count += item.count;
+    }
+    buckets.push({
       key: from,
       label:
         from === to ? dateLabel(from) : `${dateLabel(from)} – ${dateLabel(to)}`,
-      count: counts.get(index) ?? 0,
+      count,
       start: from,
       end: to,
-    };
-  });
+    });
+    from = shiftDate(to, 1);
+  }
+  return buckets;
 }

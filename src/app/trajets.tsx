@@ -13,6 +13,7 @@ import Plus from 'lucide-react-native/icons/plus';
 import Route from 'lucide-react-native/icons/route';
 import Trash2 from 'lucide-react-native/icons/trash';
 import { AppScreen } from '@/components/app-screen';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import { AppIcon } from '@/components/ui/app-icon';
 import { AnimatedPressable } from '@/components/ui/animated-pressable';
 import { surfaceDepth } from '@/components/ui/surface-depth';
@@ -33,6 +34,13 @@ import { enableRoutePush, getRoutePushStatus } from '@/features/saved-routes/pus
 type Draft = { id?: string; shape: RouteShape | null; schedule: RouteSchedule | null };
 
 export default function SavedRoutesScreen() {
+  const router = useRouter();
+  if (featureAvailability.savedPlacesAndRoutes) return <SavedRoutesContent />;
+  return <AppScreen title="Mes trajets" description={comingSoonMessage} animateEntrance={false}
+    headerLeft={<Back onPress={() => router.canGoBack() ? router.back() : router.replace('/')} />} />;
+}
+
+function SavedRoutesContent() {
   const { userId } = useSafetyAlerts();
   const router = useRouter();
   const styles = useStyles();

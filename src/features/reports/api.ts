@@ -25,5 +25,5 @@ export async function readAnalytics(
     throw new Error(
       "Les rapports ne sont pas disponibles pour le moment. Réessayez dans un instant.",
     );
-  return data as Analytics;
+  return { individual_total: data.total, stop_accidents_bulletins: [], ...data } as Analytics;
 }

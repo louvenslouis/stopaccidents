@@ -67,7 +67,7 @@ export function AppLocationProvider({ children }: PropsWithChildren) {
     );
   }, [clearRefreshTimer]);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback((access: 'automatic' | 'retry' = 'automatic') => {
     if (!mounted.current || !foreground.current || session.current) return;
     clearRefreshTimer();
     const controller = new AbortController();
@@ -76,7 +76,7 @@ export function AppLocationProvider({ children }: PropsWithChildren) {
     setLocating(true);
     setError(null);
 
-    void acquirePreciseLocation(controller.signal, () => {})
+    void acquirePreciseLocation(controller.signal, () => {}, access)
       .then((coordinates) => {
         if (controller.signal.aborted || !mounted.current) return;
         acquired = true;
@@ -193,7 +193,7 @@ export function AppLocationProvider({ children }: PropsWithChildren) {
   }, [clearRefreshTimer, refresh]);
 
   const value = useMemo(
-    () => ({ location, locating, error, refresh }),
+    () => ({ location, locating, error, refresh: () => refresh('retry') }),
     [error, locating, location, refresh],
   );
 

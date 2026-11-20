@@ -60,7 +60,7 @@ function fixture(appLocation = null) {
   const hooks = [];
   const gps = deferred(),
     firstSave = deferred();
-  const calls = { locate: 0, reverseGeocode: 0, save: [], closed: 0 };
+  const calls = { locate: 0, reverseGeocode: 0, save: [], closed: 0, discarded: 0 };
   function state(initial) {
     const index = cursor++;
     if (!(index in hooks)) hooks[index] = typeof initial === 'function' ? initial() : initial;
@@ -69,7 +69,8 @@ function fixture(appLocation = null) {
   const { ReportSheet } = compile(source, {
     '@/features/report-events/use-report-draft': { useReportDraft: (_kind, factory) => {
       const [draft, setDraft] = state(factory), [step, setStep] = state(0), [savedSteps, setSavedSteps] = state(0), [receipt, setReceipt] = state(null);
-      return { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready: true, checkpoint: async () => {}, storageError: null };
+      return { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready: true,
+        checkpoint: async () => {}, discardDraft: async done => { calls.discarded++; done(); }, storageError: null };
     } },
     '@/features/report-events/use-event-choice': { useEventChoice: () => ({ panel: null, choose: async (draft) => ({ ...draft, eventChoiceMade: true, eventId: null }) }) },
     react: {
@@ -295,6 +296,7 @@ test('closing during acquisition prevents a late position from creating a report
   f.gps.resolve({ latitude: 18.5, longitude: -72.3, accuracy: 8 });
   await flush();
   assert.equal(f.calls.closed, 1);
+  assert.equal(f.calls.discarded, 1);
   assert.equal(f.calls.save.length, 0);
 });
 

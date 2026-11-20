@@ -26,6 +26,24 @@ function pointer(value: string) {
   return { name: parsed.name as string, secret: parsed.secret as string };
 }
 
+const discarded = 'discarded:';
+
+async function finishRemoval(key: string, name: string) {
+  if (!/^report-draft-[a-f0-9-]+\.(aes|json)$/i.test(name)) throw new Error('Invalid draft filename');
+  const file = new File(Paths.document, name);
+  if (file.exists) file.delete();
+  await SecureStore.deleteItemAsync(key, options);
+}
+
+async function readPointer(key: string) {
+  const stored = await SecureStore.getItemAsync(key, options);
+  if (stored?.startsWith(discarded)) {
+    await finishRemoval(key, stored.slice(discarded.length));
+    return null;
+  }
+  return stored;
+}
+
 async function save(key: string, value: string, previous: string | null) {
   const old = previous ? pointer(previous) : null;
   const secret = await AESEncryptionKey.generate(AESKeySize.AES256);
@@ -51,7 +69,7 @@ async function save(key: string, value: string, previous: string | null) {
 export const draftStorage = {
   getItem(key: string): Promise<string | null> {
     return serialized(key, async () => {
-      const stored = await SecureStore.getItemAsync(key, options);
+      const stored = await readPointer(key);
       if (!stored) return null;
       const metadata = pointer(stored);
       const file = new File(Paths.document, metadata.name);
@@ -68,6 +86,16 @@ export const draftStorage = {
     });
   },
   setItem(key: string, value: string): Promise<void> {
-    return serialized(key, async () => save(key, value, await SecureStore.getItemAsync(key, options)));
+    return serialized(key, async () => save(key, value, await readPointer(key)));
+  },
+  removeItem(key: string): Promise<void> {
+    return serialized(key, async () => {
+      const stored = await readPointer(key);
+      if (!stored) return;
+      const { name } = pointer(stored);
+      // Drop the secret first and keep the filename until cleanup survives a restart.
+      await SecureStore.setItemAsync(key, discarded + name, options);
+      await finishRemoval(key, name);
+    });
   },
 };

@@ -1,5 +1,11 @@
 // French source messages are stable keys; never use this catalog for stored user content.
 export const haitianCreole: Record<string, string> = {
+  "Localisation en arrière-plan": "Lokalizasyon an aryèplan",
+  "Annuler": "Anile",
+  "Continuer": "Kontinye",
+  "Stop Accidents collecte et partage votre position avec les proches sélectionnés, même lorsque l’application est en arrière-plan ou que vous ne l’utilisez pas. Le partage prend fin à la durée choisie ou lorsque vous l’arrêtez.": "Stop Accidents kolekte epi pataje pozisyon ou ak pwòch ou chwazi yo, menm lè aplikasyon an an aryèplan oswa lè ou p ap itilize l. Pataj la fini lè tan ou chwazi a pase oswa lè ou kanpe l.",
+  "Politique de confidentialité": "Règleman sou konfidansyalite",
+  "Demander la suppression du compte": "Mande pou yo efase kont lan",
   "Photo {0}": "Foto {0}",
   "Choisir des images": "Chwazi imaj",
   "Vous pouvez ajouter jusqu’à 4 photos.": "Ou ka ajoute jiska 4 foto.",
@@ -11,6 +17,7 @@ export const haitianCreole: Record<string, string> = {
   "Ajouter un détail": "Ajoute yon detay",
   "Types de signalement": "Kalite rapò",
   "Lieux et trajets": "Kote ak trajè",
+  "Fonctionnalité à venir": "Fonksyon sa a ap vini",
   "Récompenses": "Rekonpans",
   "Mes trajets": "Trajè mwen yo",
   "Mes trajets surveillés": "Trajè m ap siveye yo",
@@ -894,6 +901,8 @@ export const haitianCreole: Record<string, string> = {
   "Description du véhicule et faits observés.": "Deskripsyon machin nan ak sa ou obsève.",
   "{0} Localise automatiquement et propose les événements proches.": "{0} Jwenn pozisyon an otomatikman epi sijere evènman ki toupre yo.",
   "Nouveau signalement": "Nouvo rapò",
+  "Reprendre le brouillon": "Kontinye bouyon an",
+  "Impossible d’annuler le signalement. Réessayez.": "Nou pa t ka anile rapò a. Eseye ankò.",
   "Fermer les types de signalement": "Fèmen kalite rapò yo",
   "Ces signalements resteront anonymes pour le public.": "Rapò sa yo ap rete anonim pou piblik la.",
   "Zone à préciser": "Zòn pou presize",

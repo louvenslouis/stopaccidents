@@ -80,3 +80,18 @@ test("charts fill gaps, include both boundaries, and retain every count in long 
 test('event dates match the chart calendar day in Haiti', () => {
  assert.equal(context.exports.dateLabel('2026-09-21T03:30:00+00:00'), context.exports.dateLabel('2026-09-20'));
 });
+
+test("chart totals keep entire bulletins together and retain individual events", () => {
+  const bulletins = [
+    { period_start: "2026-11-02", period_end: "2026-11-08", serious_accidents: 29 },
+    { period_start: "2026-10-01", period_end: "2026-10-11", serious_accidents: 29 },
+  ];
+  const daily = [{ date: "2026-11-09", count: 2 }];
+  const buckets = chartBuckets(daily, { start: null, end: "2026-11-10" }, "2026-10-01", bulletins);
+  assert.equal(buckets.reduce((sum, b) => sum + b.count, 0), 60);
+  for (const bulletin of bulletins) {
+    assert.ok(buckets.some((b) => b.start <= bulletin.period_start && b.end >= bulletin.period_end && b.count >= 29));
+  }
+  const partial = chartBuckets(daily, { start: "2026-11-06", end: "2026-11-10" }, null, bulletins);
+  assert.equal(partial.reduce((sum, b) => sum + b.count, 0), 2);
+});

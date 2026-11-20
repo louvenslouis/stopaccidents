@@ -236,7 +236,7 @@ function EventsList({
               accessibilityLiveRegion="polite"
               style={styles.eventsContextCount}
             >
-              {numberLabel(data.total)}
+              {numberLabel(data.individual_total)}
             </Text>
           )}
         </View>
@@ -342,7 +342,7 @@ function EventsList({
                 {moreError}
               </Text>
             )}
-            {reports.length < data.total && (
+            {reports.length < data.individual_total && (
               <AnimatedPressable
                 accessibilityRole="button"
                 disabled={moreLoading}
@@ -355,7 +355,7 @@ function EventsList({
                 ) : (
                   <Text style={styles.link}>
                     Voir plus d’événements · {numberLabel(reports.length)} sur{" "}
-                    {numberLabel(data.total)}
+                    {numberLabel(data.individual_total)}
                   </Text>
                 )}
               </AnimatedPressable>

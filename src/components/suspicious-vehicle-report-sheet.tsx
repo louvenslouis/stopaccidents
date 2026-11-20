@@ -127,7 +127,7 @@ export function SuspiciousVehicleReportSheet({
   const themeColor = useThemeColor();
 
   const { location: appLocation } = useAppLocation();
-  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('suspicious_vehicle', makeDraft, visible);
+  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage, resumeDraft, discardDraft, discarding } = useReportDraft('suspicious_vehicle', makeDraft, visible);
   const eventChoice = useEventChoice('suspicious_vehicle');
   const [locating, setLocating] = useState(false);
   const [sending, setSending] = useState(false);
@@ -334,7 +334,7 @@ export function SuspiciousVehicleReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending || selectingPhotos}
+      dismissDisabled={sending || selectingPhotos || discarding}
     >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
@@ -342,17 +342,19 @@ export function SuspiciousVehicleReportSheet({
             <ReportContextStep
               key={draft.id}
               initialContext={draft}
+              onResumeDraft={resumeDraft}
               active={visible}
-              busy={locating || sending || selectingPhotos}
-              cancelDisabled={sending}
+              busy={discarding || locating || sending || selectingPhotos}
+              cancelDisabled={sending || discarding}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
               onPublish={(context) => void locate(context)}
               onCancel={() => {
+                if (submitting.current || selectingPhotos) return;
                 locationRequest.current++;
                 locationController.current?.abort();
                 setLocating(false);
-                done();
+                return discardDraft(done);
               }}
             />
           ) : receipt ? (

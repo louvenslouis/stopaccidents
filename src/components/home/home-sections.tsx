@@ -1,4 +1,5 @@
 import { ReportCardActions } from '@/components/report-card-actions';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import UsersRound from 'lucide-react-native/icons/users-round';
 import Flame from 'lucide-react-native/icons/flame';
 import { ContrastSurface } from '@/features/navigation/tab-contrast-provider';
@@ -286,7 +287,7 @@ export function HomeSections({
   const insets = useSafeAreaInsets();
   const gps = useAppLocation();
   const reports = useAccident(readMapReports, enabled, 30_000);
-  const places = useAccident(readHomePlaces, enabled);
+  const places = useAccident(readHomePlaces, enabled && featureAvailability.savedPlacesAndRoutes);
   const [radius, setRadius] = useState(10);
   const [zone, setZone] = useState<"position" | "home" | "work">("position");
   const [tipsOpen, setTipsOpen] = useState(false);
@@ -317,6 +318,11 @@ export function HomeSections({
   const closeSheet = () => {
     onZonesClose();
     setTipsOpen(false);
+  };
+  const openSavedDestination = (target: 'home' | 'work') => {
+    if (!featureAvailability.savedPlacesAndRoutes) router.push('/lieux-trajets');
+    else if (target === 'home' ? home : work) openRoute(target);
+    else openProfile();
   };
 
   return (
@@ -443,19 +449,20 @@ export function HomeSections({
           <ContrastSurface style={styles.savedRoutes}>
             <AnimatedPressable
               accessibilityRole="button"
+              accessibilityHint={featureAvailability.savedPlacesAndRoutes ? undefined : comingSoonMessage}
               accessibilityLabel={
-                home
+                !featureAvailability.savedPlacesAndRoutes ? "Domicile" : home
                   ? "Préparer un trajet vers mon domicile"
                   : "Enregistrer mon domicile"
               }
-              onPress={() => (home ? openRoute("home") : openProfile())}
+              onPress={() => openSavedDestination("home")}
               style={styles.savedRoute}
             >
               <House size={18} color="#D3E7CB" />
               <View style={styles.grow}>
                 <Text style={styles.savedRouteTitle}>Domicile</Text>
                 <Text numberOfLines={1} style={styles.savedRouteAddress}>
-                  {places.loading
+                  {!featureAvailability.savedPlacesAndRoutes ? comingSoonMessage : places.loading
                     ? "Chargement…"
                     : home
                       ? places.data?.home?.address
@@ -466,19 +473,20 @@ export function HomeSections({
             <View style={styles.routeDivider} />
             <AnimatedPressable
               accessibilityRole="button"
+              accessibilityHint={featureAvailability.savedPlacesAndRoutes ? undefined : comingSoonMessage}
               accessibilityLabel={
-                work
+                !featureAvailability.savedPlacesAndRoutes ? "Travail" : work
                   ? "Préparer un trajet vers mon travail"
                   : "Enregistrer mon lieu de travail"
               }
-              onPress={() => (work ? openRoute("work") : openProfile())}
+              onPress={() => openSavedDestination("work")}
               style={styles.savedRoute}
             >
               <BriefcaseBusiness size={18} color="#D3E7CB" />
               <View style={styles.grow}>
                 <Text style={styles.savedRouteTitle}>Travail</Text>
                 <Text numberOfLines={1} style={styles.savedRouteAddress}>
-                  {places.loading
+                  {!featureAvailability.savedPlacesAndRoutes ? comingSoonMessage : places.loading
                     ? "Chargement…"
                     : work
                       ? places.data?.work?.address
@@ -679,7 +687,9 @@ export function HomeSections({
                       </AnimatedPressable>
                     ))}
                   </View>
-                  {zoneCenter ? (
+                  {zone !== 'position' && !featureAvailability.savedPlacesAndRoutes ? (
+                    <Text style={styles.emptyTitle}>{comingSoonMessage}</Text>
+                  ) : zoneCenter ? (
                     <>
                       <View style={styles.zoneContext}>
                         <MapPin size={15} color={themeColor("#697B6A", 'muted')} />

@@ -1,3 +1,4 @@
+import { eventReportQuery, type ReportDetailScope } from '@/features/safety-report/read';
 import { supabase } from '@/lib/supabase';
 import type { AccidentType, Severity } from './model';
 
@@ -62,10 +63,10 @@ export async function readLatestAccident(
 export async function readAccident(
   id: string,
   signal: AbortSignal,
+  scope: ReportDetailScope = 'testimony',
 ): Promise<AccidentDetail | null> {
-  const { data, error } = await supabase
-    .rpc('read_accident', { p_id: id })
-    .abortSignal(signal);
+  const query = scope === 'event' ? eventReportQuery('accident', id) : supabase.rpc('read_accident', { p_id: id });
+  const { data, error } = await query.abortSignal(signal);
   if (error) throw new Error('Impossible de charger cet accident. Réessayez.');
   if (!data) return null;
   const report = data as AccidentDetail;

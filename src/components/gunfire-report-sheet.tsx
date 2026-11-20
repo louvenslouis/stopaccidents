@@ -170,7 +170,7 @@ export function GunfireReportSheet({
   const themeColor = useThemeColor();
 
   const { location: appLocation } = useAppLocation();
-  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage } = useReportDraft('gunfire', makeDraft, visible);
+  const { draft, setDraft, step, setStep, savedSteps, setSavedSteps, receipt, setReceipt, ready, storageError, checkpoint, retryStorage, resumeDraft, discardDraft, discarding } = useReportDraft('gunfire', makeDraft, visible);
   const eventChoice = useEventChoice('gunfire');
   const [locating, setLocating] = useState(false);
   const [sending, setSending] = useState(false);
@@ -379,7 +379,7 @@ export function GunfireReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending || selectingPhotos}
+      dismissDisabled={sending || selectingPhotos || discarding}
     >
           {!ready ? (
             <ReportDraftLoading error={storageError} onRetry={retryStorage} onClose={close} />
@@ -387,17 +387,19 @@ export function GunfireReportSheet({
             <ReportContextStep
               key={draft.id}
               initialContext={draft}
+              onResumeDraft={resumeDraft}
               active={visible}
-              busy={locating || sending}
-              cancelDisabled={sending}
+              busy={discarding || locating || sending}
+              cancelDisabled={sending || discarding}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
               onPublish={(context) => void locate(context)}
               onCancel={() => {
+                if (submitting.current || selectingPhotos) return;
                 locationRequest.current++;
                 locationController.current?.abort();
                 setLocating(false);
-                done();
+                return discardDraft(done);
               }}
             />
           ) : receipt ? (

@@ -14,7 +14,7 @@ import { readUserAlias } from '@/features/profile/alias';
 import { completeGoogleSignIn, signInWithGoogle } from '@/features/profile/google-auth';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import ChevronRight from 'lucide-react-native/icons/chevron-right';
 import CircleCheck from 'lucide-react-native/icons/circle-check';
@@ -35,6 +35,7 @@ type Feedback = {
 };
 
 const GOOGLE_AUTH_ENABLED = process.env.EXPO_PUBLIC_GOOGLE_AUTH_ENABLED === 'true';
+const PRIVACY_POLICY_URL = 'https://stopaccidentshaiti.org/confidentialite';
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -543,6 +544,18 @@ export default function ProfileScreen() {
                 <AppIcon icon={ChevronRight} color={themeColor('#89919E', 'muted')} size={20} />
               </View>
             </AnimatedPressable>
+            <View style={styles.privacyLinks}>
+              <Link href={PRIVACY_POLICY_URL} asChild>
+                <Pressable accessibilityRole="link" style={styles.privacyLink}>
+                  <Text style={styles.secondaryButtonText}>Politique de confidentialité</Text>
+                </Pressable>
+              </Link>
+              <Link href={`${PRIVACY_POLICY_URL}#choix`} asChild>
+                <Pressable accessibilityRole="link" style={styles.privacyLink}>
+                  <Text style={styles.secondaryButtonText}>Demander la suppression du compte</Text>
+                </Pressable>
+              </Link>
+            </View>
           </View>
         </AppScreen>
       </KeyboardAvoidingView>
@@ -574,6 +587,8 @@ const useStyles = createThemedStyles((themeColor) => StyleSheet.create({
     gap: 26,
   },
   personalGroup: { gap: 14 },
+  privacyLinks: { alignItems: 'flex-start' },
+  privacyLink: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 },
   loadingCard: {
     minHeight: 128,
     padding: 24,

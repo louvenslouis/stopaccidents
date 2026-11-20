@@ -8,7 +8,7 @@ import { ReportPlaceCard } from '@/components/report-place-card';
 import { ReportTimeRuler } from '@/components/report-time-ruler';
 import { reportTimeAt, validMinutesAgo, publicationCountdown, type ManualReportContext } from '@/features/report-events/context';
 
-export function ReportContextStep({ active, busy, cancelDisabled, error, progressLabel, initialContext, onPublish, onCancel }: {
+export function ReportContextStep({ active, busy, cancelDisabled, error, progressLabel, initialContext, onPublish, onResumeDraft, onCancel }: {
   initialContext?: { locationSource?: string; occurredAt?: string; minutesAgo?: number; location: string; coordinates: { latitude: number; longitude: number } | null };
   active: boolean;
   busy: boolean;
@@ -16,7 +16,8 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
   error: string | null;
   progressLabel: string;
   onPublish: (context?: ManualReportContext) => void;
-  onCancel: () => void;
+  onResumeDraft?: () => void;
+  onCancel: () => void | Promise<void>;
 }) {
   const styles = useStyles();
   const [elsewhere, setElsewhere] = useState(false);
@@ -39,12 +40,13 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
   const countdown = useRef<ReturnType<typeof publicationCountdown> | null>(null);
   const attempted = useRef(false);
   const [foreground, setForeground] = useState(AppState.currentState !== 'background');
+  const canResume = Boolean(onResumeDraft);
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
     return () => subscription.remove();
   }, []);
   useEffect(() => {
-    if (!active || !foreground || editing || busy || error || attempted.current) return;
+    if (!active || !foreground || editing || busy || error || canResume || attempted.current) return;
     setProgress(0);
     countdown.current = publicationCountdown(() => {
       attempted.current = true;
@@ -52,12 +54,12 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
       else latest.current.onPublish();
     }, setProgress);
     return () => countdown.current?.cancel();
-  }, [active, foreground, editing, busy, error]);
+  }, [active, foreground, editing, busy, error, canResume]);
 
   function publish() {
     if (busy) return;
     if (!editing) {
-      if (!attempted.current && !error) countdown.current?.finish();
+      if (!canResume && !attempted.current && !error && countdown.current) countdown.current.finish();
       else if (elsewhere) setEditing(true);
       else onPublish();
       return;
@@ -69,6 +71,16 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
     setLocalError(null);
     onPublish({ locationSource: 'manual', occurredAt: reportTimeAt(minutesAgo), minutesAgo,
       location: place.address, coordinates: { latitude: place.latitude, longitude: place.longitude, accuracy: null } });
+  }
+  async function cancel() {
+    attempted.current = true;
+    countdown.current?.cancel();
+    setLocalError(null);
+    try {
+      await onCancel();
+    } catch {
+      setLocalError('Impossible d’annuler le signalement. Réessayez.');
+    }
   }
   const displayedError = localError || ((!editing || initialContext?.locationSource === 'manual') ? error : null);
   const canPublish = !busy && (!editing || (place !== null && validMinutesAgo(minutesAgo)));
@@ -105,10 +117,15 @@ export function ReportContextStep({ active, busy, cancelDisabled, error, progres
         <Pressable accessibilityRole="button" accessibilityLabel="Publier" disabled={!canPublish}
           accessibilityState={{ disabled: !canPublish, busy }} onPress={publish}
           style={[styles.publish, !canPublish && styles.disabled]}>
-          {!editing && <View pointerEvents="none" style={[styles.fill, { width: `${progress * 100}%` }]} />}
+          {!editing && !canResume && <View pointerEvents="none" style={[styles.fill, { width: `${progress * 100}%` }]} />}
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.publishText}>Publier</Text>}
         </Pressable>
-        <Pressable accessibilityRole="button" disabled={cancelDisabled} onPress={() => { countdown.current?.cancel(); onCancel(); }} style={styles.cancel}>
+        {onResumeDraft && !editing && !busy && (
+          <Pressable accessibilityRole="button" onPress={onResumeDraft} style={styles.cancel}>
+            <Text style={styles.resumeText}>Reprendre le brouillon</Text>
+          </Pressable>
+        )}
+        <Pressable accessibilityRole="button" disabled={cancelDisabled} onPress={cancel} style={styles.cancel}>
           <Text style={styles.cancelText}>Annuler</Text>
         </Pressable>
       </View>
@@ -130,5 +147,6 @@ const useStyles = createThemedStyles((color) => StyleSheet.create({
   footer: { paddingHorizontal: 24, paddingTop: 12, gap: 4 }, publish: { height: 58, borderRadius: 18, overflow: 'hidden', backgroundColor: '#235D55', alignItems: 'center', justifyContent: 'center' },
   fill: { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#329B85' }, publishText: { color: '#fff', fontSize: 17, fontWeight: '800' },
   cancel: { minHeight: 48, justifyContent: 'center', alignItems: 'center' }, cancelText: { fontSize: 15, color: color('#697687', 'muted') },
+  resumeText: { fontSize: 15, fontWeight: '600', color: color('#267E70', 'success') },
   disabled: { opacity: 0.5 }, error: { color: color('#BD2E40', 'accent'), fontSize: 14 }, status: { color: color('#697687', 'muted'), fontSize: 14 },
 }));

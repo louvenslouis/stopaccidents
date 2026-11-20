@@ -8,6 +8,8 @@ import { useAccident } from '@/features/accident-report/use-accident';
 import { readTransportStations } from '@/features/transport/api';
 import { stationMarkers, type TransportStation } from '@/features/transport/model';
 import { TransportStationsSheet } from './transport-stations-sheet';
+import { ComingSoonDialog } from './coming-soon-dialog';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import BusFront from 'lucide-react-native/icons/bus-front';
 import { useRoutePlanner } from '@/features/map/use-route-planner';
 import type { MapPlace } from '@/features/map/place-search';
@@ -136,8 +138,8 @@ export function OpenStreetMap({
   const themeColor = useThemeColor();
 
   const [attempt, setAttempt] = useState(0);
-  const stations = useAccident(readTransportStations, true, 60000);
-  const transportMarkers = useMemo(() => stationMarkers(stations.data ?? []), [stations.data]);
+  const stations = useAccident(readTransportStations, featureAvailability.transportStations, 60000);
+  const transportMarkers = useMemo(() => featureAvailability.transportStations ? stationMarkers(stations.data ?? []) : [], [stations.data]);
   const [stationsOpen, setStationsOpen] = useState(false);
   const [selectedStation, setSelectedStation] = useState<TransportStation | null>(null);
   const [weatherCenter, setWeatherCenter] = useState<WeatherPoint | null>(null);
@@ -181,6 +183,9 @@ export function OpenStreetMap({
     if (trajet === 'custom') {
       handledJourney.current = key;
       showPlanner();
+    } else if (!featureAvailability.savedPlacesAndRoutes) {
+      handledJourney.current = key;
+      router.push('/lieux-trajets');
     } else {
       void readHomePlaces().then((places) => {
         if (!active) return;
@@ -252,6 +257,11 @@ export function OpenStreetMap({
   };
 
   const openSavedPlace = async (kind: 'home' | 'work') => {
+    if (!featureAvailability.savedPlacesAndRoutes) {
+      Keyboard.dismiss();
+      router.push('/lieux-trajets');
+      return;
+    }
     const request = ++searchRequest.current;
     setShortcutLoading(kind);
     setSearchOpen(false);
@@ -354,7 +364,7 @@ export function OpenStreetMap({
         </View>
       )}
 
-      {stationsOpen && <TransportStationsSheet
+      {stationsOpen && (featureAvailability.transportStations ? <TransportStationsSheet
         stations={stations}
         initialStation={selectedStation}
         onClose={() => setStationsOpen(false)}
@@ -363,7 +373,7 @@ export function OpenStreetMap({
           selectPlace({ latitude: station.latitude, longitude: station.longitude, label: station.name });
           setStationsOpen(false);
         }}
-      />}
+      /> : <ComingSoonDialog onClose={() => setStationsOpen(false)} />)}
 
       <View
         style={[
@@ -380,6 +390,7 @@ export function OpenStreetMap({
           <AnimatedPressable
             accessibilityRole="button"
             accessibilityLabel={stations.error ? 'Stations : chargement impossible, réessayer' : 'Voir les stations de transport en commun'}
+            accessibilityHint={featureAvailability.transportStations ? undefined : comingSoonMessage}
             haptic="light"
             pressedScale={0.9}
             onPress={() => {
@@ -390,7 +401,7 @@ export function OpenStreetMap({
             }}
             style={[styles.iconButton, styles.locateButton, stations.error && styles.errorButton]}
           >
-            {stations.loading && !stations.data ? (
+            {featureAvailability.transportStations && stations.loading && !stations.data ? (
               <ActivityIndicator size="small" color={themeColor("#087F75", 'success')} />
             ) : (
               <BusFront size={23} color={stations.error ? themeColor('#C63E31', 'accent') : themeColor('#087F75', 'success')} />

@@ -103,3 +103,30 @@ test('kidnapping markers are visible, distinct and open the kidnapping detail', 
   assert.match(markers[0].title, /^Enlèvement/);
   assert.equal(markers[1].id, 'accident:accident');
 });
+
+test('event sheets request the consolidated detail and history reads the selected testimony', async () => {
+  const signal = new AbortController().signal;
+  const calls = [];
+  const api = { supabase: { rpc(name, params) {
+    return { abortSignal: async received => {
+      assert.equal(received, signal);
+      calls.push([name, params]);
+      return { data: { id: params.p_id, photos: [] }, error: null };
+    } };
+  } } };
+  const read = await compile('features/safety-report/read', { '@/lib/supabase': api });
+  const accident = await compile('features/accident-report/read', {
+    '@/lib/supabase': api, '@/features/safety-report/read': read,
+  });
+  for (const [kind, reader] of Object.entries({
+    accident: accident.readAccident, fire: read.readFireReport, breakdown: read.readBreakdownReport,
+    gathering: read.readGatheringReport, barricade: read.readBarricadeReport,
+  })) {
+    await reader('selected', signal, 'event');
+    await reader('selected', signal, 'testimony');
+    assert.deepEqual(calls.splice(0), [
+      ['read_event_report', { p_kind: kind, p_id: 'selected' }],
+      [kind === 'accident' ? 'read_accident' : `read_${kind}_report`, { p_id: 'selected' }],
+    ]);
+  }
+});

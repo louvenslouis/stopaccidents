@@ -28,13 +28,16 @@ async function read(key: string): Promise<string | EncryptedDraft | null> {
   });
 }
 
-async function write(key: string, value: EncryptedDraft, legacy?: string): Promise<boolean> {
+async function write(key: string, value: EncryptedDraft | null, legacy?: string): Promise<boolean> {
   const db = await database();
   return new Promise((resolve, reject) => {
     const tx = db.transaction('drafts', 'readwrite');
     const store = tx.objectStore('drafts');
     let committed = false;
-    if (legacy === undefined) {
+    if (value === null) {
+      store.delete(key);
+      committed = true;
+    } else if (legacy === undefined) {
       store.put(value, key);
       committed = true;
     } else {
@@ -63,5 +66,8 @@ export const draftStorage = {
   },
   async setItem(key: string, value: string): Promise<void> {
     await write(key, await encrypt(key, value));
+  },
+  async removeItem(key: string): Promise<void> {
+    await write(key, null);
   },
 };

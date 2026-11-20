@@ -196,7 +196,7 @@ export function ReportDashboard({
     category === "all"
       ? "#F04F66"
       : categories.find((item) => item.id === category)!.color;
-  const buckets = chartBuckets(data.daily, range, data.first_date);
+  const buckets = chartBuckets(data.daily, range, data.first_date, data.stop_accidents_bulletins);
   const selected = buckets.find((item) => item.key === selectedBar);
   const difference = data.previous_total
     ? Math.round(
@@ -544,7 +544,7 @@ export function ReportDashboard({
           <Text style={styles.eventsLinkEyebrow}>ALLER PLUS LOIN</Text>
           <Text style={styles.eventsLinkTitle}>Explorer les événements</Text>
           <Text style={styles.eventsLinkSubtitle}>
-            {numberLabel(data.total)} dans cette sélection · Voir la liste
+            {numberLabel(data.individual_total)} dans cette sélection · Voir la liste
             complète
           </Text>
         </View>

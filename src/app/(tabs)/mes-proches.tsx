@@ -2,6 +2,7 @@ import { UserAvatar } from '@/components/user-avatar';
 import { parseAvatar } from '@/features/profile/avatar';
 import { SafetyAlertsCard } from '@/features/safety-profile/alerts-card';
 import { AppScreen } from '@/components/app-screen';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { inviteConnection, respondConnection, type Connection } from '@/features/connections/api';
@@ -21,6 +22,12 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Share, StyleSheet } from 'react-native';
 
 export default function RelativesScreen() {
+  return featureAvailability.relatives
+    ? <RelativesContent />
+    : <AppScreen title="Mes proches" description={comingSoonMessage} animateEntrance={false} />;
+}
+
+function RelativesContent() {
   const styles = useStyles();
   const color = useThemeColor();
   const router = useRouter();

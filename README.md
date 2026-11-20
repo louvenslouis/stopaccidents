@@ -179,7 +179,10 @@ adresse n’est inventée. Un échec d’envoi propose une reprise sans doublon.
 Chaque « Suivant » attend la confirmation Supabase avant de poursuivre. Les
 étapes suivantes ajustent ce même signalement ; revenir modifier une étape ne
 supprime pas les autres informations. Une fermeture conserve les étapes déjà
-validées en base. Le brouillon en cours reste accessible après fermeture ou redémarrage de l’application.
+validées en base. « Signaler » ouvre un formulaire vide. Si un brouillon du même
+type existe, « Reprendre le brouillon » retrouve l’étape en cours, même après
+un redémarrage. Le bouton « Publier » démarre alors un nouveau signalement.
+« Annuler » ferme le formulaire et supprime le brouillon de ce type sur l’appareil.
 La caméra intégrée ne propose aucun accès à la galerie ; jusqu’à quatre photos
 JPEG de 6 Mo chacune peuvent être ajoutées aux compléments.
 

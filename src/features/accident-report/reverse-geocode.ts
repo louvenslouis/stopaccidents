@@ -1,7 +1,11 @@
-// Photon uses OpenStreetMap address data on web and native, without GPS permission.
+// Look up the report's coordinates on web and native without GPS permission.
 const endpoint =
   process.env.EXPO_PUBLIC_GEOCODING_URL || 'https://photon.komoot.io/reverse';
-const cache = new Map<string, { zone: string | null; expires: number }>();
+const routingEndpoint =
+  process.env.EXPO_PUBLIC_ROUTING_URL || 'https://router.project-osrm.org/route/v1/driving';
+const streetRadiusMeters = 75;
+type LookupKind = 'zone' | 'street';
+const cache = new Map<string, { value: string | null; expires: number }>();
 const pending = new Map<string, Promise<string | null>>();
 const cacheLifetime = 24 * 60 * 60 * 1000;
 const failureLifetime = 60 * 1000;
@@ -56,11 +60,23 @@ export function photonZone(payload: unknown): string | null {
 }
 
 export function cachedZone(key: string): string | null {
-  const entry = cache.get(key);
-  return entry && entry.expires > Date.now() ? entry.zone : null;
+  const entry = cache.get(`zone:${key}`);
+  return entry && entry.expires > Date.now() ? entry.value : null;
 }
 
-async function lookup(key: string): Promise<string | null> {
+function nearestStreet(payload: unknown): string | null {
+  const data = record(payload);
+  if (data?.code !== 'Ok' || !Array.isArray(data.waypoints)) return null;
+  // OSRM returns road segments in order of distance from the pin.
+  for (const item of data.waypoints) {
+    const road = record(item);
+    if (typeof road?.distance === 'number' && road.distance >= 0 && road.distance <= streetRadiusMeters &&
+        typeof road.name === 'string' && road.name.trim()) return road.name.trim();
+  }
+  return null;
+}
+
+async function lookup(key: string, kind: LookupKind): Promise<string | null> {
   const delay = nextRequestAt - Date.now();
   if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
   nextRequestAt = Date.now() + 1000;
@@ -68,20 +84,27 @@ async function lookup(key: string): Promise<string | null> {
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const [latitude, longitude] = key.split(',');
-    const url = new URL(endpoint);
-    url.searchParams.set('lat', latitude);
-    url.searchParams.set('lon', longitude);
-    url.searchParams.set('lang', 'fr');
-    url.searchParams.set('limit', '1');
-    // Avoid assigning a distant settlement to a point with no nearby map data.
-    url.searchParams.set('radius', '1');
+    const url = new URL(kind === 'street' ? routingEndpoint : endpoint);
+    if (kind === 'street') {
+      url.pathname = url.pathname.replace('/route/v1/', '/nearest/v1/').replace(/\/$/, '') + `/${longitude},${latitude}`;
+      url.searchParams.set('number', '4');
+      url.searchParams.set('radiuses', String(streetRadiusMeters));
+      url.searchParams.set('generate_hints', 'false');
+    } else {
+      url.searchParams.set('lat', latitude);
+      url.searchParams.set('lon', longitude);
+      url.searchParams.set('lang', 'fr');
+      url.searchParams.set('limit', '1');
+      url.searchParams.set('radius', '1');
+    }
     const response = await fetch(url.toString(), {
       signal: controller.signal,
       headers: { Accept: 'application/json' },
       credentials: 'omit',
     });
     if (!response.ok) return null;
-    return photonZone(await response.json());
+    const payload = await response.json();
+    return kind === 'street' ? nearestStreet(payload) : photonZone(payload);
   } catch {
     return null;
   } finally {
@@ -89,29 +112,39 @@ async function lookup(key: string): Promise<string | null> {
   }
 }
 
-export function reverseGeocodeZone(
+function reverseGeocode(
+  kind: LookupKind,
   latitude: number | null | undefined,
   longitude: number | null | undefined,
 ): Promise<string | null> {
-  const key = coordinatesKey(latitude, longitude);
-  if (!key) return Promise.resolve(null);
+  const coordinates = coordinatesKey(latitude, longitude);
+  if (!coordinates) return Promise.resolve(null);
+  const key = `${kind}:${coordinates}`;
   const entry = cache.get(key);
-  if (entry && entry.expires > Date.now()) return Promise.resolve(entry.zone);
+  if (entry && entry.expires > Date.now()) return Promise.resolve(entry.value);
   const existing = pending.get(key);
   if (existing) return existing;
 
   // Share card/detail requests, serialize lookups, and cache failures briefly.
-  const request = queue.then(() => lookup(key)).then((zone) => {
+  const request = queue.then(() => lookup(coordinates, kind)).then((value) => {
     cache.delete(key);
     cache.set(key, {
-      zone,
-      expires: Date.now() + (zone ? cacheLifetime : failureLifetime),
+      value,
+      expires: Date.now() + (value ? cacheLifetime : failureLifetime),
     });
     if (cache.size > 100) cache.delete(cache.keys().next().value!);
     pending.delete(key);
-    return zone;
+    return value;
   });
   pending.set(key, request);
   queue = request;
   return request;
+}
+
+export function reverseGeocodeZone(latitude: number | null | undefined, longitude: number | null | undefined) {
+  return reverseGeocode('zone', latitude, longitude);
+}
+
+export function reverseGeocodeStreet(latitude: number, longitude: number) {
+  return reverseGeocode('street', latitude, longitude);
 }

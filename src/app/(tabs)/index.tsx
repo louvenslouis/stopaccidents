@@ -1,10 +1,13 @@
 import { ReportCardActivityContext } from '@/components/report-card-actions';
 import { surfaceDepth } from '@/components/ui/surface-depth';
 import { useLanguage } from '@/features/language/language-provider';
-import { Text, View } from '@/features/language/native';
+import { Pressable, Text, View } from '@/features/language/native';
 import { useAppLocation } from '@/features/location/app-location';
+import { LocationPermissionError } from '@/features/accident-report/precise-location';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
 import { AppScreen } from '@/components/app-screen';
+import { ComingSoonDialog } from '@/components/coming-soon-dialog';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import { RecentReportStack } from '@/components/recent-report-stack';
 import { recentReportStack } from '@/features/home/report-stack';
 import { HomeSections } from '@/components/home/home-sections';
@@ -45,12 +48,13 @@ export default function HomeScreen() {
   const { t } = useLanguage();
   const styles = useStyles();
   const themeColor = useThemeColor();
-  const { location, locating, error } = useAppLocation();
+  const { location, locating, error, refresh } = useAppLocation();
   const locationLabel = error
-    ? error.message === 'L’accès à la position exacte n’est pas autorisé.'
+    ? error instanceof LocationPermissionError
       ? 'Accès à la position refusé'
       : 'Localisation indisponible'
     : location?.location || (location && !locating ? 'Lieu indisponible' : 'Localisation…');
+  const LocationRow = error ? Pressable : View;
 
   const router = useRouter();
   const { signalement } = useLocalSearchParams<{ signalement?: string | string[] }>();
@@ -64,6 +68,7 @@ export default function HomeScreen() {
   }, []);
   const [reportOpen, setReportOpen] = useState(false);
   const [zonesOpen, setZonesOpen] = useState(false);
+  const [notificationNoticeOpen, setNotificationNoticeOpen] = useState(false);
   const [reportType, setReportType] = useState<ReportType | null>(null);
   const selectedReport = sharedReportSelection(signalement);
   const latestReport = useAccident(readLatestReport, !reportOpen && !selectedReport && !cardActive, 30000);
@@ -151,7 +156,13 @@ export default function HomeScreen() {
         contentContainerStyle={styles.homeContent}
         onScroll={handleScroll}
         headerLeft={
-          <View style={styles.currentLocation} accessibilityLabel={locationLabel}>
+          <LocationRow
+            style={styles.currentLocation}
+            accessibilityLabel={locationLabel}
+            accessibilityRole={error ? 'button' : undefined}
+            accessibilityHint={error ? 'Activer ma localisation' : undefined}
+            disabled={error ? locating : undefined}
+            onPress={error ? refresh : undefined}>
             <AppIcon icon={MapPin} size={20} color={themeColor('#49614D', 'secondary')} />
             <Text
               numberOfLines={1}
@@ -160,21 +171,22 @@ export default function HomeScreen() {
               style={styles.currentLocationText}>
               {locationLabel}
             </Text>
-          </View>
+          </LocationRow>
         }
         headerRight={
           <View style={styles.headerActions}>
             <AnimatedPressable
               accessibilityLabel="Consulter mes alertes locales"
+              accessibilityHint={featureAvailability.homeNotificationButton ? undefined : comingSoonMessage}
               accessibilityRole="button"
-              onPress={() => setZonesOpen(true)}
+              onPress={() => featureAvailability.homeNotificationButton ? setZonesOpen(true) : setNotificationNoticeOpen(true)}
               haptic="light"
               hitSlop={4}
               pressedScale={0.9}
               style={styles.headerButton}>
               <AppIcon icon={Bell} size={21} color={themeColor('#49614D', 'secondary')} />
             </AnimatedPressable>
-            <HomeMenu allowInstallReminder={!reportOpen && !zonesOpen && !selectedReport && !cardActive} />
+            <HomeMenu allowInstallReminder={!reportOpen && !zonesOpen && !notificationNoticeOpen && !selectedReport && !cardActive} />
           </View>
         }
       >
@@ -193,6 +205,7 @@ export default function HomeScreen() {
           onZonesClose={() => setZonesOpen(false)}
         />
       </AppScreen>
+      {notificationNoticeOpen && <ComingSoonDialog onClose={() => setNotificationNoticeOpen(false)} />}
 
       <Animated.View
         entering={FadeInUp.delay(180).duration(360).reduceMotion(ReduceMotion.System)}
@@ -241,6 +254,7 @@ export default function HomeScreen() {
         </Animated.View>
       </Animated.View>
       <ReportSheet
+        key={reportType ?? 'types'}
         visible={reportOpen}
         reportType={reportType}
         onSelectType={setReportType}

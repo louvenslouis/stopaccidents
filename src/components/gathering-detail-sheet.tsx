@@ -70,10 +70,10 @@ export function GatheringDetailSheet({
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback(
-    (signal: AbortSignal) => readGatheringReport(id, signal),
-    [id],
+    (signal: AbortSignal) => readGatheringReport(id, signal, hideContributions ? 'testimony' : 'event'),
+    [id, hideContributions],
   );
-  const { data: report, loading, error, refresh } = useAccident(loader);
+  const { data: report, loading, error, refresh } = useAccident(loader, true, hideContributions ? 0 : 30_000);
   const location = useReportLocation(report);
   const [mapError, setMapError] = useState<string | null>(null);
 

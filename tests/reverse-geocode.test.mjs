@@ -46,6 +46,44 @@ test('invalid or missing coordinates are skipped; latitude/longitude zero are va
   assert.equal(calls, 0);
 });
 
+test('street lookups request a nearby road and cache it independently of the area', async () => {
+  const urls = [];
+  let now = 10000;
+  const { reverseGeocodeZone, reverseGeocodeStreet, cachedZone } = await compile('reverse-geocode', {
+    Date: { now: () => now },
+    fetch: async url => {
+      urls.push(new URL(url));
+      const result = url.includes('/nearest/') ? { code: 'Ok', waypoints: [
+        { name: '', distance: 9.2 }, { name: ' Rue Légitime ', distance: 26.8 },
+      ] } : response(address);
+      return { ok: true, json: async () => result };
+    },
+  });
+  const point = [18.5392, -72.3364];
+  assert.equal(await reverseGeocodeZone(...point), 'Bois Verna, Port-au-Prince');
+  now += 1000;
+  const street = reverseGeocodeStreet(...point);
+  assert.equal(reverseGeocodeStreet(...point), street);
+  assert.equal(await street, 'Rue Légitime');
+  assert.equal(await reverseGeocodeStreet(...point), 'Rue Légitime');
+  assert.equal(cachedZone('18.53920,-72.33640'), 'Bois Verna, Port-au-Prince');
+  assert.equal(urls.length, 2);
+  assert.match(urls[1].pathname, /\/nearest\/v1\/driving\/-72\.33640,18\.53920$/);
+  assert.equal(urls[1].searchParams.get('radiuses'), '75');
+});
+
+test('an unnamed or distant road, a place name or an empty response does not supply a street label', async () => {
+  for (const payload of [
+    { code: 'Ok', waypoints: [{ name: ' ', distance: 12 }, { name: 'Autre rue', distance: 180 }] },
+    response(address), { code: 'NoSegment' }, { code: 'Ok', waypoints: [] },
+  ]) {
+    const { reverseGeocodeStreet } = await compile('reverse-geocode', {
+      fetch: async () => ({ ok: true, json: async () => payload }),
+    });
+    assert.equal(await reverseGeocodeStreet(18.5, -72.3), null);
+  }
+});
+
 test('concurrent card/detail reads and later refreshes share one cached request', async () => {
   let calls = 0;
   let resolveFetch;

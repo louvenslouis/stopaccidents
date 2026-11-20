@@ -88,10 +88,10 @@ export function AccidentDetailSheet({
   const { height, width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const loader = useCallback(
-    (signal: AbortSignal) => readAccident(id, signal),
-    [id],
+    (signal: AbortSignal) => readAccident(id, signal, hideContributions ? 'testimony' : 'event'),
+    [id, hideContributions],
   );
-  const { data: report, loading, error, refresh } = useAccident(loader);
+  const { data: report, loading, error, refresh } = useAccident(loader, true, hideContributions ? 0 : 30_000);
   const [mapError, setMapError] = useState<string | null>(null);
   const severity = report ? accidentSeverity(report) : null;
   const location = useAccidentLocation(report);

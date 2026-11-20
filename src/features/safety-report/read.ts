@@ -53,15 +53,23 @@ export type BreakdownReportDetail = BreakdownReportSummary & {
 };
 export type FireReportSummary = ReportLocation & { report_kind: 'fire'; accident_type: null; severity: null };
 export type FireReportDetail = FireReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; fire_target: string; fire_state: string; people_danger: string; details: string };
-export async function readFireReport(id: string, signal: AbortSignal): Promise<FireReportDetail | null> {
-  const { data, error } = await supabase.rpc('read_fire_report', { p_id: id }).abortSignal(signal);
+export type ReportDetailScope = 'event' | 'testimony';
+
+export function eventReportQuery(kind: 'accident' | 'fire' | 'gathering' | 'barricade' | 'breakdown', id: string) {
+  return supabase.rpc('read_event_report', { p_kind: kind, p_id: id });
+}
+
+export async function readFireReport(id: string, signal: AbortSignal, scope: ReportDetailScope = 'testimony'): Promise<FireReportDetail | null> {
+  const query = scope === 'event' ? eventReportQuery('fire', id) : supabase.rpc('read_fire_report', { p_id: id });
+  const { data, error } = await query.abortSignal(signal);
   if (error) throw new Error('Impossible de charger cet incendie. Réessayez.');
   return data as FireReportDetail | null;
 }
 export type GatheringReportSummary = ReportLocation & { report_kind: 'gathering'; accident_type: null; severity: null };
 export type GatheringReportDetail = GatheringReportSummary & { location_accuracy_m: number | null; status: 'received' | 'reviewing' | 'closed'; updated_at: string; gathering_type: string; gathering_state: string; traffic_impact: string; details: string };
-export async function readGatheringReport(id: string, signal: AbortSignal): Promise<GatheringReportDetail | null> {
-  const { data, error } = await supabase.rpc('read_gathering_report', { p_id: id }).abortSignal(signal);
+export async function readGatheringReport(id: string, signal: AbortSignal, scope: ReportDetailScope = 'testimony'): Promise<GatheringReportDetail | null> {
+  const query = scope === 'event' ? eventReportQuery('gathering', id) : supabase.rpc('read_gathering_report', { p_id: id });
+  const { data, error } = await query.abortSignal(signal);
   if (error) throw new Error('Impossible de charger ce rassemblement. Réessayez.');
   return data as GatheringReportDetail | null;
 }
@@ -93,14 +101,16 @@ export async function readArmedPresenceReport(id: string, signal: AbortSignal): 
   return data as ArmedPresenceReportDetail | null;
 }
 
-export async function readBarricadeReport(id: string, signal: AbortSignal): Promise<BarricadeReportDetail | null> {
-  const { data, error } = await supabase.rpc('read_barricade_report', { p_id: id }).abortSignal(signal);
+export async function readBarricadeReport(id: string, signal: AbortSignal, scope: ReportDetailScope = 'testimony'): Promise<BarricadeReportDetail | null> {
+  const query = scope === 'event' ? eventReportQuery('barricade', id) : supabase.rpc('read_barricade_report', { p_id: id });
+  const { data, error } = await query.abortSignal(signal);
   if (error) throw new Error('Impossible de charger cette route barricadée. Réessayez.');
   return data as BarricadeReportDetail | null;
 }
 
-export async function readBreakdownReport(id: string, signal: AbortSignal): Promise<BreakdownReportDetail | null> {
-  const { data, error } = await supabase.rpc('read_breakdown_report', { p_id: id }).abortSignal(signal);
+export async function readBreakdownReport(id: string, signal: AbortSignal, scope: ReportDetailScope = 'testimony'): Promise<BreakdownReportDetail | null> {
+  const query = scope === 'event' ? eventReportQuery('breakdown', id) : supabase.rpc('read_breakdown_report', { p_id: id });
+  const { data, error } = await query.abortSignal(signal);
   if (error) throw new Error('Impossible de charger ce signalement de véhicule en panne. Réessayez.');
   return data as BreakdownReportDetail | null;
 }

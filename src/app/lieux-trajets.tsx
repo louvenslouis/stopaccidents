@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import ChevronLeft from 'lucide-react-native/icons/chevron-left';
 import { AppScreen } from '@/components/app-screen';
+import { comingSoonMessage, featureAvailability } from '@/constants/feature-availability';
 import SavedPlacesCard from '@/components/saved-places-card';
 import Route from 'lucide-react-native/icons/route';
 import { createThemedStyles, useThemeColor } from '@/features/appearance/theme-provider';
@@ -16,6 +17,8 @@ export default function PlacesAndRoutesScreen() {
   return (
     <AppScreen
       title="Lieux et trajets"
+      description={featureAvailability.savedPlacesAndRoutes ? undefined : comingSoonMessage}
+      animateEntrance={featureAvailability.savedPlacesAndRoutes}
       headerRight={
         <AnimatedPressable
           accessibilityLabel="Retour"
@@ -25,14 +28,14 @@ export default function PlacesAndRoutesScreen() {
           <AppIcon icon={ChevronLeft} size={22} />
         </AnimatedPressable>
       }>
-      <View style={styles.content}>
+      {featureAvailability.savedPlacesAndRoutes && <View style={styles.content}>
         <AnimatedPressable accessibilityRole="button" accessibilityLabel="Mes trajets"
           onPress={() => router.push('/trajets')} style={styles.routeButton}>
           <AppIcon icon={Route} size={24} color={color('#267E70', 'success')} />
           <Text style={styles.routeLabel}>Mes trajets</Text>
         </AnimatedPressable>
         <SavedPlacesCard />
-      </View>
+      </View>}
     </AppScreen>
   );
 }

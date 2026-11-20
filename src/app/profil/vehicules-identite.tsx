@@ -1,4 +1,5 @@
 import { AppScreen } from "@/components/app-screen";
+import { comingSoonMessage, featureAvailability } from "@/constants/feature-availability";
 import { surfaceDepth } from "@/components/ui/surface-depth";
 import {
   createThemedStyles,
@@ -368,7 +369,7 @@ function PrivateProfile({ userId }: { userId: string }) {
           </View>
           <View style={[styles.card, styles.row]}>
             <Text style={[styles.title, styles.grow]}>Alerter mes proches</Text>
-            <Switch
+            {featureAvailability.relatives || profile.alerts_enabled ? <Switch
               accessibilityLabel="Alerter mes proches"
               value={profile.alerts_enabled}
               disabled={busy}
@@ -376,7 +377,7 @@ function PrivateProfile({ userId }: { userId: string }) {
                 void perform(() => setSafetyAlertsEnabled(userId, enabled))
               }
               trackColor={{ true: color("#267E70", "success") }}
-            />
+            /> : <Text style={styles.muted}>{comingSoonMessage}</Text>}
           </View>
         </>
       )}

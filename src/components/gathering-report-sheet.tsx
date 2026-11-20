@@ -179,6 +179,9 @@ export function GatheringReportSheet({
     storageError,
     checkpoint,
     retryStorage,
+    resumeDraft,
+    discardDraft,
+    discarding,
   } = useReportDraft('gathering', makeDraft, visible);
   const eventChoice = useEventChoice('gathering');
   const [locating, setLocating] = useState(false);
@@ -390,7 +393,7 @@ export function GatheringReportSheet({
     <ReportModalSheet
       visible={visible}
       onRequestClose={close}
-      dismissDisabled={sending || selectingPhotos}
+      dismissDisabled={sending || selectingPhotos || discarding}
     >
           {!ready ? (
             <ReportDraftLoading
@@ -404,17 +407,19 @@ export function GatheringReportSheet({
             <ReportContextStep
               key={draft.id}
               initialContext={draft}
+              onResumeDraft={resumeDraft}
               active={visible}
-              busy={locating || sending}
-              cancelDisabled={sending}
+              busy={discarding || locating || sending}
+              cancelDisabled={sending || discarding}
               error={locationError || storageError}
               progressLabel={sending ? progress : locationProgress}
               onPublish={(context) => void locate(context)}
               onCancel={() => {
+                if (submitting.current || selectingPhotos) return;
                 locationRequest.current++;
                 locationController.current?.abort();
                 setLocating(false);
-                done();
+                return discardDraft(done);
               }}
             />
           ) : receipt ? (

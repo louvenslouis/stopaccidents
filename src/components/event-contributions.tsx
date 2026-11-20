@@ -32,7 +32,7 @@ export function EventContributions({
     (signal: AbortSignal) => readReportEvent(kind, reportId, signal),
     [kind, reportId],
   );
-  const { data: event, loading, error, refresh } = useAccident(loader);
+  const { data: event, loading, error, refresh } = useAccident(loader, true, moderation ? 0 : 30_000);
   const [selection, setSelection] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [target, setTarget] = useState("");
@@ -175,7 +175,7 @@ export function EventContributions({
             <Text style={styles.body}>
               {report.location_description ? <Text translate={false}>{report.location_description}</Text> : "Lieu à préciser"}
             </Text>
-            {report.id === reportId ? (
+            {report.id === reportId && event.contributions.length === 1 ? (
               <Text style={styles.body}>Témoignage affiché</Text>
             ) : (
               <Pressable

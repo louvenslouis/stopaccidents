@@ -103,7 +103,7 @@ export function RecentReportCard({ report, active, loading, canInteract, stackGe
             <View style={styles.age}><Clock3 size={13} color={color('#737D8B', 'muted')} /><Text style={styles.ageText}>{age}</Text></View>
             {severity && <Text numberOfLines={1} style={[styles.badge, { color: severity.color, backgroundColor: severity.tint }]}>{severity.label}</Text>}
           </AnimatedPressable>
-          <View style={styles.miniMap}><ReportLocationPreview latitude={report.latitude} longitude={report.longitude} active={active} showAttribution={false} /></View>
+          <View style={styles.miniMap}><ReportLocationPreview latitude={report.latitude} longitude={report.longitude} active={active} compact /></View>
         </View> : <>
           <View style={styles.expandedMap}><ReportLocationPreview latitude={report.latitude} longitude={report.longitude} active={active} /></View>
           <SafetyReportDetailSheet key={detailRevision} selection={reportSelection(report)} onClose={close} embedded />

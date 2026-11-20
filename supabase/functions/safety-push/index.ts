@@ -1,6 +1,7 @@
 // @ts-nocheck -- Supabase Edge / Deno entry point; dispatch.mjs is tested with Node.
 // eslint-disable-next-line import/no-unresolved -- Resolved by the Deno npm loader.
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
+import { deleteReportPhotos } from "./delete-photos.mjs";
 import { dispatchSafetyPush, dispatchRoutePush } from "./dispatch.mjs";
 
 Deno.serve(async (request) => {
@@ -25,10 +26,11 @@ Deno.serve(async (request) => {
       fetch,
       accessToken: Deno.env.get("EXPO_ACCESS_TOKEN"),
     };
-    // The existing one-minute cron drives both independent queues.
+    // The scheduled worker also reclaims media from deleted reports.
     const results = await Promise.allSettled([
       dispatchSafetyPush(dependencies),
       dispatchRoutePush(dependencies),
+      deleteReportPhotos(client),
     ]);
     if (results.some((result) => result.status === "rejected")) {
       throw new Error("delivery_temporarily_unavailable");
